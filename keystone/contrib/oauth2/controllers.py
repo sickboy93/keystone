@@ -16,6 +16,10 @@ from keystone.common import controller
 from keystone.common import dependency
 from keystone import exception
 from keystone.i18n import _
+from oauthlib.oauth2.endpoints import AuthorizationEndpoint
+from oauthlib.oauth2.tokens import BearerToken
+from oauthlib.oauth2.grant_types import AuthorizationCodeGrant
+from keystone.contrib.oauth2 import OAuth2Validator
 
 @dependency.requires('oauth2_api')	
 class ConsumerCrudV3(controller.V3Controller):
@@ -78,5 +82,12 @@ class OAuth2ControllerV3(controller.V3Controller):
 
     @controller.protected()
     def create_authorization_code(self, context):
-        raise exception.NotImplemented()
+        request_validator = OAuth2Validator
+        auth_grant = AuthorizationCodeGrant(request_validator)
+        bearer = BearerToken(request_validator, token_generator=None,
+            token_expires_in=None, refresh_token_generator=None)#TODO figure out this part
+        AuthorizationEndpoint.__init__(self, default_response_type='code',
+            response_types={'code': auth_grant},
+            default_token_type=bearer)
         
+        #TODO oauth logic
