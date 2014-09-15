@@ -1,0 +1,54 @@
+#TODO REMOVE THIS FILE
+
+API OAUTH2
+--the api is only for WebApplicationWorkflow, in other words, AuthorizationCodeGrant
+--we will expand the API later if needed.
+
+#CONSUMERS
+/consumers
+	POST 	#create-register a consumer
+		#parameters
+			description #optional
+	    	client_type #only condifential supported for now
+	    	redirect_uris #set of allowed redirection uris
+	    	grant_type #only authorization code grant supported for now
+    		scopes #optional. No use for now
+    	#Example data
+		{
+			'consumer':{		
+				'description' : 'My consumer',    
+				'client_type' : 'confidential',
+				'redirect_uris' : {
+					'https://domain:port/endpoint'
+				},
+				'grant_type' : 'authorization_code', 
+				'scopes' : {} 
+			}
+		}
+
+	GET	 	#list all consumers
+
+/consumers/{consumer_id}
+	GET 	#obtain consumer details
+	PATCH 	#update consumer details
+		#parameters
+			same as in POST /consumers but all optional
+	DELETE 	#remove the consumer
+
+					/access_token
+						POST	#change an Authorization Code for an Access Token
+
+#RESOURCEOWNER
+					/users/{user_id}/access_tokens
+						GET		#obtain a list of all the authorized Access Tokens
+
+					/users/{user_id}/access_tokens/{access_token_id}
+						DELETE	#revoke authorization for that access_token
+						GET		#get the authorized Access Token details
+
+/users/{user_id}/authorization_codes
+	GET		#obtain a list of all the Authorization Codes
+	--Needed?? DELETE	#revoke the Authorization Code
+
+/authorize/
+	POST	#give authorization to a consumer, returns an Authorization Code
