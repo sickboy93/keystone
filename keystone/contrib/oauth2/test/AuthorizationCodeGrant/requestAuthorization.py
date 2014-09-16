@@ -4,6 +4,7 @@
 #code.
 
 from  requests_oauthlib import OAuth2Session
+import requests, json, sys
 
 #This info is obtanined after registration on the Authorization Server
 client_id = r'e3196e4458a04372a7571dd536022c3c'
@@ -18,8 +19,14 @@ oauth = OAuth2Session(client_id, redirect_uri=redirect_uri,
 authorization_url, state = oauth.authorization_url(
 	'https://localhost:5000/v3/OS-OAUTH2/authorize')
 
-print authorization_url, state
+print authorization_url
 
+#GET authorization_url to request the authorization
+
+
+#TODO simulate client authorization calling the API to get the code
+
+#TODO get token changing the authorization code 
 
 
 
