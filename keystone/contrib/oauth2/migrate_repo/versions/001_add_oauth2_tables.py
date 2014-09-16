@@ -45,13 +45,23 @@ def upgrade(migrate_engine):
         sql.Column('scopes',sql.Text(),nullable=True))
     authorization_code_table.create(migrate_engine,checkfirst=True)
 
+    consumer_credentials_table = sql.Table(
+        'consumer_credentials',
+        meta,
+        sql.Column('id',sql.String(64), primary_key=True, nullable=False),
+        sql.Column('consumer_id',sql.String(64), sql.ForeignKey('consumer.id'),
+                             nullable=False, index=True),
+        sql.Column('redirect_uri',sql.String(64), nullable=False),
+        sql.Column('response_type',sql.Enum('code',name='response_type'),nullable=False),
+        sql.Column('state',sql.String(64), nullable=True))
+    consumer_credentials_table.create(migrate_engine,checkfirst=True)
 
 def downgrade(migrate_engine):
     # Operations to reverse the above upgrade go here.
     meta = sql.MetaData()
     meta.bind = migrate_engine
 
-    tables = ['consumer','authorization_token']
+    tables = ['consumer','authorization_token','consumer_credentials']
     for t in tables:
         table = sql.Table(t, meta, autoload=True)
         table.drop(migrate_engine, checkfirst=True)

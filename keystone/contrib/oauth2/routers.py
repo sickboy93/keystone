@@ -67,8 +67,13 @@ class OAuth2Extension(wsgi.V3ExtensionRouter):
         self._add_resource(
             mapper, oauth2_controller,
             path=self.PATH_PREFIX + '/authorize',
-            post_action='create_authorization_code',
+            get_action='create_authorization_code',
             rel=build_resource_relation(resource_name='authorization_code'))
+        self._add_resource(
+            mapper, oauth2_controller,
+            path=self.PATH_PREFIX + '/consumer/authorize',
+            get_action='request_authorization_code',
+            rel=build_resource_relation(resource_name='consumer_credentials'))
         
         #Resource Owner CRUD for Access Tokens
         # self._add_resource(

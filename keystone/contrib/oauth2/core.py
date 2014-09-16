@@ -124,3 +124,14 @@ class Driver(object):
 
         """
         raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def store_consumer_credentials(self, credentials):
+        """Saves the consumer credentials until the user gives authorization to it
+
+        :param credentials: Contains all the requiered credentials from the client
+        :type credentials: dict
+        :returns: The stored credentials
+
+        """
+        raise exception.NotImplemented()

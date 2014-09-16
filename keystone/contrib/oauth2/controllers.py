@@ -16,9 +16,7 @@ from keystone.common import controller
 from keystone.common import dependency
 from keystone import exception
 from keystone.i18n import _
-from oauthlib.oauth2.endpoints import AuthorizationEndpoint
-from oauthlib.oauth2.tokens import BearerToken
-from oauthlib.oauth2.grant_types import AuthorizationCodeGrant
+from oauthlib.oauth2 import WebApplicationServer, FatalClientError, OAuth2Error
 from keystone.contrib.oauth2 import OAuth2Validator
 
 @dependency.requires('oauth2_api')	
@@ -79,15 +77,77 @@ class OAuth2ControllerV3(controller.V3Controller):
 
     collection_name = 'consumers'
     member_name = 'consumer'
+    request_validator = OAuth2Validator
+    server = WebApplicationServer(request_validator)
+
+    @controller.protected()
+    def request_authorization_code(self, context):
+   
+        # Validate request
+        headers = context['headers']
+        body = context['body']
+        uri = self.base_url(context, context['path'])
+
+        try:
+            scopes, credentials = self.server.validate_authorization_request(
+                uri, body, headers)
+            # scopes will hold default scopes for client, i.e.
+            #['https://example.com/userProfile', 'https://example.com/pictures']
+
+            # credentials is a dictionary of
+            # {
+            #     'client_id': 'foo',
+            #     'redirect_uri': 'https://foo.com/welcome_back',
+            #     'response_type': 'code',
+            #     'state': 'randomstring',
+            # }
+            # these credentials will be needed in the post authorization view and
+            # should be persisted between. None of them are secret but take care
+            # to ensure their integrity if embedding them in the form or cookies.
+
+
+            persist_credentials(credentials)
+
+            # Present user with a nice form where client (id foo) request access to
+            # his default scopes (omitted from request), after which you will
+            # redirect to his default redirect uri (omitted from request).
+
+        except FatalClientError as e:
+            # this is your custom error page
+            raise exception.ValidationError(message=e.description)
+
 
     @controller.protected()
     def create_authorization_code(self, context):
-        request_validator = OAuth2Validator
-        auth_grant = AuthorizationCodeGrant(request_validator)
-        bearer = BearerToken(request_validator, token_generator=None,
-            token_expires_in=None, refresh_token_generator=None)#TODO figure out this part
-        AuthorizationEndpoint.__init__(self, default_response_type='code',
-            response_types={'code': auth_grant},
-            default_token_type=bearer)
-        
-        #TODO oauth logic
+        # # Validate request
+        # uri = 'https://example.com/post_authorize?client_id=foo'
+        # headers, body, http_method = {}, '', 'GET'
+
+        # # Fetch the credentials saved in the pre authorization phase
+        # credentials = fetch_credentials()
+
+        # # Fetch authorized scopes from the request
+        # from your_framework import request
+        # scopes = request.POST.get('scopes')
+
+        # http_response(body, status=status, headers=headers)
+        # try:
+        #     headers, body, status = server.create_authorization_response(
+        #         uri, http_method, body, headers, scopes, credentials)
+        #     # headers = {'Location': 'https://foo.com/welcome_back?code=somerandomstring&state=xyz'}, this might change to include suggested headers related
+        #     # to cache best practices etc.
+        #     # body = '', this might be set in future custom grant types
+        #     # status = 302, suggested HTTP status code
+
+        #     return http_response(body, status=status, headers=headers)
+
+        # except FatalClientError as e:
+        #     # this is your custom error page
+        #     from your_view_helpers import error_to_response
+        #     return error_to_response(e)
+
+        # except OAuth2Error as e:
+        #     # Less grave errors will be reported back to client
+        #     client_redirect_uri = credentials.get('redirect_uri')
+        #     redirect(e.in_uri(client_redirect_uri))
+        pass
