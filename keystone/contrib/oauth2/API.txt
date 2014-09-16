@@ -35,13 +35,7 @@ API OAUTH2
 			same as in POST /consumers but all optional
 	DELETE 	#remove the consumer
 
-consumer/authorize
-	GET 	#Requests authorization. The Authorization Server saves the credentials until the 					#Resource Owner grants the authorization via /authorize
-		#Query
-			client_id
-			redirect_uri
-        	response_type #Has to be set to 'code',
-			state #Optional. For use of the Client
+
 
 												/access_token
 													POST	#change an Authorization Code for an Access Token
@@ -52,7 +46,17 @@ consumer/authorize
 	--Needed?? DELETE	#revoke the Authorization Code
 
 /authorize/
-	GET		#give authorization to a consumer, returns an Authorization Code
+	GET 	#Requests authorization. The Authorization Server saves the credentials until the 					#Resource Owner grants the authorization via /authorize
+	#Query
+		client_id
+		redirect_uri
+    	response_type #Has to be set to 'code',
+		state #Optional. For use of the Client
+
+	POST	#give authorization to a consumer, returns an Authorization Code
+
+
+
 
 												/users/{user_id}/access_tokens
 													GET		#obtain a list of all the authorized Access Tokens
