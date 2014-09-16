@@ -3,7 +3,6 @@
 #the Resource Owner gives the authorization, which will return an authorization
 #code.
 
-from base import *
 from  requests_oauthlib import OAuth2Session
 
 #This info is obtanined after registration on the Authorization Server
@@ -15,8 +14,11 @@ redirect_uri = 'https://TEST.URI.com'
 scope = ['']
 oauth = OAuth2Session(client_id, redirect_uri=redirect_uri,
                           scope=scope)
-url = KEYSTONE_URL_V3 + EXTENSION + 'authorize'
-authorization_url, state = oauth.authorization_url(url)
+
+authorization_url, state = oauth.authorization_url(
+	'https://localhost:5000/v3/OS-OAUTH2/authorize')
+
+print authorization_url, state
 
 
 
