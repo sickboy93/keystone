@@ -32,28 +32,45 @@ class OAuth2Validator(RequestValidator):
     # Pre- and post-authorization.
     def validate_client_id(self, client_id, request, *args, **kwargs):
         # Simple validity check, does client exist? Not banned?
-        pass
+        client_dict = self.oauth2_api.get_consumer(client_id)
+        if client_dict:
+            return True
+        return False #Currently the sql driver raises an exception if the consumer doesnt exist
+
     def validate_redirect_uri(self, client_id, redirect_uri, request, *args, **kwargs):
         # Is the client allowed to use the supplied redirect_uri? i.e. has
         # the client previously registered this EXACT redirect uri.
-        pass
+        client_dict = self.oauth2_api.get_consumer(client_id)
+        registered_uris = client_dict['redirect_uris']  
+        return redirect_uri in registered_uris
+
     def get_default_redirect_uri(self, client_id, request, *args, **kwargs):
         # The redirect used if none has been supplied.
         # Prefer your clients to pre register a redirect uri rather than
         # supplying one on each authorization request.
+        #TODO implement
         pass
+
     def validate_scopes(self, client_id, scopes, client, request, *args, **kwargs):
         # Is the client allowed to access the requested scopes?
-        pass
+        client_dict = self.oauth2_api.get_consumer(client_id)
+        for scope in scopes:
+            if not scope in client_dict['scopes']:
+                return False
+        return True      
+
     def get_default_scopes(self, client_id, request, *args, **kwargs):
         # Scopes a client will authorize for if none are supplied in the
         # authorization request.
+        #TODO implement
         pass
+
     def validate_response_type(self, client_id, response_type, client, request, *args, **kwargs):
         # Clients should only be allowed to use one type of response type, the
         # one associated with their one allowed grant type.
-        # In this case it must be "code".
-        pass
+        client_dict = self.oauth2_api.get_consumer(client_id)
+        allowed_response_type = client_dict['response_type']
+        return allowed_response_type == response_type
 
     # Post-authorization
     def save_authorization_code(self, client_id, code, request, *args, **kwargs):
