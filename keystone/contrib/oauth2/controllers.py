@@ -17,7 +17,7 @@ from keystone.common import dependency
 from keystone import exception
 from keystone.i18n import _
 from oauthlib.oauth2 import WebApplicationServer, FatalClientError, OAuth2Error
-from keystone.contrib.oauth2 import OAuth2Validator
+from keystone.contrib.oauth2 import validator
 
 @dependency.requires('oauth2_api')	
 class ConsumerCrudV3(controller.V3Controller):
@@ -77,7 +77,7 @@ class OAuth2ControllerV3(controller.V3Controller):
 
     collection_name = 'consumers'
     member_name = 'consumer'
-    request_validator = OAuth2Validator
+    request_validator = validator.OAuth2Validator
     server = WebApplicationServer(request_validator)
 
     @controller.protected()
@@ -106,7 +106,7 @@ class OAuth2ControllerV3(controller.V3Controller):
             # to ensure their integrity if embedding them in the form or cookies.
 
 
-            persist_credentials(credentials)
+            self.oauth2_api.store_consumer_credentials(credentials)
 
             # Present user with a nice form where client (id foo) request access to
             # his default scopes (omitted from request), after which you will
