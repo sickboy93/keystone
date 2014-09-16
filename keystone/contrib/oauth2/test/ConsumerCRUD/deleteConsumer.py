@@ -1,5 +1,4 @@
 from base import *
-import sys
 
 endpoint = 'consumers/%s' %sys.argv[1]
 

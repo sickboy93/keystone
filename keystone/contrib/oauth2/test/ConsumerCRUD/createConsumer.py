@@ -7,7 +7,7 @@ print "Testing endpoint: %s " %endpoint
 
 CREATE_DATA = {
 		"consumer":{
-			"description" : "TEST CONSUMER",
+			"description" : sys.argv[1],
 			"client_type" : "confidential",
 			"redirect_uris" : [
 				"https://TEST.URI.com"
@@ -18,5 +18,5 @@ CREATE_DATA = {
 r = requests.post(url,headers=BASE_HEADERS,data=json.dumps(CREATE_DATA))
 print 'Response to POST at %s: ' %endpoint, r.json()
 
-created_consumer_id = r.json()['consumer']['id']
-print "CREATED CONSUMER ID: %s" %created_consumer_id
+print "CREATED CONSUMER ID: %s" %r.json()['consumer']['id']
+print "CREATED CONSUMER SECRET: %s" %r.json()['consumer']['secret']
