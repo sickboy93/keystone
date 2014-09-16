@@ -75,8 +75,8 @@ class AuthorizationCodeCrudV3(controller.V3Controller):
 @dependency.requires('oauth2_api')  
 class OAuth2ControllerV3(controller.V3Controller):
 
-    collection_name = 'consumers'
-    member_name = 'consumer'
+    collection_name = 'not_used'
+    member_name = 'not_used'
     request_validator = validator.OAuth2Validator
     server = WebApplicationServer(request_validator)
 
@@ -85,12 +85,17 @@ class OAuth2ControllerV3(controller.V3Controller):
    
         # Validate request
         headers = context['headers']
-        body = context['body']
+        body=context['query_string']
         uri = self.base_url(context, context['path'])
-
+        http_method='GET'
+        ##debug
+        self.headers_debug = headers
+        self.body_debug=body
+        self.uri_debug = uri
+        ###
         try:
             scopes, credentials = self.server.validate_authorization_request(
-                uri, body, headers)
+                uri, http_method , body, headers)
             # scopes will hold default scopes for client, i.e.
             #['https://example.com/userProfile', 'https://example.com/pictures']
 
@@ -111,10 +116,12 @@ class OAuth2ControllerV3(controller.V3Controller):
             # Present user with a nice form where client (id foo) request access to
             # his default scopes (omitted from request), after which you will
             # redirect to his default redirect uri (omitted from request).
-
+            #TODO
         except FatalClientError as e:
             # this is your custom error page
-            raise exception.ValidationError(message=e.description)
+            #TODO
+            mss = 'Error: '+str(e.error) +' , headers: '+str(self.headers_debug)+' , body: '+str(self.body_debug)+', uri: '+ str(self.uri_debug)
+            raise exception.ValidationError(message=mss)
 
 
     @controller.protected()
