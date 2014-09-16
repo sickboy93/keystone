@@ -1,5 +1,4 @@
 from base import *
-import sys
 
 endpoint = 'consumers/%s' %sys.argv[1]
 
@@ -10,7 +9,7 @@ print "Testing endpoint: %s " %endpoint
 
 UPDATE_DATA = {
 		"consumer":{
-			"description" : "TEST CONSUMER NEW DESCRIPTION",
+			"description" : sys.argv[2],
 			"redirect_uris" : [
 				"https://TEST.URI.com"
 			],

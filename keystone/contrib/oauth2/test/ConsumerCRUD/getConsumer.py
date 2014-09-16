@@ -1,6 +1,4 @@
 from base import *
-import sys
-
 endpoint = 'consumers/%s' %sys.argv[1]
 
 url = KEYSTONE_URL_V3 + EXTENSION + endpoint
