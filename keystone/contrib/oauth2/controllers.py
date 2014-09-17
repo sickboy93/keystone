@@ -77,7 +77,7 @@ class OAuth2ControllerV3(controller.V3Controller):
 
     collection_name = 'not_used'
     member_name = 'not_used'
-    request_validator = validator.OAuth2Validator
+    request_validator = validator.OAuth2Validator()
     server = WebApplicationServer(request_validator)
 
     @controller.protected()
@@ -85,14 +85,10 @@ class OAuth2ControllerV3(controller.V3Controller):
    
         # Validate request
         headers = context['headers']
-        body=context['query_string']
+        body=context['query_string'].items()
         uri = self.base_url(context, context['path'])
         http_method='GET'
-        ##debug
-        self.headers_debug = headers
-        self.body_debug=body
-        self.uri_debug = uri
-        ###
+
         try:
             scopes, credentials = self.server.validate_authorization_request(
                 uri, http_method , body, headers)
@@ -105,23 +101,25 @@ class OAuth2ControllerV3(controller.V3Controller):
             #     'redirect_uri': 'https://foo.com/welcome_back',
             #     'response_type': 'code',
             #     'state': 'randomstring',
+            #     'request' : The request object created internally. 
             # }
             # these credentials will be needed in the post authorization view and
             # should be persisted between. None of them are secret but take care
             # to ensure their integrity if embedding them in the form or cookies.
 
-
-            self.oauth2_api.store_consumer_credentials(credentials)
+            credentials.pop('request')#We are not storing this for now, might do it in the future
+            
+            credentials_ref = self._assign_unique_id(self._normalize_dict(credentials))
+            self.oauth2_api.store_consumer_credentials(credentials_ref)
 
             # Present user with a nice form where client (id foo) request access to
             # his default scopes (omitted from request), after which you will
             # redirect to his default redirect uri (omitted from request).
-            #TODO
+            
+            return "OK" #TODO
         except FatalClientError as e:
             # this is your custom error page
-            #TODO
-            mss = 'Error: '+str(e.error) +' , headers: '+str(self.headers_debug)+' , body: '+str(self.body_debug)+', uri: '+ str(self.uri_debug)
-            raise exception.ValidationError(message=mss)
+            raise exception.ValidationError(message=e.error)
 
 
     @controller.protected()
