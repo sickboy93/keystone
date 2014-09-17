@@ -126,6 +126,17 @@ class Driver(object):
         raise exception.NotImplemented()
 
     @abc.abstractmethod
+    def store_authorization_code(self, authorization_code):
+        """Stores an authorization_code. This should never be exposed by the API, its called from the oauth2 flow through the validator
+
+        :param authorization_code: All the requiered info
+        :type authorization_code: dict
+        :returns: Nothing
+
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
     def store_consumer_credentials(self, credentials):
         """Saves the consumer credentials until the user gives authorization to it
 

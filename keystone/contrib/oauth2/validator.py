@@ -20,6 +20,7 @@ from keystone.common import dependency
 from keystone import exception
 from keystone.openstack.common import log
 from oauthlib.oauth2 import RequestValidator
+from oslo.utils import timeutils
 
 METHOD_NAME = 'oauth2_validator'
 LOG = log.getLogger(__name__)
@@ -60,7 +61,7 @@ class OAuth2Validator(RequestValidator):
 
         if not client_dict['scopes']:
             return False #the client isnt allowed any scopes
-            
+
         for scope in scopes:
             if not scope in client_dict['scopes']:
                 return False
@@ -84,7 +85,19 @@ class OAuth2Validator(RequestValidator):
         # Remember to associate it with request.scopes, request.redirect_uri
         # request.client, request.state and request.user (the last is passed in
         # post_authorization credentials, i.e. { 'user': request.user}.
-        pass
+        authorization_code = code['code']#code is a dict with state and the code
+        authorization_code['consumer_id'] = client_id
+        #TODO authorization_code['redirect_uri'] = request.redirect_uri
+        authorization_code['scopes'] = request.scopes
+        authorization_code['authorizing_user_id'] = request.user
+
+        token_duration=28800#TODO extract as configuration option
+        #TODO find a better place to do this
+        now = timeutils.utcnow()
+        future = now + datetime.timedelta(seconds=token_duration)
+        expiry_date = timeutils.isotime(future, subsecond=True)
+        authorization_code['expires_at'] = expiry_date
+        self.oauth2_api.store_authorization_code(authorization_code)
 
     # Token request
     def authenticate_client(self, request, *args, **kwargs):
