@@ -15,7 +15,7 @@
 """OAuthlib request validator."""
 
 import six
-
+import datetime
 from keystone.common import dependency
 from keystone import exception
 from keystone.openstack.common import log
@@ -85,11 +85,13 @@ class OAuth2Validator(RequestValidator):
         # Remember to associate it with request.scopes, request.redirect_uri
         # request.client, request.state and request.user (the last is passed in
         # post_authorization credentials, i.e. { 'user': request.user}.
-        authorization_code = code['code']#code is a dict with state and the code
+        #TODO write it cleaner
+        authorization_code = {}
+        authorization_code['code'] = code['code']#code is a dict with state and the code
         authorization_code['consumer_id'] = client_id
         #TODO authorization_code['redirect_uri'] = request.redirect_uri
         authorization_code['scopes'] = request.scopes
-        authorization_code['authorizing_user_id'] = request.user
+        authorization_code['authorizing_user_id'] = request.user_id#populated through the credentials
 
         token_duration=28800#TODO extract as configuration option
         #TODO find a better place to do this

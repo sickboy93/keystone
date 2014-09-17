@@ -11,13 +11,15 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-
+from keystone import exception
 from keystone.common import controller
 from keystone.common import dependency
-from keystone import exception
+from keystone.common import wsgi
 from keystone.i18n import _
-from oauthlib.oauth2 import WebApplicationServer, FatalClientError, OAuth2Error
 from keystone.contrib.oauth2 import validator
+from oauthlib.oauth2 import WebApplicationServer, FatalClientError, OAuth2Error
+
+
 
 @dependency.requires('oauth2_api')	
 class ConsumerCrudV3(controller.V3Controller):
@@ -147,7 +149,11 @@ class OAuth2ControllerV3(controller.V3Controller):
             raise exception.ValidationError(attribute='client_id',target='request')
 
         credentials = self.oauth2_api.get_consumer_credentials(client_id)
-
+        #Add the user_id to the credential for later use
+        user_id = body.get('user_id')
+        if not user_id:
+            raise exception.ValidationError(attribute='user_id',target='request')
+        credentials['user_id'] = user_id
         try:
             headers, body, status = self.server.create_authorization_response(
                 uri, http_method, body, headers, scopes, credentials)
@@ -156,8 +162,10 @@ class OAuth2ControllerV3(controller.V3Controller):
             # body = '', this might be set in future custom grant types
             # status = 302, suggested HTTP status code
 
-            #TODO return the response with the code
-            return "OK"
+            response = wsgi.render_response(body,
+                                            status=(302,'Found'),
+                                            headers=headers.items())#oauthlib returns a dict, we expect a list of tuples
+            return response
 
         except FatalClientError as e:
             # this is your custom error page
