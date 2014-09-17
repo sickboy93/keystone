@@ -50,10 +50,10 @@ class AuthorizationCode(sql.ModelBase, sql.ModelDictMixin):
 
 class ConsumerCredentials(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'consumer_credentials'
-    attributes = ['id', 'consumer_id','redirect_uri','response_type','state']
+    attributes = ['id', 'client_id','redirect_uri','response_type','state']
 
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
-    consumer_id = sql.Column(sql.String(64), sql.ForeignKey('consumer.id'),
+    client_id = sql.Column(sql.String(64), sql.ForeignKey('consumer.id'),
                              nullable=False, index=True)
     redirect_uri = sql.Column(sql.String(64), nullable=False)
     response_type = sql.Column(VALID_RESPONSE_TYPES,nullable=False)
@@ -121,9 +121,3 @@ class OAuth2(oauth2.Driver):
             credentials_ref = ConsumerCredentials.from_dict(credentials)
             session.add(credentials_ref)
         return credentials_ref.to_dict()
-
-    def get_redirect_uris(self, consumer_id):
-        session = sql.get_session()
-        consumer_ref = self._get_consumer(session,consumer_id)
-        redirect_uris = consumer_ref.redirect_uris.json() #TODO check this
-        return redirect_uris
