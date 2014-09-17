@@ -94,10 +94,9 @@ class OAuth2(oauth2.Driver):
         session = sql.get_session()
         with session.begin():
             consumer_ref = self._get_consumer(session, consumer_id)
-            old_consumer_dict = consumer_ref.to_dict()
-            old_consumer_dict.update(consumer)
-            new_consumer = Consumer.from_dict(old_consumer_dict)
-        return new_consumer.to_dict()
+            for k in consumer:
+                setattr(consumer_ref,k,consumer[k])
+        return consumer_ref.to_dict()
 
     def delete_consumer(self, consumer_id):
         session = sql.get_session()
@@ -129,3 +128,10 @@ class OAuth2(oauth2.Driver):
         if credentials_ref is None:
             raise exception.NotFound(_('Credentials not found'))
         return credentials_ref.to_dict()
+
+    def store_authorization_code(self,authorization_code):
+        session = sql.get_session()
+        with session.begin():
+            authorization_code_ref = AuthorizationCode.from_dict(authorization_code)
+            session.add(authorization_code_ref)
+        return authorization_code_ref.to_dict()
