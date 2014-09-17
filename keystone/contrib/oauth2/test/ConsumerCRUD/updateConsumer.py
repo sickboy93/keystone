@@ -13,6 +13,7 @@ UPDATE_DATA = {
 			"redirect_uris" : [
 				"https://TEST.URI.com"
 			],
+			"scopes":["basic"]
 	}
 }
 

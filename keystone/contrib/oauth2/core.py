@@ -135,3 +135,17 @@ class Driver(object):
 
         """
         raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def get_consumer_credentials(self, client_id):
+        """Retrieves the consumer credentials saved when the authorization request
+
+        :param client_id: client_id
+        :type client_id: string
+        :returns: The stored credentials
+
+        """
+        #TODO we need more info to get the credentials, or define constrains like
+        #only allowing one pending authorization request from each consumer so consumer_id
+        #could be use as a PK and/or a unique value
+        raise exception.NotImplemented()

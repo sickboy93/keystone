@@ -85,9 +85,9 @@ class OAuth2ControllerV3(controller.V3Controller):
    
         # Validate request
         headers = context['headers']
-        body=context['query_string'].items()
+        body=context['query_string']
         uri = self.base_url(context, context['path'])
-        http_method='GET'
+        http_method='GET'#TODO get it from context
 
         try:
             scopes, credentials = self.server.validate_authorization_request(
@@ -108,51 +108,62 @@ class OAuth2ControllerV3(controller.V3Controller):
             # to ensure their integrity if embedding them in the form or cookies.
 
             credentials.pop('request')#We are not storing this for now, might do it in the future
-            
+
             credentials_ref = self._assign_unique_id(self._normalize_dict(credentials))
-            self.oauth2_api.store_consumer_credentials(credentials_ref)
+            self.oauth2_api.store_consumer_credentials(credentials_ref) 
+            #TODO there is some issues here with GET not being idempotent, related to the issues commented on
+            #the definition of store_consumer_credentials. The best fix for all probably is to only allow
+            #one pending authorization request for each client, even if its to different users.
 
             # Present user with a nice form where client (id foo) request access to
             # his default scopes (omitted from request), after which you will
             # redirect to his default redirect uri (omitted from request).
             
-            return "OK" #TODO
+            return "OK" #TODO return a JSON object with consumer description, requested scopes, etc.
+            #This JSON is to be used by the next layer (ie a Django server) to populate the view
         except FatalClientError as e:
             # this is your custom error page
             raise exception.ValidationError(message=e.error)
 
 
     @controller.protected()
-    def create_authorization_code(self, context):
-        # # Validate request
-        # uri = 'https://example.com/post_authorize?client_id=foo'
-        # headers, body, http_method = {}, '', 'GET'
+    def create_authorization_code(self, context,user_auth):
+        # Validate request
+        headers = context['headers']
+        body=user_auth
+        uri = self.base_url(context, context['path'])
+        http_method='POST'#TODO get it from context
 
-        # # Fetch the credentials saved in the pre authorization phase
-        # credentials = fetch_credentials()
+        # Fetch authorized scopes from the request
+        scopes = body.get('scopes')
+        if not scopes:
+            raise exception.ValidationError(attribute='scopes',target='request')
+        #TODO oauthlib doesnt allows us empty scopes in this step. If the non-scopes use-case wants to
+        #be supported we'll have to define a default 'noscope' scope.
 
-        # # Fetch authorized scopes from the request
-        # from your_framework import request
-        # scopes = request.POST.get('scopes')
+        # Fetch the credentials saved in the pre authorization phase
+        client_id = body.get('client_id')
+        if not client_id:
+            raise exception.ValidationError(attribute='client_id',target='request')
 
-        # http_response(body, status=status, headers=headers)
-        # try:
-        #     headers, body, status = server.create_authorization_response(
-        #         uri, http_method, body, headers, scopes, credentials)
-        #     # headers = {'Location': 'https://foo.com/welcome_back?code=somerandomstring&state=xyz'}, this might change to include suggested headers related
-        #     # to cache best practices etc.
-        #     # body = '', this might be set in future custom grant types
-        #     # status = 302, suggested HTTP status code
+        credentials = self.oauth2_api.get_consumer_credentials(client_id)
 
-        #     return http_response(body, status=status, headers=headers)
+        try:
+            headers, body, status = self.server.create_authorization_response(
+                uri, http_method, body, headers, scopes, credentials)
+            # headers = {'Location': 'https://foo.com/welcome_back?code=somerandomstring&state=xyz'}, this might change to include suggested headers related
+            # to cache best practices etc.
+            # body = '', this might be set in future custom grant types
+            # status = 302, suggested HTTP status code
 
-        # except FatalClientError as e:
-        #     # this is your custom error page
-        #     from your_view_helpers import error_to_response
-        #     return error_to_response(e)
+            #TODO return the response with the code
+            return "OK"
 
-        # except OAuth2Error as e:
-        #     # Less grave errors will be reported back to client
-        #     client_redirect_uri = credentials.get('redirect_uri')
-        #     redirect(e.in_uri(client_redirect_uri))
-        pass
+        except FatalClientError as e:
+            # this is your custom error page
+            raise exception.ValidationError(message=e.error)
+
+        except OAuth2Error as e:
+            # Less grave errors will be reported back to client
+            #TODO decide how I'm I going to redirect cos redirects should be handled by an upper layer
+            raise exception.ValidationError(message=e.error)
