@@ -32,11 +32,10 @@ class OAuth2Validator(RequestValidator):
     # Pre- and post-authorization.
     def validate_client_id(self, client_id, request, *args, **kwargs):
         # Simple validity check, does client exist? Not banned?
-        # client_dict = self.oauth2_api.get_consumer(client_id)
-        # if client_dict:
-        #     return True
-        # return False #Currently the sql driver raises an exception if the consumer doesnt exist
-        return True #TODO dev
+        client_dict = self.oauth2_api.get_consumer(client_id)
+        if client_dict:
+            return True
+        return False #Currently the sql driver raises an exception if the consumer doesnt exist
 
     def validate_redirect_uri(self, client_id, redirect_uri, request, *args, **kwargs):
         # Is the client allowed to use the supplied redirect_uri? i.e. has
@@ -56,8 +55,12 @@ class OAuth2Validator(RequestValidator):
         # Is the client allowed to access the requested scopes?
         if not scopes:
             return True #the client is not requesting any scope
-            
+
         client_dict = self.oauth2_api.get_consumer(client_id)
+
+        if not client_dict['scopes']:
+            return False #the client isnt allowed any scopes
+            
         for scope in scopes:
             if not scope in client_dict['scopes']:
                 return False

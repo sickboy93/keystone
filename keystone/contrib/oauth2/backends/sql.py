@@ -34,7 +34,7 @@ class Consumer(sql.ModelBase, sql.ModelDictMixin):
     redirect_uris = sql.Column(sql.JsonBlob(), nullable=False)
     grant_type = sql.Column(VALID_GRANT_TYPES,nullable=False) 
     response_type = sql.Column(VALID_RESPONSE_TYPES,nullable=False) 
-    scopes = sql.Column(sql.JsonBlob(),nullable=True)
+    scopes = sql.Column(sql.JsonBlob(),nullable=True)#TODO better naming to reflect they are the allowed scopes for the client
 
 class AuthorizationCode(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'authorization_code'
@@ -120,4 +120,12 @@ class OAuth2(oauth2.Driver):
         with session.begin():
             credentials_ref = ConsumerCredentials.from_dict(credentials)
             session.add(credentials_ref)
+        return credentials_ref.to_dict()
+
+    def get_consumer_credentials(self, client_id):
+        session = sql.get_session()
+        with session.begin():
+            credentials_ref =  session.query(ConsumerCredentials).filter_by(client_id=client_id).first() #TODO see interface definition in core to decide what to do
+        if credentials_ref is None:
+            raise exception.NotFound(_('Credentials not found'))
         return credentials_ref.to_dict()

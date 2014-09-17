@@ -12,18 +12,18 @@ API OAUTH2
 	    	client_type #only condifential supported for now
 	    	redirect_uris #set of allowed redirection uris
 	    	grant_type #only authorization code grant supported for now
-    		scopes #optional. No use for now #TODO
-    	#Example data
+    		scopes #optional. They are the scopes the client wants to be allowed to ask 					authorization for
+    	#example data
 		{
-			'consumer':{		
-				'description' : 'My consumer',    
-				'client_type' : 'confidential',
-				'redirect_uris' : {
-					'https://domain:port/endpoint'
-				},
-				'grant_type' : 'authorization_code', 
-				'scopes' : {} 
-			}
+		    "consumer": {
+		        "description": "Myconsumer",
+		        "client_type": "confidential",
+		        "redirect_uris": [
+		            "https: //domain: port/endpoint"
+		        ],
+		        "grant_type": "authorization_code",
+		        "scopes": []
+		    }
 		}
 
 	GET	 	#list all consumers
@@ -47,13 +47,25 @@ API OAUTH2
 
 /authorize/
 	GET 	#Requests authorization. The Authorization Server saves the credentials until the 					#Resource Owner grants the authorization via /authorize
-	#Query
-		client_id
-		redirect_uri
-    	response_type #Has to be set to 'code',
-		state #Optional. For use of the Client
+		#query
+			client_id
+			redirect_uri
+	    	response_type #Has to be set to 'code',
+			state #Optional. For use of the Client
 
 	POST	#give authorization to a consumer, returns an Authorization Code
+		#parameters
+			client_id #required to retrieve the client credentials from the previous step
+			scopes #required. They have to match with the requested ones in the credentials
+			user_id #requiered
+		#example data
+		{
+			"user_auth": {
+				"client_id":"1",
+				"user_id":"2",
+				"scopes":["basic"]
+			}
+		}
 
 
 
