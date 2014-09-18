@@ -176,50 +176,50 @@ class OAuth2ControllerV3(controller.V3Controller):
             #TODO decide how I'm I going to redirect cos redirects should be handled by an upper layer
             raise exception.ValidationError(message=e.error)
 
-        @controller.protected()
-        def create_access_token(self,context):
-            # Validate request
-            
-            body=context['query_string']
-            uri = self.base_url(context, context['path'])
-            http_method='POST'#TODO get it from context
-            # Clients authenticate  using HTTP Basic Authentication
-            headers = context['headers']
+    @controller.protected()
+    def create_access_token(self,context):
+        # Validate request
+        
+        body=context['query_string']
+        uri = self.base_url(context, context['path'])
+        http_method='POST'#TODO get it from context
+        # Clients authenticate  using HTTP Basic Authentication
+        headers = context['headers']
 
-            # Extra credentials you wish to include
-            credentials = None #TODO
+        # Extra credentials you wish to include
+        credentials = None #TODO
 
-            headers, body, status = self.server.create_token_response(
-                uri, http_method, body, headers, credentials)
+        headers, body, status = self.server.create_token_response(
+            uri, http_method, body, headers, credentials)
 
-            # headers will contain some suggested headers to add to your response
-            # {
-            #     'Content-Type': 'application/json',
-            #     'Cache-Control': 'no-store',
-            #     'Pragma': 'no-cache',
-            # }
-            # body will contain the token in json format and expiration from now
-            # in seconds.
-            # {
-            #     'access_token': 'sldafh309sdf',
-            #     'refresh_token': 'alsounguessablerandomstring',
-            #     'expires_in': 3600,
-            #     'scopes': [
-            #         'https://example.com/userProfile',
-            #         'https://example.com/pictures'
-            #     ],
-            #     'token_type': 'Bearer'
-            # }
-            # body will contain an error code and possibly an error description if
-            # the request failed, also in json format.
-            # {
-            #     'error': 'invalid_grant_type',
-            #     'description': 'athorizatoin_coed is not a valid grant type'
-            # }
-            # status will be a suggested status code, 200 on ok, 400 on bad request
-            # and 401 if client is trying to use an invalid authorization code,
-            # fail to authenticate etc.
+        # headers will contain some suggested headers to add to your response
+        # {
+        #     'Content-Type': 'application/json',
+        #     'Cache-Control': 'no-store',
+        #     'Pragma': 'no-cache',
+        # }
+        # body will contain the token in json format and expiration from now
+        # in seconds.
+        # {
+        #     'access_token': 'sldafh309sdf',
+        #     'refresh_token': 'alsounguessablerandomstring',
+        #     'expires_in': 3600,
+        #     'scopes': [
+        #         'https://example.com/userProfile',
+        #         'https://example.com/pictures'
+        #     ],
+        #     'token_type': 'Bearer'
+        # }
+        # body will contain an error code and possibly an error description if
+        # the request failed, also in json format.
+        # {
+        #     'error': 'invalid_grant_type',
+        #     'description': 'athorizatoin_coed is not a valid grant type'
+        # }
+        # status will be a suggested status code, 200 on ok, 400 on bad request
+        # and 401 if client is trying to use an invalid authorization code,
+        # fail to authenticate etc.
 
-            response = wsgi.render_response(body,
-                                            status=(status,'TODO:name'),
-                                            headers=headers.items())#oauthlib returns a dict, we expect a list of tuples
+        response = wsgi.render_response(body,
+                                        status=(status,'TODO:name'),
+                                        headers=headers.items())#oauthlib returns a dict, we expect a list of tuples
