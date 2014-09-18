@@ -9,9 +9,10 @@ CREATE_DATA = {
 			"description" : sys.argv[1],
 			"client_type" : "confidential",
 			"redirect_uris" : [
-				"https://TEST.URI.com"
+				"https://testuri.com"
 			],
 			"grant_type" : "authorization_code",
+			"scopes":["basic"]
 	}
 }
 r = requests.post(url,headers=BASE_HEADERS,data=json.dumps(CREATE_DATA))

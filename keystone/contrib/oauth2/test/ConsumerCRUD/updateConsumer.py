@@ -11,9 +11,9 @@ UPDATE_DATA = {
 		"consumer":{
 			"description" : sys.argv[2],
 			"redirect_uris" : [
-				"https://TEST.URI.com"
+				sys.argv[3]
 			],
-			"scopes":["basic"]
+			"scopes":sys.argv[4]
 	}
 }
 
