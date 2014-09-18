@@ -187,7 +187,7 @@ class OAuth2ControllerV3(controller.V3Controller):
             headers = context['headers']
 
             # Extra credentials you wish to include
-            credentials = {} #TODO
+            credentials = None #TODO
 
             headers, body, status = self.server.create_token_response(
                 uri, http_method, body, headers, credentials)

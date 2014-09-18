@@ -92,7 +92,8 @@ class OAuth2Validator(RequestValidator):
         #TODO authorization_code['redirect_uri'] = request.redirect_uri
         authorization_code['scopes'] = request.scopes
         authorization_code['authorizing_user_id'] = request.user_id#populated through the credentials
-
+        authorization_code['state'] = request.state
+        authorization_code['redirect_uri'] = request.redirect_uri
         token_duration=28800#TODO extract as configuration option
         #TODO find a better place to do this
         now = timeutils.utcnow()
@@ -103,22 +104,41 @@ class OAuth2Validator(RequestValidator):
 
     # Token request
     def authenticate_client(self, request, *args, **kwargs):
-        # Whichever authentication method suits you, HTTP Basic might work
-        pass
+        # Whichever authentication method suits you, HTTP Basic might work 
+        #TODO write it cleaner
+        authmethod, auth = request.headers['Authorization'].split(' ', 1)
+        if authmethod.lower() == 'basic':
+            auth = auth.strip().decode('base64')
+            client_id, secret = auth.split(':', 1)
+            client_dict = self.oauth2_api.get_consumer(client_id)
+            return client_dict['secret'] == secret
+
     def authenticate_client_id(self, client_id, request, *args, **kwargs):
         # Don't allow public (non-authenticated) clients
         return False
     def validate_code(self, client_id, code, client, request, *args, **kwargs):
         # Validate the code belongs to the client. Add associated scopes,
         # state and user to request.scopes, request.state and request.user.
-        pass
+        authorization_code = self.oauth2_api.get_authorization_code(code)
+        if not authorization_code['consumer_id'] == client_id:
+            return False
+        request.scopes = authorization_code['scopes']
+        request.state = authorization_code['state']
+        request.user = authorization_code['authorizing_user_id']
+        return True
+        
     def confirm_redirect_uri(self, client_id, code, redirect_uri, client, *args, **kwargs):
         # You did save the redirect uri with the authorization code right?
-        pass
+        authorization_code = self.oauth2_api.get_authorization_code(code)
+        return authorization_code['redirect_uri'] == redirect_uri
+
     def validate_grant_type(self, client_id, grant_type, client, request, *args, **kwargs):
         # Clients should only be allowed to use one type of grant.
         # In this case, it must be "authorization_code" or "refresh_token"
-        pass
+        #TODO support for refresh tokens
+        client_dict = self.oauth2_api.get_consumer(client_id)
+        return grant_type==client_dict['grant_type']
+        
     def save_bearer_token(self, token, request, *args, **kwargs):
         # Remember to associate it with request.scopes, request.user and
         # request.client. The two former will be set when you validate

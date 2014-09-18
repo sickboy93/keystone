@@ -39,7 +39,8 @@ class Consumer(sql.ModelBase, sql.ModelDictMixin):
 class AuthorizationCode(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'authorization_code'
 
-    attributes = ['code', 'consumer_id','authorizing_user_id','expires_at','scopes']
+    attributes = ['code', 'consumer_id','authorizing_user_id','expires_at','scopes',
+                'state','redirect_uri']
 
     code = sql.Column(sql.String(64),primary_key=True,nullable=False)
     consumer_id = sql.Column(sql.String(64), sql.ForeignKey('consumer.id'),
@@ -47,6 +48,8 @@ class AuthorizationCode(sql.ModelBase, sql.ModelDictMixin):
     authorizing_user_id = sql.Column(sql.String(64), nullable=False)#TODO shouldnt it be a Foreign Key??
     expires_at = sql.Column(sql.String(64), nullable=False)#TODO datetime type or similar?
     scopes = sql.Column(sql.JsonBlob(),nullable=True)
+    state = sql.Column(sql.String(64), nullable=True)
+    redirect_uri = sql.Column(sql.String(64), nullable=False)
 
 class ConsumerCredentials(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'consumer_credentials'
@@ -134,4 +137,12 @@ class OAuth2(oauth2.Driver):
         with session.begin():
             authorization_code_ref = AuthorizationCode.from_dict(authorization_code)
             session.add(authorization_code_ref)
+        return authorization_code_ref.to_dict()
+
+    def get_authorization_code(self, code):
+        session = sql.get_session()
+        with session.begin():
+            authorization_code_ref =  session.query(AuthorizationCode).get(code)
+        if authorization_code_ref is None:
+            raise exception.NotFound(_('Authorization Code not found'))
         return authorization_code_ref.to_dict()
