@@ -42,7 +42,9 @@ def upgrade(migrate_engine):
                              nullable=False, index=True),
         sql.Column('authorizing_user_id',sql.String(64), nullable=False),
         sql.Column('expires_at',sql.String(64), nullable=False),
-        sql.Column('scopes',sql.Text(),nullable=True))
+        sql.Column('scopes',sql.Text(),nullable=True),
+        sql.Column('redirect_uri',sql.String(64), nullable=False),
+        sql.Column('state',sql.String(64), nullable=True))
     authorization_code_table.create(migrate_engine,checkfirst=True)
 
     consumer_credentials_table = sql.Table(
