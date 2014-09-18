@@ -6,6 +6,7 @@ API OAUTH2
 
 #CONSUMERS
 /consumers
+	GET	 	#list all consumers
 	POST 	#create-register a consumer
 		#parameters
 			description #optional
@@ -26,8 +27,6 @@ API OAUTH2
 		    }
 		}
 
-	GET	 	#list all consumers
-
 /consumers/{consumer_id}
 	GET 	#obtain consumer details
 	PATCH 	#update consumer details
@@ -35,15 +34,20 @@ API OAUTH2
 			same as in POST /consumers but all optional
 	DELETE 	#remove the consumer
 
-
-
-												/access_token
-													POST	#change an Authorization Code for an Access Token
-
 #RESOURCEOWNER
+
 /users/{user_id}/authorization_codes
 	GET		#obtain a list of all the Authorization Codes
 	--Needed?? DELETE	#revoke the Authorization Code
+
+												/users/{user_id}/access_tokens
+													GET		#obtain a list of all the authorized Access Tokens
+
+												/users/{user_id}/access_tokens/{access_token_id}
+													DELETE	#revoke authorization for that access_token
+													GET		#get the authorized Access Token details
+
+#OAUTH2
 
 /authorize/
 	GET 	#Requests authorization. The Authorization Server saves the credentials until the 					#Resource Owner grants the authorization via /authorize
@@ -67,13 +71,17 @@ API OAUTH2
 			}
 		}
 
-
-
-
-												/users/{user_id}/access_tokens
-													GET		#obtain a list of all the authorized Access Tokens
-
-												/users/{user_id}/access_tokens/{access_token_id}
-													DELETE	#revoke authorization for that access_token
-													GET		#get the authorized Access Token details
+/access_token
+	POST	#change an Authorization Code for an Access Token
+		#parameters
+			grant_type #has to be set to authorization_code
+			code #the code provided in the previous step to the resource owner
+			redirect_uri #the one provided in the authorization request
+		#headers
+			Authorization: Basic czZCaGRSa3F0MzpnWDFmQmF0M2JW
+			Content-Type: application/x-www-form-urlencoded
+		#example data
+		grant_type=authorization_code&code=SplxlOBeZQQYbYS6WxSbIA&redirect_uri=https%3A%2F%2Fclient%2Eexample%2Ecom%2Fcallback_url
+	
+												
 
