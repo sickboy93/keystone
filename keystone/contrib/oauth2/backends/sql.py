@@ -67,7 +67,7 @@ class OAuth2(oauth2.Driver):
     def _get_consumer(self, session, consumer_id):
         consumer_ref = session.query(Consumer).get(consumer_id)
         if consumer_ref is None:
-            raise exception.NotFound(_('Consumer not found'))
+            raise exception.NotFound(_('No Consumer found with id: %s' %consumer_id))
         return consumer_ref
     def list_consumers(self):
         session = sql.get_session()
@@ -90,7 +90,7 @@ class OAuth2(oauth2.Driver):
     def get_consumer(self,consumer_id):
         session = sql.get_session()
         with session.begin():
-            consumer_ref = self._get_consumer(session,consumer_id)
+            consumer_ref = self._get_consumer(session,consumer_id) 
         return consumer_ref.to_dict()
 
     def update_consumer(self,consumer_id,consumer):

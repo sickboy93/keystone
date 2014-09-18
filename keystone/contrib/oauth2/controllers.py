@@ -219,7 +219,7 @@ class OAuth2ControllerV3(controller.V3Controller):
         # status will be a suggested status code, 200 on ok, 400 on bad request
         # and 401 if client is trying to use an invalid authorization code,
         # fail to authenticate etc.
-
         response = wsgi.render_response(body,
                                         status=(status,'TODO:name'),
                                         headers=headers.items())#oauthlib returns a dict, we expect a list of tuples
+        return response

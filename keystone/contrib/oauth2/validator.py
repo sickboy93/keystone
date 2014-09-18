@@ -107,11 +107,16 @@ class OAuth2Validator(RequestValidator):
         # Whichever authentication method suits you, HTTP Basic might work 
         #TODO write it cleaner
         authmethod, auth = request.headers['Authorization'].split(' ', 1)
+        auth = auth.decode('unicode_escape')
         if authmethod.lower() == 'basic':
-            auth = auth.strip().decode('base64')
+            auth = auth.decode('base64')
             client_id, secret = auth.split(':', 1)
             client_dict = self.oauth2_api.get_consumer(client_id)
-            return client_dict['secret'] == secret
+            if client_dict['secret'] == secret:
+                #this can be done in a cleaner way if we change the consumer model attribute to client_id
+                request.client = type('obj', (object,), {'client_id' : client_id})
+                return True
+        return False
 
     def authenticate_client_id(self, client_id, request, *args, **kwargs):
         # Don't allow public (non-authenticated) clients
@@ -120,7 +125,7 @@ class OAuth2Validator(RequestValidator):
         # Validate the code belongs to the client. Add associated scopes,
         # state and user to request.scopes, request.state and request.user.
         authorization_code = self.oauth2_api.get_authorization_code(code)
-        if not authorization_code['consumer_id'] == client_id:
+        if not authorization_code['consumer_id'] == request.client.client_id:
             return False
         request.scopes = authorization_code['scopes']
         request.state = authorization_code['state']
@@ -136,9 +141,10 @@ class OAuth2Validator(RequestValidator):
         # Clients should only be allowed to use one type of grant.
         # In this case, it must be "authorization_code" or "refresh_token"
         #TODO support for refresh tokens
-        client_dict = self.oauth2_api.get_consumer(client_id)
+        #client_id comes as None...
+        client_dict = self.oauth2_api.get_consumer(request.client.client_id)
         return grant_type==client_dict['grant_type']
-        
+
     def save_bearer_token(self, token, request, *args, **kwargs):
         # Remember to associate it with request.scopes, request.user and
         # request.client. The two former will be set when you validate
