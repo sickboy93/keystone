@@ -6,7 +6,7 @@ CREATED CONSUMER SECRET: 7c54d415d38143bb96621b13f2d014ff
 
 3ed8b317a2f941539b560da23ff705ae:7c54d415d38143bb96621b13f2d014ff
 
-M2VkOGIzMTdhMmY5NDE1MzliNTYwZGEyM2ZmNzA1YWU6N2M1NGQ0MTVkMzgxNDNiYjk2NjIxYjEzZjJkMDE0ZmY=
+M2VkOGIzMTdhMmY5NDE1MzliNTYwZGEyM2ZmNzA1YWU6N2M1NGQ0MTVkMzgxNDNiYjk2NjIxYjEz\nZjJkMDE0ZmY=
 
 curl -s  -H "X-Auth-Token: ADMIN"  http://localhost:5000/v3/OS-OAUTH2/authorize?'response_type=code&client_id=3ed8b317a2f941539b560da23ff705ae&redirect_uri=https%3A%2F%2Ftesturi.com'
 
@@ -15,4 +15,4 @@ curl -v --X POST -H "X-Auth-Token: ADMIN" -H "Content-Type: application/json"  h
  Location: https://testuri.com?code=1A6D1F0796rHxCSFWESINmrvXHaKb4
 
 
-curl -v --X POST -H "X-Auth-Token: ADMIN" -H "Content-Type: application/x-www-form-urlencoded" -H "Authorization: Basic MDY5ODc0Y2M4MjcxNDQ2MzgwMzk1NDE1OWM1MzJiODU6YjMyOGM4ODBiNjc4NGVlNWIxNGE5NzE0NjM2NTQyNzE=" http://localhost:5000/v3/OS-OAUTH2/access_token -d 'grant_type=authorization_code&code=1A6D1F0796rHxCSFWESINmrvXHaKb4&redirect_uri=https%3A%2F%2Ftesturi.com'
+curl -v --X POST -H "X-Auth-Token: ADMIN" -H "Content-Type: application/x-www-form-urlencoded" -H "Authorization: Basic M2VkOGIzMTdhMmY5NDE1MzliNTYwZGEyM2ZmNzA1YWU6N2M1NGQ0MTVkMzgxNDNiYjk2NjIxYjEz\nZjJkMDE0ZmY=" http://localhost:5000/v3/OS-OAUTH2/access_token -d 'grant_type=authorization_code&code=1A6D1F0796rHxCSFWESINmrvXHaKb4&redirect_uri=https%3A%2F%2Ftesturi.com'
