@@ -44,53 +44,37 @@ class OAuth2Tests(test_v3.RestfulTestCase):
         self.base_url = 'http://localhost/v3'
         self.controller = controllers.OAuthControllerV3()
 
-    def _create_single_consumer(self):
-        ref = {'description': uuid.uuid4().hex}
-        resp = self.post(
-            self.CONSUMER_URL,
-            body={'consumer': ref})
+    def _create_consumer(self, description=None,client_type='confidential',
+                         redirect_uris=[],grant_type='authorization_code',scopes=[]):
+        data = {
+            'description': description,
+            'client_type': client_type,
+            'redirect_uris': redirect_uris,
+            'grant_type': grant_type,
+            'scopes': scopes
+        }
+        resp = self.post(self.CONSUMER_URL,body={'consumer': data})
+
         return resp.result['consumer']
 
 
 class ConsumerCRUDTests(OAuth2Tests):
 
-    def _consumer_create(self, description=None, description_flag=True,
-                         **kwargs):
-        if description_flag:
-            ref = {'description': description}
-        else:
-            ref = {}
-        if kwargs:
-            ref.update(kwargs)
-        resp = self.post(
-            self.CONSUMER_URL,
-            body={'consumer': ref})
-        consumer = resp.result['consumer']
-        consumer_id = consumer['id']
+
+    def _create_consumer_assertions(self, consumer):
+        
         self.assertEqual(consumer['description'], description)
-        self.assertIsNotNone(consumer_id)
+        self.assertIsNotNone(consumer['id'])
         self.assertIsNotNone(consumer['secret'])
         return consumer
 
-    def test_consumer_create(self):
-        description = uuid.uuid4().hex
-        self._consumer_create(description=description)
+    def test_create_consumer(self):
+        self._create_consumer_assertions(description='a description',
+                            redirect_uris=['http://a.uri.com'],
+                            scopes=['some scopes'])
 
-    def test_consumer_create_none_desc_1(self):
-        self._consumer_create()
-
-    def test_consumer_create_none_desc_2(self):
-        self._consumer_create(description_flag=False)
-
-    def test_consumer_create_normalize_field(self):
-        # If create a consumer with a field with : or - in the name,
-        # the name is normalized by converting those chars to _.
-        field_name = 'some:weird-field'
-        field_value = uuid.uuid4().hex
-        extra_fields = {field_name: field_value}
-        consumer = self._consumer_create(**extra_fields)
-        normalized_field_name = 'some_weird_field'
-        self.assertEqual(field_value, consumer[normalized_field_name])
+    def test_create_consumer_no_data(self):
+        self._create_consumer_assertions()
 
     def test_consumer_delete(self):
         consumer = self._create_single_consumer()
@@ -109,7 +93,7 @@ class ConsumerCRUDTests(OAuth2Tests):
         self.assertEqual(resp.result['consumer']['id'], consumer_id)
 
     def test_consumer_list(self):
-        self._consumer_create()
+        self._create_consumer()
         resp = self.get(self.CONSUMER_URL)
         entities = resp.result['consumers']
         self.assertIsNotNone(entities)
@@ -161,7 +145,7 @@ class ConsumerCRUDTests(OAuth2Tests):
         field1_orig_value = uuid.uuid4().hex
 
         extra_fields = {field1_name: field1_orig_value}
-        consumer = self._consumer_create(**extra_fields)
+        consumer = self._create_consumer(**extra_fields)
         consumer_id = consumer['id']
 
         field1_new_value = uuid.uuid4().hex
@@ -182,7 +166,7 @@ class ConsumerCRUDTests(OAuth2Tests):
         normalized_field2_name = 'weird_some_field'
         self.assertEqual(field2_value, consumer[normalized_field2_name])
 
-    def test_consumer_create_no_description(self):
+    def test_create_consumer_no_description(self):
         resp = self.post(self.CONSUMER_URL, body={'consumer': {}})
         consumer = resp.result['consumer']
         consumer_id = consumer['id']
