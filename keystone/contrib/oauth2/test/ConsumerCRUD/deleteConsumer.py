@@ -8,4 +8,5 @@ print "Testing endpoint: %s " %endpoint
 
 
 r = requests.delete(url,headers=BASE_HEADERS)
+#TODO no json response, fix this print
 print 'Response to DELETE at %s: ' %endpoint, r.json()
