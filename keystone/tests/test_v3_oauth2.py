@@ -12,24 +12,17 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import copy
-import uuid
-
-from six.moves import urllib
-
 from keystone import config
+from keystone.common import dependency
 from keystone.contrib import oauth2
 from keystone.contrib.oauth2 import controllers
 from keystone.contrib.oauth2 import core
-from keystone import exception
-from keystone.openstack.common import jsonutils
-from keystone.tests.ksfixtures import temporaryfile
 from keystone.tests import test_v3
 
 
 CONF = config.CONF
 
-
+@dependency.requires('oauth2_api')
 class OAuth2Tests(test_v3.RestfulTestCase):
 
     EXTENSION_NAME = 'oauth2'
@@ -42,9 +35,19 @@ class OAuth2Tests(test_v3.RestfulTestCase):
 
         # Now that the app has been served, we can query CONF values
         self.base_url = 'http://localhost/v3'
-        self.controller = controllers.OAuthControllerV3()
+        self.controller = controllers.ConsumerCrudV3()
+        #TODO(garcianavalon) if I put this line the dependency injection works, but I don't know if its the right thing to do...
+        self.manager = core.Manager()
 
-    def _create_consumer(self, description=None,client_type='confidential',
+    def _create_consumer(self, data=None):
+
+        if data is None:
+            data = self._consumer_data()
+        resp = self.post(self.CONSUMER_URL,body={'consumer': data})
+
+        return resp.result['consumer'],data
+
+    def _consumer_data(self,description=None,client_type='confidential',
                          redirect_uris=[],grant_type='authorization_code',scopes=[]):
         data = {
             'description': description,
@@ -53,37 +56,33 @@ class OAuth2Tests(test_v3.RestfulTestCase):
             'grant_type': grant_type,
             'scopes': scopes
         }
-        resp = self.post(self.CONSUMER_URL,body={'consumer': data})
-
-        return resp.result['consumer']
-
+        return data
 
 class ConsumerCRUDTests(OAuth2Tests):
 
-
-    def _create_consumer_assertions(self, consumer):
-        
-        self.assertEqual(consumer['description'], description)
+    
+    def _consumer_assertions(self, consumer,data):
+        self.assertEqual(consumer['description'], data['description'])
         self.assertIsNotNone(consumer['id'])
         self.assertIsNotNone(consumer['secret'])
+
         return consumer
 
-    def test_create_consumer(self):
-        self._create_consumer_assertions(description='a description',
-                            redirect_uris=['http://a.uri.com'],
-                            scopes=['some scopes'])
+    def _test_create_consumer(self,consumer_data=None):
+        consumer,data = self._create_consumer(consumer_data)
+        self._consumer_assertions(consumer,data)
 
     def test_create_consumer_no_data(self):
-        self._create_consumer_assertions()
-
+        self._test_create_consumer()
+    """
     def test_consumer_delete(self):
-        consumer = self._create_single_consumer()
+        consumer = self._create_consumer()
         consumer_id = consumer['id']
         resp = self.delete(self.CONSUMER_URL + '/%s' % consumer_id)
         self.assertResponseStatus(resp, 204)
 
     def test_consumer_get(self):
-        consumer = self._create_single_consumer()
+        consumer = self._create_consumer()
         consumer_id = consumer['id']
         resp = self.get(self.CONSUMER_URL + '/%s' % consumer_id)
         self_url = ['http://localhost/v3', self.CONSUMER_URL,
@@ -103,7 +102,7 @@ class ConsumerCRUDTests(OAuth2Tests):
         self.assertValidListLinks(resp.result['links'])
 
     def test_consumer_update(self):
-        consumer = self._create_single_consumer()
+        consumer = self._create_consumer()
         original_id = consumer['id']
         original_description = consumer['description']
         update_description = original_description + '_new'
@@ -116,7 +115,7 @@ class ConsumerCRUDTests(OAuth2Tests):
         self.assertEqual(consumer['id'], original_id)
 
     def test_consumer_update_bad_secret(self):
-        consumer = self._create_single_consumer()
+        consumer = self._create_consumer()
         original_id = consumer['id']
         update_ref = copy.deepcopy(consumer)
         update_ref['description'] = uuid.uuid4().hex
@@ -126,7 +125,7 @@ class ConsumerCRUDTests(OAuth2Tests):
                    expected_status=400)
 
     def test_consumer_update_bad_id(self):
-        consumer = self._create_single_consumer()
+        consumer = self._create_consumer()
         original_id = consumer['id']
         original_description = consumer['description']
         update_description = original_description + "_new"
@@ -178,3 +177,4 @@ class ConsumerCRUDTests(OAuth2Tests):
         self.get(self.CONSUMER_URL + '/%(consumer_id)s'
                  % {'consumer_id': uuid.uuid4().hex},
                  expected_status=404)
+    """

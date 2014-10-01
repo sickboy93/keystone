@@ -23,7 +23,7 @@ VALID_CLIENT_TYPES = sql.Enum('confidential')
 VALID_GRANT_TYPES = sql.Enum('authorization_code')
 
 class Consumer(sql.ModelBase, sql.ModelDictMixin):
-    __tablename__ = 'consumer'
+    __tablename__ = 'consumer_oauth2'
     attributes = ['id', 'description','secret','client_type', 'redirect_uris',
                     'grant_type','response_type','scopes']
                     
@@ -37,7 +37,7 @@ class Consumer(sql.ModelBase, sql.ModelDictMixin):
     scopes = sql.Column(sql.JsonBlob(),nullable=True)#TODO better naming to reflect they are the allowed scopes for the client
 
 class AuthorizationCode(sql.ModelBase, sql.ModelDictMixin):
-    __tablename__ = 'authorization_code'
+    __tablename__ = 'authorization_code_oauth2'
 
     attributes = ['code', 'consumer_id','authorizing_user_id','expires_at','scopes',
                 'state','redirect_uri']
@@ -52,7 +52,7 @@ class AuthorizationCode(sql.ModelBase, sql.ModelDictMixin):
     redirect_uri = sql.Column(sql.String(64), nullable=False)
 
 class ConsumerCredentials(sql.ModelBase, sql.ModelDictMixin):
-    __tablename__ = 'consumer_credentials'
+    __tablename__ = 'consumer_credentials_oauth2'
     attributes = ['id', 'client_id','redirect_uri','response_type','state']
 
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
