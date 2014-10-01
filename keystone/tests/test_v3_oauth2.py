@@ -12,8 +12,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import copy
+import uuid
+
 from keystone import config
-from keystone.common import dependency
 from keystone.contrib import oauth2
 from keystone.contrib.oauth2 import controllers
 from keystone.contrib.oauth2 import core
@@ -22,7 +24,6 @@ from keystone.tests import test_v3
 
 CONF = config.CONF
 
-@dependency.requires('oauth2_api')
 class OAuth2Tests(test_v3.RestfulTestCase):
 
     EXTENSION_NAME = 'oauth2'
@@ -74,15 +75,15 @@ class ConsumerCRUDTests(OAuth2Tests):
 
     def test_create_consumer_no_data(self):
         self._test_create_consumer()
-    """
+
     def test_consumer_delete(self):
-        consumer = self._create_consumer()
+        consumer,data = self._create_consumer()
         consumer_id = consumer['id']
         resp = self.delete(self.CONSUMER_URL + '/%s' % consumer_id)
         self.assertResponseStatus(resp, 204)
 
     def test_consumer_get(self):
-        consumer = self._create_consumer()
+        consumer,data = self._create_consumer()
         consumer_id = consumer['id']
         resp = self.get(self.CONSUMER_URL + '/%s' % consumer_id)
         self_url = ['http://localhost/v3', self.CONSUMER_URL,
@@ -102,9 +103,9 @@ class ConsumerCRUDTests(OAuth2Tests):
         self.assertValidListLinks(resp.result['links'])
 
     def test_consumer_update(self):
-        consumer = self._create_consumer()
+        consumer,data = self._create_consumer()
         original_id = consumer['id']
-        original_description = consumer['description']
+        original_description = consumer['description'] or ''
         update_description = original_description + '_new'
 
         update_ref = {'description': update_description}
@@ -115,7 +116,7 @@ class ConsumerCRUDTests(OAuth2Tests):
         self.assertEqual(consumer['id'], original_id)
 
     def test_consumer_update_bad_secret(self):
-        consumer = self._create_consumer()
+        consumer,data = self._create_consumer()
         original_id = consumer['id']
         update_ref = copy.deepcopy(consumer)
         update_ref['description'] = uuid.uuid4().hex
@@ -125,9 +126,9 @@ class ConsumerCRUDTests(OAuth2Tests):
                    expected_status=400)
 
     def test_consumer_update_bad_id(self):
-        consumer = self._create_consumer()
+        consumer,data = self._create_consumer()
         original_id = consumer['id']
-        original_description = consumer['description']
+        original_description = consumer['description'] or ''
         update_description = original_description + "_new"
 
         update_ref = copy.deepcopy(consumer)
@@ -137,44 +138,7 @@ class ConsumerCRUDTests(OAuth2Tests):
                    body={'consumer': update_ref},
                    expected_status=400)
 
-    def test_consumer_update_normalize_field(self):
-        # If update a consumer with a field with : or - in the name,
-        # the name is normalized by converting those chars to _.
-        field1_name = 'some:weird-field'
-        field1_orig_value = uuid.uuid4().hex
-
-        extra_fields = {field1_name: field1_orig_value}
-        consumer = self._create_consumer(**extra_fields)
-        consumer_id = consumer['id']
-
-        field1_new_value = uuid.uuid4().hex
-
-        field2_name = 'weird:some-field'
-        field2_value = uuid.uuid4().hex
-
-        update_ref = {field1_name: field1_new_value,
-                      field2_name: field2_value}
-
-        update_resp = self.patch(self.CONSUMER_URL + '/%s' % consumer_id,
-                                 body={'consumer': update_ref})
-        consumer = update_resp.result['consumer']
-
-        normalized_field1_name = 'some_weird_field'
-        self.assertEqual(field1_new_value, consumer[normalized_field1_name])
-
-        normalized_field2_name = 'weird_some_field'
-        self.assertEqual(field2_value, consumer[normalized_field2_name])
-
-    def test_create_consumer_no_description(self):
-        resp = self.post(self.CONSUMER_URL, body={'consumer': {}})
-        consumer = resp.result['consumer']
-        consumer_id = consumer['id']
-        self.assertIsNone(consumer['description'])
-        self.assertIsNotNone(consumer_id)
-        self.assertIsNotNone(consumer['secret'])
-
     def test_consumer_get_bad_id(self):
         self.get(self.CONSUMER_URL + '/%(consumer_id)s'
                  % {'consumer_id': uuid.uuid4().hex},
                  expected_status=404)
-    """

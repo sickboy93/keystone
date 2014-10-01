@@ -26,6 +26,14 @@ class ConsumerCrudV3(controller.V3Controller):
     collection_name = 'consumers'
     member_name = 'consumer'
 
+    @classmethod
+    def base_url(cls, context, path=None):
+        """Construct a path and pass it to V3Controller.base_url method."""
+
+        path = '/OS-OAUTH2/' + cls.collection_name
+        #return controller.V3Controller.base_url(context, path=path)
+        return super(ConsumerCrudV3, cls).base_url(context, path=path)
+
     @controller.protected()
     def list_consumers(self, context):
         """Description of the controller logic."""
