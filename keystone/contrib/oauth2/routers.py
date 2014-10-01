@@ -15,6 +15,7 @@ import functools
 
 from keystone.common import json_home
 from keystone.common import wsgi
+from keystone.contrib import oauth2
 from keystone.contrib.oauth2 import controllers
 
 build_resource_relation = functools.partial(

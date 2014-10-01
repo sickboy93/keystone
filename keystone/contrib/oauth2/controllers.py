@@ -15,11 +15,10 @@ from keystone import exception
 from keystone.common import controller
 from keystone.common import dependency
 from keystone.common import wsgi
-from keystone.i18n import _
+from keystone.contrib.oauth2 import core as oauth2
 from keystone.contrib.oauth2 import validator
+from keystone.i18n import _
 from oauthlib.oauth2 import WebApplicationServer, FatalClientError, OAuth2Error
-
-
 
 @dependency.requires('oauth2_api')	
 class ConsumerCrudV3(controller.V3Controller):

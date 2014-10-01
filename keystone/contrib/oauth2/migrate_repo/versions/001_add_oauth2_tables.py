@@ -22,7 +22,7 @@ def upgrade(migrate_engine):
     meta.bind = migrate_engine
 
     consumer_table = sql.Table(
-        'consumer',
+        'consumer_oauth2',
         meta,
         sql.Column('id',sql.String(64), primary_key=True, nullable=False),
         sql.Column('description',sql.String(64), nullable=True),
@@ -35,10 +35,10 @@ def upgrade(migrate_engine):
     consumer_table.create(migrate_engine, checkfirst=True)
 
     authorization_code_table = sql.Table(
-        'authorization_code',
+        'authorization_code_oauth2',
         meta,
         sql.Column('code', sql.String(64),primary_key=True,nullable=False),
-        sql.Column('consumer_id',sql.String(64), sql.ForeignKey('consumer.id'),
+        sql.Column('consumer_id',sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
                              nullable=False, index=True),
         sql.Column('authorizing_user_id',sql.String(64), nullable=False),
         sql.Column('expires_at',sql.String(64), nullable=False),
@@ -48,10 +48,10 @@ def upgrade(migrate_engine):
     authorization_code_table.create(migrate_engine,checkfirst=True)
 
     consumer_credentials_table = sql.Table(
-        'consumer_credentials',
+        'consumer_credentials_oauth2',
         meta,
         sql.Column('id',sql.String(64), primary_key=True, nullable=False),
-        sql.Column('client_id',sql.String(64), sql.ForeignKey('consumer.id'),
+        sql.Column('client_id',sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
                              nullable=False, index=True),
         sql.Column('redirect_uri',sql.String(64), nullable=False),
         sql.Column('response_type',sql.Enum('code',name='response_type'),nullable=False),
@@ -63,7 +63,7 @@ def downgrade(migrate_engine):
     meta = sql.MetaData()
     meta.bind = migrate_engine
 
-    tables = ['consumer','authorization_token','consumer_credentials']
+    tables = ['consumer_oauth2','authorization_token_oauth2','consumer_credentials_oauth2']
     for t in tables:
         table = sql.Table(t, meta, autoload=True)
         table.drop(migrate_engine, checkfirst=True)

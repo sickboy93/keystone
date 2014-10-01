@@ -11,14 +11,17 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+from __future__ import absolute_import
 
-from keystone.common import dependency
-from keystone.common import manager
-from keystone.common import extension
-from keystone import exception
-from keystone.openstack.common import log
 import six
 import abc
+
+from keystone.common import dependency
+from keystone.common import extension
+from keystone.common import manager
+from keystone import exception
+from keystone.openstack.common import log
+
 
 LOG = log.getLogger(__name__)
 
