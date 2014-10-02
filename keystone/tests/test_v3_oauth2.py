@@ -195,7 +195,7 @@ class OAuth2FlowTests(OAuth2Tests):
 
     def _http_basic_auth(self,consumer_id,consumer_secret):
         #TODO(garcianavalon) encode base64
-        return ''.join(consumer_id,consumer_secret)
+        return ''.join(consumer_id).join(consumer_secret)
 
     def _obtain_access_token(self):
         response = self._grant_authorization()
