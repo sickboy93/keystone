@@ -13,6 +13,7 @@
 # under the License.
 
 import copy
+import urlparse
 import uuid
 
 from keystone import config
@@ -190,6 +191,30 @@ class OAuth2FlowTests(OAuth2Tests):
     def test_grant_authorization(self):
         #TODO(garcianavalon) test all the stuff
         response = self._grant_authorization()
+        self.assertIsNotNone(response)
+
+    def _http_basic_auth(self,consumer_id,consumer_secret):
+        #TODO(garcianavalon) encode base64
+        return ''.join(consumer_id,consumer_secret)
+
+    def _obtain_access_token(self):
+        response = self._grant_authorization()
+        redirected_uri = response.headers['Location']
+        query_params = urlparse.parse_qs(urlparse.urlparse(redirected_uri).query)
+        authorization_code = query_params['code']
+        #POST to the token url
+        body = 'grant_type=authorization_code&code=%s&' %authorization_code
+        base64_credentials = self._http_basic_auth('consumer_id','consumer_secret')#TODO(garcianavalon) obtain them
+        auth_string = 'Basic '.join(base64_credentials)
+        headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': auth_string
+        }
+        return self.post('/OS-OAUTH2/access_token',body=body,headers=headers)
+
+    def test_obtain_access_token(self):
+        #TODO(garcianavalon) test all the stuff
+        response = self._obtain_access_token()
         self.assertIsNotNone(response)
 
         

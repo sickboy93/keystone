@@ -180,7 +180,7 @@ class OAuth2ControllerV3(controller.V3Controller):
 
             response = wsgi.render_response(body,
                                             status=(302,'Found'),
-                                            headers=headers.items())#oauthlib returns a dict, we expect a list of tuples
+                                            headers=headers.items())#oauthlib returns a dict, keystone expects a list of tuples
             return response
 
         except FatalClientError as e:
