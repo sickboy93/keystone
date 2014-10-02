@@ -61,3 +61,6 @@ oslosphinx
 kombu>=2.4.8
 lockfile>=0.8
 stevedore>=0.14
+
+#Optional extension OAuth2
+requests-oauthlib>=0.4.1

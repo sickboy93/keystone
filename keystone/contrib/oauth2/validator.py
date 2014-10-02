@@ -17,9 +17,11 @@
 import six
 import datetime
 from keystone.common import dependency
+from keystone.contrib.oauth2 import core as oauth2
 from keystone import exception
 from keystone.openstack.common import log
 from oauthlib.oauth2 import RequestValidator
+
 from oslo.utils import timeutils
 
 METHOD_NAME = 'oauth2_validator'
