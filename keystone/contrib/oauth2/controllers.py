@@ -36,7 +36,6 @@ class ConsumerCrudV3(controller.V3Controller):
 
     @controller.protected()
     def list_consumers(self, context):
-        """Description of the controller logic."""
         ref = self.oauth2_api.list_consumers()
         return ConsumerCrudV3.wrap_collection(context, ref)
 
@@ -86,12 +85,13 @@ class OAuth2ControllerV3(controller.V3Controller):
 
     collection_name = 'not_used'
     member_name = 'not_used'
-    request_validator = validator.OAuth2Validator()
-    server = WebApplicationServer(request_validator)
+    
 
     @controller.protected()
     def request_authorization_code(self, context):
-   
+
+        request_validator = validator.OAuth2Validator()
+        server = WebApplicationServer(request_validator)
         # Validate request
         headers = context['headers']
         body=context['query_string']
@@ -99,7 +99,7 @@ class OAuth2ControllerV3(controller.V3Controller):
         http_method='GET'#TODO get it from context
 
         try:
-            scopes, credentials = self.server.validate_authorization_request(
+            scopes, credentials = server.validate_authorization_request(
                 uri, http_method , body, headers)
             # scopes will hold default scopes for client, i.e.
             #['https://example.com/userProfile', 'https://example.com/pictures']
@@ -137,6 +137,8 @@ class OAuth2ControllerV3(controller.V3Controller):
 
     @controller.protected()
     def create_authorization_code(self, context,user_auth):
+        request_validator = validator.OAuth2Validator()
+        server = WebApplicationServer(request_validator)
         # Validate request
         headers = context['headers']
         body=user_auth
@@ -162,7 +164,7 @@ class OAuth2ControllerV3(controller.V3Controller):
             raise exception.ValidationError(attribute='user_id',target='request')
         credentials['user_id'] = user_id
         try:
-            headers, body, status = self.server.create_authorization_response(
+            headers, body, status = server.create_authorization_response(
                 uri, http_method, body, headers, scopes, credentials)
             # headers = {'Location': 'https://foo.com/welcome_back?code=somerandomstring&state=xyz'}, this might change to include suggested headers related
             # to cache best practices etc.
@@ -185,6 +187,8 @@ class OAuth2ControllerV3(controller.V3Controller):
 
     @controller.protected()
     def create_access_token(self,context):
+        request_validator = validator.OAuth2Validator()
+        server = WebApplicationServer(request_validator)
         # Validate request
         
         body=context['query_string']
@@ -196,7 +200,7 @@ class OAuth2ControllerV3(controller.V3Controller):
         # Extra credentials you wish to include
         credentials = None #TODO
 
-        headers, body, status = self.server.create_token_response(
+        headers, body, status = server.create_token_response(
             uri, http_method, body, headers, credentials)
 
         # headers will contain some suggested headers to add to your response
