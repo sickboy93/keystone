@@ -116,7 +116,7 @@ class OAuth2ControllerV3(controller.V3Controller):
             # should be persisted between. None of them are secret but take care
             # to ensure their integrity if embedding them in the form or cookies.
 
-            credentials.pop('request')#We are not storing this for now, might do it in the future
+            request = credentials.pop('request')#We are not storing this for now, might do it in the future
 
             credentials_ref = self._assign_unique_id(self._normalize_dict(credentials))
             self.oauth2_api.store_consumer_credentials(credentials_ref) 
@@ -128,7 +128,14 @@ class OAuth2ControllerV3(controller.V3Controller):
             # his default scopes (omitted from request), after which you will
             # redirect to his default redirect uri (omitted from request).
             
-            return "OK" #TODO return a JSON object with consumer description, requested scopes, etc.
+            return { 'authorization_request': {
+                        'consumer': {
+                            'id':credentials['client_id']
+                            #TODO(garcianavalon) add consumer description
+                        },
+                        'redirect_uri':credentials['redirect_uri'],
+                        'requested_scopes':request.scopes
+                    }}
             #This JSON is to be used by the next layer (ie a Django server) to populate the view
         except FatalClientError as e:
             # this is your custom error page
