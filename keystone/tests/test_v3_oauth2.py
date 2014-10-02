@@ -38,15 +38,7 @@ class OAuth2Tests(test_v3.RestfulTestCase):
         #TODO(garcianavalon) I've put this line for dependency injection to work, but I don't know if its the right way to do it...
         self.manager = core.Manager()
 
-    def _create_consumer(self, data=None):
-
-        if data is None:
-            data = self._consumer_data()
-        response = self.post(self.CONSUMER_URL,body={'consumer': data})
-
-        return response.result['consumer'],data
-
-    def _consumer_data(self,description=None,client_type='confidential',
+    def _create_consumer(self,description=None,client_type='confidential',
                          redirect_uris=[],grant_type='authorization_code',scopes=[]):
         data = {
             'description': description,
@@ -55,7 +47,9 @@ class OAuth2Tests(test_v3.RestfulTestCase):
             'grant_type': grant_type,
             'scopes': scopes
         }
-        return data
+        response = self.post(self.CONSUMER_URL,body={'consumer': data})
+
+        return response.result['consumer'],data
 
 # class ConsumerCRUDTests(OAuth2Tests):
 
@@ -141,25 +135,61 @@ class OAuth2Tests(test_v3.RestfulTestCase):
 #                  expected_status=404)
 
 class OAuth2FlowTests(OAuth2Tests):
+    DEFAULT_REDIRECT_URIS = ['https://uri.com']
+    DEFAULT_SCOPES = ['basic_scope']
+    def _generate_consumer(self):
+        #TODO(garcianavalon) refractor this
+        return self._create_consumer(redirect_uris=self.DEFAULT_REDIRECT_URIS,
+                                     scopes=self.DEFAULT_SCOPES)
 
+    def _create_authorization_url(self):
 
-    def test_request_authorization(self):
-        data = self._consumer_data(redirect_uris=['https://uri.com'],
-                                  scopes=['basic_scope'])
-        consumer,data = self._create_consumer(data)
-
-        #self.assertIsNotNone(consumer['secret'])
-
+        consumer,data = self._generate_consumer()
         oauth = OAuth2Session(consumer['id'], 
                               redirect_uri=consumer['redirect_uris'][0],
                               scope=consumer['scopes'][0])
-
         authorization_url, state = oauth.authorization_url('https://remove.this/OS-OAUTH2/authorize')
         #hack to work around the need for https in request_oauthilb authorization_url 
         #and the fact that RestfulTestCase prepends the base_url when calling get
         authorization_url = authorization_url.replace('https://remove.this','')
-        self.assertIsNotNone(authorization_url)
+        return authorization_url
+
+    def _request_authorization(self):
+        authorization_url = self._create_authorization_url()
         #GET authorization_url to request the authorization
-        response = self.get(authorization_url)
+        return self.get(authorization_url)
+
+    def _authorization_data(self,consumer_id,user_id=1):
+        #TODO(garcianavalon) fix user_id, now there is no Foreign Key constrain so we can put any value
+        data = {
+            "user_auth": {
+                "client_id":consumer_id,
+                "user_id":user_id,
+                "scopes":self.DEFAULT_SCOPES
+            }
+        }
+        return data
+
+    def test_authorization_url(self):
+        #TODO(garcianavalon) check more stuff in the url
+        authorization_url = self._create_authorization_url()
+        self.assertIsNotNone(authorization_url)
+
+    def test_request_authorization(self):
+        #TODO(garcianavalon) check all the stuff in the response
+        response = self._request_authorization()
+        self.assertIsNotNone(response)
+
+    def _grant_authorization(self):
+        get_response = self._request_authorization()
+        #POST authorization url to simulate ResourceOwner granting authorization
+        consumer_id = get_response.result['data']['consumer']['id']
+        data = self._authorization_data(consumer_id)
+        return self.post('/OS-OAUTH2/authorize',body=data,expected_status=302)
+
+    def test_grant_authorization(self):
+        #TODO(garcianavalon) test all the stuff
+        response = self._grant_authorization()
+        self.assertIsNotNone(response)
 
         

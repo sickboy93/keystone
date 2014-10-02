@@ -128,7 +128,7 @@ class OAuth2ControllerV3(controller.V3Controller):
             # his default scopes (omitted from request), after which you will
             # redirect to his default redirect uri (omitted from request).
             
-            return { 'authorization_request': {
+            return { 'data': { #TODO(garcianavalon) find a better name for this
                         'consumer': {
                             'id':credentials['client_id']
                             #TODO(garcianavalon) add consumer description
