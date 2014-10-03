@@ -107,7 +107,7 @@ class OAuth2Validator(RequestValidator):
     # Token request
     def authenticate_client(self, request, *args, **kwargs):
         # Whichever authentication method suits you, HTTP Basic might work 
-        #TODO write it cleaner
+        #TODO(garcianavalon) write it cleaner
         authmethod, auth = request.headers['Authorization'].split(' ', 1)
         auth = auth.decode('unicode_escape')
         if authmethod.lower() == 'basic':

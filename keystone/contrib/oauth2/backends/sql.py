@@ -140,9 +140,12 @@ class OAuth2(oauth2.Driver):
         return authorization_code_ref.to_dict()
 
     def get_authorization_code(self, code):
+
         session = sql.get_session()
         with session.begin():
             authorization_code_ref =  session.query(AuthorizationCode).get(code)
+
         if authorization_code_ref is None:
-            raise exception.NotFound(_('Authorization Code not found'))
+            msg = _('Authorization Code %s not found') %code
+            raise exception.NotFound(message=msg)
         return authorization_code_ref.to_dict()
