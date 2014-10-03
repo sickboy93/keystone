@@ -138,10 +138,12 @@ class OAuth2Tests(test_v3.RestfulTestCase):
 class OAuth2FlowTests(OAuth2Tests):
     DEFAULT_REDIRECT_URIS = ['https://uri.com']
     DEFAULT_SCOPES = ['basic_scope']
+
     def _generate_consumer(self):
         #TODO(garcianavalon) refractor this
-        return self._create_consumer(redirect_uris=self.DEFAULT_REDIRECT_URIS,
+        self.consumer, self.data = self._create_consumer(redirect_uris=self.DEFAULT_REDIRECT_URIS,
                                      scopes=self.DEFAULT_SCOPES)
+        return self.consumer, self.data
 
     def _create_authorization_url(self):
 
@@ -155,10 +157,36 @@ class OAuth2FlowTests(OAuth2Tests):
         authorization_url = authorization_url.replace('https://remove.this','')
         return authorization_url
 
+    # def test_authorization_url(self):
+    #     #TODO(garcianavalon) is this encesary? are we testing our test methods here?
+    #     #TODO(garcianavalon) check more stuff in the url
+    #     authorization_url = self._create_authorization_url()
+    #     self.assertIsNotNone(authorization_url)    
+
     def _request_authorization(self):
         authorization_url = self._create_authorization_url()
         #GET authorization_url to request the authorization
         return self.get(authorization_url)
+
+    def test_request_authorization(self):
+        response = self._request_authorization()
+
+        self.assertIsNotNone(response.result['data'])
+
+        data = response.result['data']
+        self.assertIsNotNone(data['redirect_uri'])
+        self.assertIsNotNone(data['requested_scopes'])
+        self.assertIsNotNone(data['consumer'])
+        self.assertIsNotNone(data['consumer']['id'])
+
+        consumer_id = data['consumer']['id']
+        self.assertEqual(consumer_id,self.consumer['id'])
+
+        requested_scopes = data['requested_scopes']
+        self.assertEqual(requested_scopes,self.DEFAULT_SCOPES)
+
+        redirect_uri = data['redirect_uri']
+        self.assertEqual(redirect_uri,self.DEFAULT_REDIRECT_URIS[0])
 
     def _authorization_data(self,consumer_id,user_id=1):
         #TODO(garcianavalon) fix user_id, now there is no Foreign Key constrain so we can put any value
@@ -171,16 +199,6 @@ class OAuth2FlowTests(OAuth2Tests):
         }
         return data
 
-    def test_authorization_url(self):
-        #TODO(garcianavalon) check more stuff in the url
-        authorization_url = self._create_authorization_url()
-        self.assertIsNotNone(authorization_url)
-
-    def test_request_authorization(self):
-        #TODO(garcianavalon) check all the stuff in the response
-        response = self._request_authorization()
-        self.assertIsNotNone(response)
-
     def _grant_authorization(self):
         get_response = self._request_authorization()
         #POST authorization url to simulate ResourceOwner granting authorization
@@ -189,32 +207,60 @@ class OAuth2FlowTests(OAuth2Tests):
         return self.post('/OS-OAUTH2/authorize',body=data,expected_status=302)
 
     def test_grant_authorization(self):
-        #TODO(garcianavalon) test all the stuff
         response = self._grant_authorization()
-        self.assertIsNotNone(response)
 
-    def _http_basic_auth(self,consumer_id,consumer_secret):
-        #TODO(garcianavalon) encode base64
-        return ''.join(consumer_id).join(consumer_secret)
+        self.assertIsNotNone(response.headers['Location'])
+        ###
+        #TODO(garcianavalon) extract method
+        redirect_uri = response.headers['Location']
+        query_params = urlparse.parse_qs(urlparse.urlparse(redirect_uri).query)
+        ###
+        self.assertIsNotNone(query_params['code'][0])
+        self.assertIsNotNone(query_params['state'][0])
+
+    def _http_basic(self,consumer_id,consumer_secret):
+        auth_string = consumer_id + ':' + consumer_secret
+        return 'Basic ' + auth_string.encode('base64')
+
+    def _generate_urlencoded_request(self,authorization_code,consumer_id,consumer_secret):
+        #No use for now, keystone only accepts JSON bodys
+        body = 'grant_type=authorization_code&code=%s&' %authorization_code
+        headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': self._http_basic(consumer_id,consumer_secret)
+        }
+        return headers,body
+
+    def _generate_json_request(self,authorization_code,consumer_id,consumer_secret):
+        #TODO(garcianavalon) implement this stub correctly
+        body = {
+            'token_request' : {
+                'grant_type':'authorization_code',
+                'code': authorization_code
+            }
+        }    
+        headers = {
+            'Authorization': self._http_basic(consumer_id,consumer_secret)
+        }
+        return headers,body
 
     def _obtain_access_token(self):
         response = self._grant_authorization()
-        redirected_uri = response.headers['Location']
-        query_params = urlparse.parse_qs(urlparse.urlparse(redirected_uri).query)
-        authorization_code = query_params['code']
+        ###
+        #TODO(garcianavalon) extract method
+        redirect_uri = response.headers['Location']
+        query_params = urlparse.parse_qs(urlparse.urlparse(redirect_uri).query)
+        authorization_code = query_params['code'][0]
+        ###
+        consumer_id = self.consumer['id']
+        consumer_secret = self.consumer['secret']
+
+        headers,body = self._generate_json_request(authorization_code,
+                                                   consumer_id,consumer_secret)
         #POST to the token url
-        body = 'grant_type=authorization_code&code=%s&' %authorization_code
-        base64_credentials = self._http_basic_auth('consumer_id','consumer_secret')#TODO(garcianavalon) obtain them
-        auth_string = 'Basic '.join(base64_credentials)
-        headers = {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Authorization': auth_string
-        }
         return self.post('/OS-OAUTH2/access_token',body=body,headers=headers)
 
     def test_obtain_access_token(self):
         #TODO(garcianavalon) test all the stuff
         response = self._obtain_access_token()
         self.assertIsNotNone(response)
-
-        

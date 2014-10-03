@@ -11,6 +11,10 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+
+import json
+import urllib
+
 from keystone import exception
 from keystone.common import controller
 from keystone.common import dependency
@@ -18,7 +22,9 @@ from keystone.common import wsgi
 from keystone.contrib.oauth2 import core as oauth2
 from keystone.contrib.oauth2 import validator
 from keystone.i18n import _
+
 from oauthlib.oauth2 import WebApplicationServer, FatalClientError, OAuth2Error
+
 
 @dependency.requires('oauth2_api')	
 class ConsumerCrudV3(controller.V3Controller):
@@ -192,18 +198,44 @@ class OAuth2ControllerV3(controller.V3Controller):
             #TODO decide how I'm I going to redirect cos redirects should be handled by an upper layer
             raise exception.ValidationError(message=e.error)
 
-    @controller.protected()
-    def create_access_token(self,context):
+    def _dict_to_urlencoded(self,dict):
+        # This method is to work around the keystone limitation with content types
+        # Keystone only accepts JSON bodies while OAuth2.0 (RFC 6749) requires x-www-form-urlencoded    
+        # This method converts a dictionary into a urlencoded string
+
+        #TODO(garcianavalon) this check shouldnt be here
+        if not 'code' in dict:
+            msg = _('code missing in request body: %s') %dict
+            raise exception.ValidationError(message=msg)
+
+        return urllib.urlencode(dict)
+
+    @controller.protected()# TODO(garcianavalon) Clients authenticate  using HTTP Basic Authentication
+    def create_access_token(self,context,token_request):
         request_validator = validator.OAuth2Validator()
         server = WebApplicationServer(request_validator)
+
         # Validate request
-        
-        body=context['query_string']
+
+        headers = context['headers']
+        # to support future versions where the use of x-www-form-urlencoded is accepted
+        if headers['Content-Type'] == 'application/x-www-form-urlencoded':
+            body=context['query_string']
+        elif headers['Content-Type'] == 'application/json':
+            body = self._dict_to_urlencoded(token_request)
+        else:
+            msg = _('Content-Type: %s is not supported') %headers['Content-Type']
+            raise exception.ValidationError(message=msg) 
+
+        #check headers for authentication
+        authmethod, auth = headers['Authorization'].split(' ', 1)
+        if authmethod.lower() != 'basic':
+            msg = _('Authorization error: %s. Only HTPP Basic is supported') %headers['Authorization']
+            raise exception.ValidationError(message=msg)
+
         uri = self.base_url(context, context['path'])
         http_method='POST'#TODO get it from context
-        # Clients authenticate  using HTTP Basic Authentication
-        headers = context['headers']
-
+        
         # Extra credentials you wish to include
         credentials = None #TODO
 
@@ -238,6 +270,6 @@ class OAuth2ControllerV3(controller.V3Controller):
         # and 401 if client is trying to use an invalid authorization code,
         # fail to authenticate etc.
         response = wsgi.render_response(body,
-                                        status=(status,'TODO:name'),
+                                        status=(status,'TODO(garcianavalon):name'),
                                         headers=headers.items())#oauthlib returns a dict, we expect a list of tuples
         return response
