@@ -13,6 +13,7 @@
 # under the License.
 
 import copy
+import json
 import urlparse
 import uuid
 
@@ -263,4 +264,11 @@ class OAuth2FlowTests(OAuth2Tests):
     def test_obtain_access_token(self):
         #TODO(garcianavalon) test all the stuff
         response = self._obtain_access_token()
-        self.assertIsNotNone(response)
+        json_response = json.loads(response.result)
+        self.assertIsNotNone(json_response['access_token'])
+        self.assertIsNotNone(json_response['token_type'])
+        self.assertIsNotNone(json_response['expires_in'])
+        self.assertIsNotNone(json_response['scope'])
+
+        scope = json_response['scope']
+        self.assertEqual(scope,self.DEFAULT_SCOPES[0])
