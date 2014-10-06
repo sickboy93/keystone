@@ -16,9 +16,11 @@
 
 import six
 import datetime
-from keystone.common import dependency
-from keystone.contrib.oauth2 import core as oauth2
+
 from keystone import exception
+from keystone.common import dependency
+from keystone.contrib.oauth2 import core as oauth2_api
+from keystone.i18n import _
 from keystone.openstack.common import log
 from oauthlib.oauth2 import RequestValidator
 

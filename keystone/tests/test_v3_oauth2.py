@@ -224,7 +224,7 @@ class OAuth2FlowTests(OAuth2Tests):
 
     def _generate_urlencoded_request(self,authorization_code,consumer_id,consumer_secret):
         #No use for now, keystone only accepts JSON bodys
-        body = 'grant_type=authorization_code&code=%s&' %authorization_code
+        body = 'grant_type=authorization_code&code=%s&redirect_uri=%s' %authorization_code,self.DEFAULT_REDIRECT_URIS[0]
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
             'Authorization': self._http_basic(consumer_id,consumer_secret)
@@ -232,11 +232,11 @@ class OAuth2FlowTests(OAuth2Tests):
         return headers,body
 
     def _generate_json_request(self,authorization_code,consumer_id,consumer_secret):
-        #TODO(garcianavalon) implement this stub correctly
         body = {
             'token_request' : {
                 'grant_type':'authorization_code',
-                'code': authorization_code
+                'code': authorization_code,
+                'redirect_uri':self.DEFAULT_REDIRECT_URIS[0]
             }
         }    
         headers = {
@@ -258,7 +258,7 @@ class OAuth2FlowTests(OAuth2Tests):
         headers,body = self._generate_json_request(authorization_code,
                                                    consumer_id,consumer_secret)
         #POST to the token url
-        return self.post('/OS-OAUTH2/access_token',body=body,headers=headers)
+        return self.post('/OS-OAUTH2/access_token',body=body,headers=headers,expected_status=200)
 
     def test_obtain_access_token(self):
         #TODO(garcianavalon) test all the stuff
