@@ -259,7 +259,8 @@ class OAuth2FlowTests(OAuth2Tests):
         headers,body = self._generate_json_request(authorization_code,
                                                    consumer_id,consumer_secret)
         #POST to the token url
-        return self.post('/OS-OAUTH2/access_token',body=body,headers=headers,expected_status=200)
+        return self.post('/OS-OAUTH2/access_token',body=body,
+                        headers=headers,expected_status=200)
 
     def test_obtain_access_token(self):
         #TODO(garcianavalon) test all the stuff

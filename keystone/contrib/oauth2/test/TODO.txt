@@ -1,3 +1,0 @@
-Implement this as tests in a test suite, for now they're only dirty scripts to check stuff
-
-Delete consumers.txt

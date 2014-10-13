@@ -58,12 +58,24 @@ def upgrade(migrate_engine):
         sql.Column('state',sql.String(64), nullable=True))
     consumer_credentials_table.create(migrate_engine,checkfirst=True)
 
+    access_token_table = sql.Table(
+        'access_token_oauth2',
+        sql.Column('id', sql.String(64), primary_key=True, nullable=False),
+        sql.Column('consumer_id', sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
+                             nullable=False, index=True),
+        sql.Column('authorizing_user_id', sql.String(64), nullable=False),
+        sql.Column('expires_at', sql.String(64), nullable=False),
+        sql.Column('scopes', sql.Text(), nullable=True),
+        sql.Column('refresh_token', sql.String(64), nullable=True))
+    access_token_table.create(migrate_engine,checkfirst=True)
+
 def downgrade(migrate_engine):
     # Operations to reverse the above upgrade go here.
     meta = sql.MetaData()
     meta.bind = migrate_engine
 
-    tables = ['consumer_oauth2','authorization_token_oauth2','consumer_credentials_oauth2']
+    tables = ['consumer_oauth2','authorization_token_oauth2','consumer_credentials_oauth2',
+                'access_token_oauth2']
     for t in tables:
         table = sql.Table(t, meta, autoload=True)
         table.drop(migrate_engine, checkfirst=True)
