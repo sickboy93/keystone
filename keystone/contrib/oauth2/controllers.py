@@ -37,7 +37,6 @@ class ConsumerCrudV3(controller.V3Controller):
         """Construct a path and pass it to V3Controller.base_url method."""
 
         path = '/OS-OAUTH2/' + cls.collection_name
-        #return controller.V3Controller.base_url(context, path=path)
         return super(ConsumerCrudV3, cls).base_url(context, path=path)
 
     @controller.protected()
@@ -71,7 +70,7 @@ class ConsumerCrudV3(controller.V3Controller):
 
     @controller.protected()
     def delete_consumer(self, context,consumer_id):
-        #TODO revoke and delete consumer tokens
+        # TODO(garcianavalon) revoke and delete consumer tokens
         self.oauth2_api.delete_consumer(consumer_id)
 
 @dependency.requires('oauth2_api')  
@@ -102,7 +101,7 @@ class OAuth2ControllerV3(controller.V3Controller):
         headers = context['headers']
         body=context['query_string']
         uri = self.base_url(context, context['path'])
-        http_method='GET'#TODO get it from context
+        http_method='GET'# TODO(garcianavalon) get it from context
 
         try:
             scopes, credentials = server.validate_authorization_request(
@@ -122,29 +121,30 @@ class OAuth2ControllerV3(controller.V3Controller):
             # should be persisted between. None of them are secret but take care
             # to ensure their integrity if embedding them in the form or cookies.
 
-            request = credentials.pop('request')#We are not storing this for now, might do it in the future
+            # (garcianavalon) We are not storing this for now, might do it in the future
+            request = credentials.pop('request')
 
             credentials_ref = self._assign_unique_id(self._normalize_dict(credentials))
             self.oauth2_api.store_consumer_credentials(credentials_ref) 
-            #TODO there is some issues here with GET not being idempotent, related to the issues commented on
-            #the definition of store_consumer_credentials. The best fix for all probably is to only allow
-            #one pending authorization request for each client, even if its to different users.
+            # TODO(garcianavalon) there are some issues here with GET not being idempotent, related to the issues commented on
+            # the definition of store_consumer_credentials. The best fix for all probably is to only allow
+            # one pending authorization request for each client, even if it is to different users.
 
             # Present user with a nice form where client (id foo) request access to
             # his default scopes (omitted from request), after which you will
             # redirect to his default redirect uri (omitted from request).
             
-            return { 'data': { #TODO(garcianavalon) find a better name for this
+            # This JSON is to be used by the next layer (ie a Django server) to populate the view
+            return { 'data': { # TODO(garcianavalon) find a better name for this
                         'consumer': {
                             'id':credentials['client_id']
-                            #TODO(garcianavalon) add consumer description
+                            # TODO(garcianavalon) add consumer description
                         },
                         'redirect_uri':credentials['redirect_uri'],
                         'requested_scopes':request.scopes
                     }}
-            #This JSON is to be used by the next layer (ie a Django server) to populate the view
+            
         except FatalClientError as e:
-            # this is your custom error page
             raise exception.ValidationError(message=e.error)
 
 
@@ -156,14 +156,14 @@ class OAuth2ControllerV3(controller.V3Controller):
         headers = context['headers']
         body=user_auth
         uri = self.base_url(context, context['path'])
-        http_method='POST'#TODO get it from context
+        http_method='POST'# TODO(garcianavalon) get it from context
 
         # Fetch authorized scopes from the request
         scopes = body.get('scopes')
         if not scopes:
             raise exception.ValidationError(attribute='scopes',target='request')
-        #TODO oauthlib doesnt allows us empty scopes in this step. If the non-scopes use-case wants to
-        #be supported we'll have to define a default 'noscope' scope.
+        # (garcianavalon) oauthlib doesnt allows us empty scopes in this step. If the non-scopes use-case wants to
+        # be supported we'll have to define a default 'noscope' scope.
 
         # Fetch the credentials saved in the pre authorization phase
         client_id = body.get('client_id')
@@ -171,7 +171,7 @@ class OAuth2ControllerV3(controller.V3Controller):
             raise exception.ValidationError(attribute='client_id',target='request')
 
         credentials = self.oauth2_api.get_consumer_credentials(client_id)
-        #Add the user_id to the credential for later use
+        # Add the user_id to the credential for later use
         user_id = body.get('user_id')
         if not user_id:
             raise exception.ValidationError(attribute='user_id',target='request')
@@ -186,16 +186,15 @@ class OAuth2ControllerV3(controller.V3Controller):
 
             response = wsgi.render_response(body,
                                             status=(302,'Found'),
-                                            headers=headers.items())#oauthlib returns a dict, keystone expects a list of tuples
+                                            headers=headers.items())# oauthlib returns a dict, keystone expects a list of tuples
             return response
 
         except FatalClientError as e:
-            # this is your custom error page
             raise exception.ValidationError(message=e.error)
 
         except OAuth2Error as e:
             # Less grave errors will be reported back to client
-            #TODO decide how I'm I going to redirect cos redirects should be handled by an upper layer
+            # TODO(garcianavalon) decide how I'm I going to redirect cos redirects should be handled by an upper layer
             raise exception.ValidationError(message=e.error)
 
     def _dict_to_urlencoded(self,dict):
@@ -203,7 +202,7 @@ class OAuth2ControllerV3(controller.V3Controller):
         # Keystone only accepts JSON bodies while OAuth2.0 (RFC 6749) requires x-www-form-urlencoded    
         # This method converts a dictionary into a urlencoded string
 
-        #TODO(garcianavalon) this check shouldnt be here
+        # TODO(garcianavalon) this check shouldnt be here
         if not 'code' in dict:
             msg = _('code missing in request body: %s') %dict
             raise exception.ValidationError(message=msg)
@@ -218,7 +217,7 @@ class OAuth2ControllerV3(controller.V3Controller):
         # Validate request
 
         headers = context['headers']
-        # to support future versions where the use of x-www-form-urlencoded is accepted
+        # (garcianavalon) to support future versions where the use of x-www-form-urlencoded is accepted
         if headers['Content-Type'] == 'application/x-www-form-urlencoded':
             body=context['query_string']
         elif headers['Content-Type'] == 'application/json':
@@ -271,5 +270,5 @@ class OAuth2ControllerV3(controller.V3Controller):
         # fail to authenticate etc.
         response = wsgi.render_response(body,
                                         status=(status,'TODO(garcianavalon):name'),
-                                        headers=headers.items())#oauthlib returns a dict, we expect a list of tuples
+                                        headers=headers.items())# oauthlib returns a dict, we expect a list of tuples
         return response
