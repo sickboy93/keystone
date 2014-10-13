@@ -53,88 +53,88 @@ class OAuth2Tests(test_v3.RestfulTestCase):
 
         return response.result['consumer'],data
 
-# class ConsumerCRUDTests(OAuth2Tests):
+class ConsumerCRUDTests(OAuth2Tests):
 
-#     def _consumer_assertions(self, consumer,data):
-#         self.assertEqual(consumer['description'], data['description'])
-#         self.assertIsNotNone(consumer['id'])
-#         self.assertIsNotNone(consumer['secret'])
+    def _consumer_assertions(self, consumer,data):
+        self.assertEqual(consumer['description'], data['description'])
+        self.assertIsNotNone(consumer['id'])
+        self.assertIsNotNone(consumer['secret'])
 
-#         return consumer
+        return consumer
 
-#     def _test_create_consumer(self,consumer_data=None):
-#         consumer,data = self._create_consumer(consumer_data)
-#         self._consumer_assertions(consumer,data)
+    def _test_create_consumer(self,consumer_data=None):
+        consumer,data = self._create_consumer(consumer_data)
+        self._consumer_assertions(consumer,data)
 
-#     def test_create_consumer_no_data(self):
-#         self._test_create_consumer()
+    def test_create_consumer_no_data(self):
+        self._test_create_consumer()
 
-#     def test_consumer_delete(self):
-#         consumer,data = self._create_consumer()
-#         consumer_id = consumer['id']
-#         response = self.delete(self.CONSUMER_URL + '/%s' % consumer_id)
-#         self.assertResponseStatus(response, 204)
+    def test_consumer_delete(self):
+        consumer,data = self._create_consumer()
+        consumer_id = consumer['id']
+        response = self.delete(self.CONSUMER_URL + '/%s' % consumer_id)
+        self.assertResponseStatus(response, 204)
 
-#     def test_consumer_get(self):
-#         consumer,data = self._create_consumer()
-#         consumer_id = consumer['id']
-#         response = self.get(self.CONSUMER_URL + '/%s' % consumer_id)
-#         self_url = ['http://localhost/v3', self.CONSUMER_URL,
-#                     '/', consumer_id]
-#         self_url = ''.join(self_url)
-#         self.assertEqual(response.result['consumer']['links']['self'], self_url)
-#         self.assertEqual(response.result['consumer']['id'], consumer_id)
+    def test_consumer_get(self):
+        consumer,data = self._create_consumer()
+        consumer_id = consumer['id']
+        response = self.get(self.CONSUMER_URL + '/%s' % consumer_id)
+        self_url = ['http://localhost/v3', self.CONSUMER_URL,
+                    '/', consumer_id]
+        self_url = ''.join(self_url)
+        self.assertEqual(response.result['consumer']['links']['self'], self_url)
+        self.assertEqual(response.result['consumer']['id'], consumer_id)
 
-#     def test_consumer_list(self):
-#         self._create_consumer()
-#         response = self.get(self.CONSUMER_URL)
-#         entities = response.result['consumers']
-#         self.assertIsNotNone(entities)
-#         self_url = ['http://localhost/v3', self.CONSUMER_URL]
-#         self_url = ''.join(self_url)
-#         self.assertEqual(response.result['links']['self'], self_url)
-#         self.assertValidListLinks(response.result['links'])
+    def test_consumer_list(self):
+        self._create_consumer()
+        response = self.get(self.CONSUMER_URL)
+        entities = response.result['consumers']
+        self.assertIsNotNone(entities)
+        self_url = ['http://localhost/v3', self.CONSUMER_URL]
+        self_url = ''.join(self_url)
+        self.assertEqual(response.result['links']['self'], self_url)
+        self.assertValidListLinks(response.result['links'])
 
-#     def test_consumer_update(self):
-#         consumer,data = self._create_consumer()
-#         original_id = consumer['id']
-#         original_description = consumer['description'] or ''
-#         update_description = original_description + '_new'
+    def test_consumer_update(self):
+        consumer,data = self._create_consumer()
+        original_id = consumer['id']
+        original_description = consumer['description'] or ''
+        update_description = original_description + '_new'
 
-#         update_ref = {'description': update_description}
-#         update_response = self.patch(self.CONSUMER_URL + '/%s' % original_id,
-#                                  body={'consumer': update_ref})
-#         consumer = update_response.result['consumer']
-#         self.assertEqual(consumer['description'], update_description)
-#         self.assertEqual(consumer['id'], original_id)
+        update_ref = {'description': update_description}
+        update_response = self.patch(self.CONSUMER_URL + '/%s' % original_id,
+                                 body={'consumer': update_ref})
+        consumer = update_response.result['consumer']
+        self.assertEqual(consumer['description'], update_description)
+        self.assertEqual(consumer['id'], original_id)
 
-#     def test_consumer_update_bad_secret(self):
-#         consumer,data = self._create_consumer()
-#         original_id = consumer['id']
-#         update_ref = copy.deepcopy(consumer)
-#         update_ref['description'] = uuid.uuid4().hex
-#         update_ref['secret'] = uuid.uuid4().hex
-#         self.patch(self.CONSUMER_URL + '/%s' % original_id,
-#                    body={'consumer': update_ref},
-#                    expected_status=400)
+    def test_consumer_update_bad_secret(self):
+        consumer,data = self._create_consumer()
+        original_id = consumer['id']
+        update_ref = copy.deepcopy(consumer)
+        update_ref['description'] = uuid.uuid4().hex
+        update_ref['secret'] = uuid.uuid4().hex
+        self.patch(self.CONSUMER_URL + '/%s' % original_id,
+                   body={'consumer': update_ref},
+                   expected_status=400)
 
-#     def test_consumer_update_bad_id(self):
-#         consumer,data = self._create_consumer()
-#         original_id = consumer['id']
-#         original_description = consumer['description'] or ''
-#         update_description = original_description + "_new"
+    def test_consumer_update_bad_id(self):
+        consumer,data = self._create_consumer()
+        original_id = consumer['id']
+        original_description = consumer['description'] or ''
+        update_description = original_description + "_new"
 
-#         update_ref = copy.deepcopy(consumer)
-#         update_ref['description'] = update_description
-#         update_ref['id'] = update_description
-#         self.patch(self.CONSUMER_URL + '/%s' % original_id,
-#                    body={'consumer': update_ref},
-#                    expected_status=400)
+        update_ref = copy.deepcopy(consumer)
+        update_ref['description'] = update_description
+        update_ref['id'] = update_description
+        self.patch(self.CONSUMER_URL + '/%s' % original_id,
+                   body={'consumer': update_ref},
+                   expected_status=400)
 
-#     def test_consumer_get_bad_id(self):
-#         self.get(self.CONSUMER_URL + '/%(consumer_id)s'
-#                  % {'consumer_id': uuid.uuid4().hex},
-#                  expected_status=404)
+    def test_consumer_get_bad_id(self):
+        self.get(self.CONSUMER_URL + '/%(consumer_id)s'
+                 % {'consumer_id': uuid.uuid4().hex},
+                 expected_status=404)
 
 class OAuth2FlowTests(OAuth2Tests):
     DEFAULT_REDIRECT_URIS = ['https://uri.com']
