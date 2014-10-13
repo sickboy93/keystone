@@ -23,6 +23,7 @@ from keystone import exception
 from keystone.i18n import _
 from keystone.openstack.common import log
 
+from oauthlib.oauth2 import WebApplicationServer
 
 LOG = log.getLogger(__name__)
 
@@ -38,39 +39,36 @@ class OAuth2(auth.AuthMethodHandler):
         if not self.oauth2_api:
             raise exception.Unauthorized(_('%s not supported') % self.method)
 
-        headers = context['headers']
-        import pdb; pdb.set_trace()
         access_token_id = auth_payload['access_token_id']
-
         if not access_token_id:
             raise exception.ValidationError(
                 attribute='oauth2_token', target='request')
 
         access_token = self.oauth2_api.get_access_token(access_token_id)
 
-        # TODO(garcianavalon) expiration
-        # expires_at = access_token['expires_at']
-        # if expires_at:
-        #     now = timeutils.utcnow()
-        #     expires = timeutils.normalize_time(
-        #         timeutils.parse_isotime(expires_at))
-        #     if now > expires:
-        #         raise exception.Unauthorized(_('Access token is expired'))
+        headers = context['headers']
+        uri = controller.V3Controller.base_url(context, context['path'])
+        http_method = 'POST'
+        # TODO(garcianavalon) figure out how are we going to use scopes!
+        required_scopes = ['basic_scope'] 
+        request_validator = validator.OAuth2Validator()
+        server = WebApplicationServer(request_validator)
+        body = access_token # TODO(garcianavalon) check this
+        valid, oauthlib_request = server.verify_request(
+            uri, http_method, body, headers, required_scopes)
 
-        url = controller.V3Controller.base_url(context, context['path'])
-        access_verifier = oauth.ResourceEndpoint(
-            request_validator=validator.OAuthValidator(),
-            token_generator=oauth.token_generator)
-        result, request = access_verifier.validate_protected_resource_request(
-            url,
-            http_method='POST',
-            body=context['query_string'],
-            headers=headers,
-            realms=None
-        )
-        if not result:
+        # oauthlib_request has a few convenient attributes set such as
+        # oauthlib_request.client = the client associated with the token
+        # oauthlib_request.user = the user associated with the token
+        # oauthlib_request.scopes = the scopes bound to this token
+
+        if valid:
+            auth_context['user_id'] = access_token['authorizing_user_id']
+            auth_context['access_token_id'] = access_token_id
+            auth_context['project_id'] = access_token['scopes'] # TODO(garcianavalon) see required_scopes
+            return None
+        else:
             msg = _('Could not validate the access token')
             raise exception.Unauthorized(msg)
-        auth_context['user_id'] = access_token['authorizing_user_id']
-        auth_context['access_token_id'] = access_token_id
-        auth_context['project_id'] = access_token['project_id']
+            
+        
