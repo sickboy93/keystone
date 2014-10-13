@@ -227,17 +227,17 @@ class OAuth2ControllerV3(controller.V3Controller):
             msg = _('Content-Type: %s is not supported') %headers['Content-Type']
             raise exception.ValidationError(message=msg) 
 
-        #check headers for authentication
+        # check headers for authentication
         authmethod, auth = headers['Authorization'].split(' ', 1)
         if authmethod.lower() != 'basic':
             msg = _('Authorization error: %s. Only HTPP Basic is supported') %headers['Authorization']
             raise exception.ValidationError(message=msg)
 
         uri = self.base_url(context, context['path'])
-        http_method='POST'#TODO get it from context
+        http_method='POST'# TODO(garcianavalon) get it from context
         
         # Extra credentials you wish to include
-        credentials = None #TODO
+        credentials = None # TODO(garcianavalon)
 
         headers, body, status = server.create_token_response(
             uri, http_method, body, headers, credentials)

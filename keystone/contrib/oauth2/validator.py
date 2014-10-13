@@ -117,7 +117,7 @@ class OAuth2Validator(RequestValidator):
             client_id, secret = auth.split(':', 1)
             client_dict = self.oauth2_api.get_consumer(client_id)
             if client_dict['secret'] == secret:
-                #this can be done in a cleaner way if we change the consumer model attribute to client_id
+                # TODO(garcianavalon) this can be done in a cleaner way if we change the consumer model attribute to client_id
                 request.client = type('obj', (object,), {'client_id' : client_id})
                 return True
         return False
@@ -144,8 +144,9 @@ class OAuth2Validator(RequestValidator):
     def validate_grant_type(self, client_id, grant_type, client, request, *args, **kwargs):
         # Clients should only be allowed to use one type of grant.
         # In this case, it must be "authorization_code" or "refresh_token"
-        #TODO support for refresh tokens
-        #client_id comes as None...
+
+        # TODO(garcianavalon) support for refresh tokens
+        # client_id comes as None, we use the one in request
         client_dict = self.oauth2_api.get_consumer(request.client.client_id)
         return grant_type==client_dict['grant_type']
 
@@ -155,7 +156,30 @@ class OAuth2Validator(RequestValidator):
         # the authorization code. Don't forget to save both the
         # access_token and the refresh_token and set expiration for the
         # access_token to now + expires_in seconds.
-        pass
+ 
+
+        # token is a dictionary with the following elements:
+        # { 
+        #     u'access_token': u'iC1DQuu7zOgNIjquPXPmXE5hKnTwgu', 
+        #     u'expires_in': 3600, 
+        #     u'token_type': u'Bearer', 
+        #     u'state': u'yKxWeujbz9VUBncQNrkWvVcx8EXl1w', 
+        #     u'scope': u'basic_scope', 
+        #     u'refresh_token': u'02DTsL6oWgAibU7xenvXttwG80trJC'
+        # }
+
+        # TODO(garcinanavalon) create a custom TokenCreator instead of
+        # hacking the dictionary
+        access_token = {
+            'id':token['access_token'],
+            'consumer_id':request.client.client_id,
+            'authorizing_user_id':request.user,
+            'scopes': request.scopes,
+            'expires_at':token['expires_in'],
+            'refresh_token': token['refresh_token']
+        }
+        self.oauth2_api.store_access_token(access_token)
+
     def invalidate_authorization_code(self, client_id, code, request, *args, **kwargs):
         # Authorization codes are use once, invalidate it when a Bearer token
         # has been acquired.
@@ -164,7 +188,17 @@ class OAuth2Validator(RequestValidator):
     # Protected resource request
     def validate_bearer_token(self, token, scopes, request):
         # Remember to check expiration and scope membership
-        pass
+        try:
+            access_token = self.oauth2_api.get_access_token(token)
+        except exception.NotFound:
+            return False
+
+        # TODO(garcianavalon) check expiration date
+        if access_token['scopes'] != scopes:
+            return False
+
+        return True
+
     # Token refresh request
     def get_original_scopes(self, refresh_token, request, *args, **kwargs):
         # Obtain the token associated with the given refresh_token and

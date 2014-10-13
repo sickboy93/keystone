@@ -61,6 +61,7 @@ class Manager(manager.Manager):
 class Driver(object):
     """Interface description for OAuth2 drivers"""
 
+    # CONSUMERS
     @abc.abstractmethod
     def list_consumers(self):
         """List all registered consumers
@@ -117,6 +118,7 @@ class Driver(object):
         """
         raise exception.NotImplemented()
 
+    # AUTHORIZATION CODES
     @abc.abstractmethod
     def list_authorization_codes(self, user_id):
         """List authorization codes.
@@ -150,6 +152,7 @@ class Driver(object):
         """
         raise exception.NotImplemented()
 
+    # CONSUMER CREDENTIALS
     @abc.abstractmethod
     def store_consumer_credentials(self, credentials):
         """Saves the consumer credentials until the user gives authorization to it
@@ -170,7 +173,30 @@ class Driver(object):
         :returns: The stored credentials
 
         """
-        #TODO we need more info to get the credentials, or define constrains like
-        #only allowing one pending authorization request from each consumer so consumer_id
-        #could be use as a PK and/or a unique value
+        # TODO(garcianavalon) we need more info to get the credentials, or define constrains like
+        # only allowing one pending authorization request from each consumer so consumer_id
+        # could be use as a PK and/or a unique value
+        raise exception.NotImplemented()
+
+    # ACCESS TOKEN
+    @abc.abstractmethod
+    def get_access_token(self, access_token_id):
+        """Get an access_token. Should never be exposed by the Identity API.
+
+        :param access_token_id: the access_token_id (the string itself)
+        :type access_token_id: string
+        :returns: access_token as dict
+
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def store_access_token(self, access_token):
+        """Stores an access_token. Should never be exposed by the Identity API.
+
+        :param access_token: All the requiered info
+        :type access_token: dict
+        :returns: Nothing
+
+        """
         raise exception.NotImplemented()

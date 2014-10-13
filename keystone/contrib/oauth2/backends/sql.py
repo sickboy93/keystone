@@ -62,8 +62,22 @@ class ConsumerCredentials(sql.ModelBase, sql.ModelDictMixin):
     response_type = sql.Column(VALID_RESPONSE_TYPES,nullable=False)
     state = sql.Column(sql.String(64), nullable=True)
 
+class AccessToken(sql.ModelBase, sql.ModelDictMixin):
+    __tablename__ = 'access_token_oauth2'
+
+    attributes = ['id', 'consumer_id','authorizing_user_id','expires_at','scopes']
+
+    id = sql.Column(sql.String(64),primary_key=True,nullable=False)
+    consumer_id = sql.Column(sql.String(64), sql.ForeignKey('consumer.id'),
+                             nullable=False, index=True)
+    authorizing_user_id = sql.Column(sql.String(64), nullable=False)#TODO shouldnt it be a Foreign Key??
+    expires_at = sql.Column(sql.String(64), nullable=False)#TODO datetime type or similar?
+    scopes = sql.Column(sql.JsonBlob(),nullable=True)
+    refresh_token = sql.Column(sql.String(64),nullable=True)
+
 class OAuth2(oauth2.Driver):
     """ CRUD driver for the SQL backend """
+    # CONSUMERS
     def _get_consumer(self, session, consumer_id):
         consumer_ref = session.query(Consumer).get(consumer_id)
         if consumer_ref is None:
@@ -110,11 +124,30 @@ class OAuth2(oauth2.Driver):
         consumer_ref = self._get_consumer(session, consumer_id)
         session.delete(consumer_ref)
 
+    # AUTHORIZATION CODES
     def list_authorization_codes(self):
         session = sql.get_session()
         cons = session.query(AuthorizationCode)
         return [authorization_code.to_dict() for authorization_code in cons]
 
+    def store_authorization_code(self,authorization_code):
+        session = sql.get_session()
+        with session.begin():
+            authorization_code_ref = AuthorizationCode.from_dict(authorization_code)
+            session.add(authorization_code_ref)
+        return authorization_code_ref.to_dict()
+
+    def get_authorization_code(self, code):
+        session = sql.get_session()
+        with session.begin():
+            authorization_code_ref =  session.query(AuthorizationCode).get(code)
+
+        if authorization_code_ref is None:
+            msg = _('Authorization Code %s not found') %code
+            raise exception.NotFound(message=msg)
+        return authorization_code_ref.to_dict()
+
+    # CONSUMER CREDENTIALS
     def store_consumer_credentials(self, credentials):
         if not credentials.get('state'):
             credentials['state'] = None
@@ -132,20 +165,21 @@ class OAuth2(oauth2.Driver):
             raise exception.NotFound(_('Credentials not found'))
         return credentials_ref.to_dict()
 
-    def store_authorization_code(self,authorization_code):
+    # ACCESS TOKENS
+    def get_access_token(self, access_token_id):
         session = sql.get_session()
         with session.begin():
-            authorization_code_ref = AuthorizationCode.from_dict(authorization_code)
-            session.add(authorization_code_ref)
-        return authorization_code_ref.to_dict()
+            access_token_ref =  session.query(AccessToken).get(access_token_id)
 
-    def get_authorization_code(self, code):
-
-        session = sql.get_session()
-        with session.begin():
-            authorization_code_ref =  session.query(AuthorizationCode).get(code)
-
-        if authorization_code_ref is None:
-            msg = _('Authorization Code %s not found') %code
+        if access_token_ref is None:
+            msg = _('Access Token %s not found') %access_token_id
             raise exception.NotFound(message=msg)
-        return authorization_code_ref.to_dict()
+
+        return access_token_ref.to_dict()
+
+    def store_access_token(self, access_token):
+        session = sql.get_session()
+        with session.begin():
+            access_token_ref = AccessToken.from_dict(access_token)
+            session.add(access_token_ref)
+        return access_token_ref.to_dict()
