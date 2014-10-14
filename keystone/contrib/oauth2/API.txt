@@ -16,14 +16,14 @@ API OAUTH2
     		scopes #optional. They are the scopes the client wants to be allowed to ask 					authorization for
     	#example data
 		{
-		    "consumer": {
-		        "description": "Myconsumer",
-		        "client_type": "confidential",
-		        "redirect_uris": [
-		            "https: //domain: port/endpoint"
+		    'consumer': {
+		        'description': 'Myconsumer',
+		        'client_type': 'confidential',
+		        'redirect_uris': [
+		            'https: //domain: port/endpoint'
 		        ],
-		        "grant_type": "authorization_code",
-		        "scopes": []
+		        'grant_type': 'authorization_code',
+		        'scopes': ['all_info']
 		    }
 		}
 
@@ -64,10 +64,10 @@ API OAUTH2
 			user_id #requiered
 		#example data
 		{
-			"user_auth": {
-				"client_id":"1",
-				"user_id":"2",
-				"scopes":["basic"]
+			'user_auth': {
+				'client_id':'1',
+				'user_id':'2',
+				'scopes':['all_info']
 			}
 		}
 

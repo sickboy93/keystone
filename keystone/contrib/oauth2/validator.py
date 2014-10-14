@@ -188,6 +188,7 @@ class OAuth2Validator(RequestValidator):
     # Protected resource request
     def validate_bearer_token(self, token, scopes, request):
         # Remember to check expiration and scope membership
+
         try:
             access_token = self.oauth2_api.get_access_token(token)
         except exception.NotFound:
@@ -196,7 +197,17 @@ class OAuth2Validator(RequestValidator):
         # TODO(garcianavalon) check expiration date
         if access_token['scopes'] != scopes:
             return False
-
+        # NOTE(garcianavalon) we set some attributes in request for later use. There
+        # is no documentation about this so I follow the comments found in the example
+        # at https://oauthlib.readthedocs.org/en/latest/oauth2/endpoints/resource.html
+        # which are:
+        # oauthlib_request has a few convenient attributes set such as
+        # oauthlib_request.client = the client associated with the token
+        # oauthlib_request.user = the user associated with the token
+        # oauthlib_request.scopes = the scopes bound to this token
+        # request.scopes is set by oauthlib already
+        request.user = access_token['authorizing_user_id']
+        request.client = access_token['consumer_id']
         return True
 
     # Token refresh request
