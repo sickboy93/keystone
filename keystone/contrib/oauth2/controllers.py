@@ -162,8 +162,6 @@ class OAuth2ControllerV3(controller.V3Controller):
         scopes = body.get('scopes')
         if not scopes:
             raise exception.ValidationError(attribute='scopes',target='request')
-        # (garcianavalon) oauthlib doesnt allows us empty scopes in this step. If the non-scopes use-case wants to
-        # be supported we'll have to define a default 'noscope' scope.
 
         # Fetch the credentials saved in the pre authorization phase
         client_id = body.get('client_id')

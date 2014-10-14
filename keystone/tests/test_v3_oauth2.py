@@ -12,15 +12,21 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import uuid
+
 import copy
 import json
 import urlparse
 import uuid
+import mock
 
+from keystone import auth
 from keystone import config
+from keystone import exception
+from keystone import tests
 from keystone.contrib.oauth2 import core
 from keystone.tests import test_v3
-
+# TODO(garcianavalon) remove the request_oauthlib dependency
 from  requests_oauthlib import OAuth2Session
 
 CONF = config.CONF
@@ -32,16 +38,22 @@ class OAuth2Tests(test_v3.RestfulTestCase):
 
     CONSUMER_URL = '/OS-OAUTH2/consumers'
 
+    DEFAULT_REDIRECT_URIS = ['https://uri.com']
+    DEFAULT_SCOPES = ['all_info']
+
     def setUp(self):
         super(OAuth2Tests, self).setUp()
 
         # Now that the app has been served, we can query CONF values
         self.base_url = 'http://localhost/v3'
-        #TODO(garcianavalon) I've put this line for dependency injection to work, but I don't know if its the right way to do it...
+        # TODO(garcianavalon) I've put this line for dependency injection to work, but I don't know if its the right way to do it...
         self.manager = core.Manager()
 
-    def _create_consumer(self,description=None,client_type='confidential',
-                         redirect_uris=[],grant_type='authorization_code',scopes=[]):
+    def _create_consumer(self,description=None,
+                         client_type='confidential',
+                         redirect_uris=DEFAULT_REDIRECT_URIS,
+                         grant_type='authorization_code',
+                         scopes=DEFAULT_SCOPES):
         data = {
             'description': description,
             'client_type': client_type,
@@ -52,6 +64,9 @@ class OAuth2Tests(test_v3.RestfulTestCase):
         response = self.post(self.CONSUMER_URL,body={'consumer': data})
 
         return response.result['consumer'],data
+
+    def _create_user_and_tenant(self):
+        pass
 
 class ConsumerCRUDTests(OAuth2Tests):
 
@@ -137,36 +152,23 @@ class ConsumerCRUDTests(OAuth2Tests):
                  expected_status=404)
 
 class OAuth2FlowTests(OAuth2Tests):
-    DEFAULT_REDIRECT_URIS = ['https://uri.com']
-    DEFAULT_SCOPES = ['basic_scope']
+    
+    def _create_authorization_url(self,consumer):
 
-    def _generate_consumer(self):
-        #TODO(garcianavalon) refractor this
-        self.consumer, self.data = self._create_consumer(redirect_uris=self.DEFAULT_REDIRECT_URIS,
-                                     scopes=self.DEFAULT_SCOPES)
-        return self.consumer, self.data
-
-    def _create_authorization_url(self):
-
-        consumer,data = self._generate_consumer()
+        
         oauth = OAuth2Session(consumer['id'], 
                               redirect_uri=consumer['redirect_uris'][0],
                               scope=consumer['scopes'][0])
         authorization_url, state = oauth.authorization_url('https://remove.this/OS-OAUTH2/authorize')
-        #hack to work around the need for https in request_oauthilb authorization_url 
-        #and the fact that RestfulTestCase prepends the base_url when calling get
+        # NOTE(garcianavalon)hack to work around the need for https in request_oauthilb authorization_url 
+        # and the fact that RestfulTestCase prepends the base_url when calling get
         authorization_url = authorization_url.replace('https://remove.this','')
         return authorization_url
 
-    # def test_authorization_url(self):
-    #     #TODO(garcianavalon) is this encesary? are we testing our test methods here?
-    #     #TODO(garcianavalon) check more stuff in the url
-    #     authorization_url = self._create_authorization_url()
-    #     self.assertIsNotNone(authorization_url)    
-
     def _request_authorization(self):
-        authorization_url = self._create_authorization_url()
-        #GET authorization_url to request the authorization
+        self.consumer, data = self._create_consumer()
+        authorization_url = self._create_authorization_url(self.consumer)
+        # GET authorization_url to request the authorization
         return self.get(authorization_url)
 
     def test_request_authorization(self):
@@ -189,12 +191,11 @@ class OAuth2FlowTests(OAuth2Tests):
         redirect_uri = data['redirect_uri']
         self.assertEqual(redirect_uri,self.DEFAULT_REDIRECT_URIS[0])
 
-    def _authorization_data(self,consumer_id,user_id=1):
-        #TODO(garcianavalon) fix user_id, now there is no Foreign Key constrain so we can put any value
+    def _authorization_data(self,consumer_id):
         data = {
             "user_auth": {
                 "client_id":consumer_id,
-                "user_id":user_id,
+                "user_id":self.user_id,
                 "scopes":self.DEFAULT_SCOPES
             }
         }
@@ -202,7 +203,7 @@ class OAuth2FlowTests(OAuth2Tests):
 
     def _grant_authorization(self):
         get_response = self._request_authorization()
-        #POST authorization url to simulate ResourceOwner granting authorization
+        # POST authorization url to simulate ResourceOwner granting authorization
         consumer_id = get_response.result['data']['consumer']['id']
         data = self._authorization_data(consumer_id)
         return self.post('/OS-OAUTH2/authorize',body=data,expected_status=302)
@@ -212,7 +213,7 @@ class OAuth2FlowTests(OAuth2Tests):
 
         self.assertIsNotNone(response.headers['Location'])
         ###
-        #TODO(garcianavalon) extract method
+        # TODO(garcianavalon) extract method
         redirect_uri = response.headers['Location']
         query_params = urlparse.parse_qs(urlparse.urlparse(redirect_uri).query)
         ###
@@ -224,7 +225,7 @@ class OAuth2FlowTests(OAuth2Tests):
         return 'Basic ' + auth_string.encode('base64')
 
     def _generate_urlencoded_request(self,authorization_code,consumer_id,consumer_secret):
-        #No use for now, keystone only accepts JSON bodys
+        # No use for now, keystone only accepts JSON bodys
         body = 'grant_type=authorization_code&code=%s&redirect_uri=%s' %authorization_code,self.DEFAULT_REDIRECT_URIS[0]
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -248,7 +249,7 @@ class OAuth2FlowTests(OAuth2Tests):
     def _obtain_access_token(self):
         response = self._grant_authorization()
         ###
-        #TODO(garcianavalon) extract method
+        # TODO(garcianavalon) extract method
         redirect_uri = response.headers['Location']
         query_params = urlparse.parse_qs(urlparse.urlparse(redirect_uri).query)
         authorization_code = query_params['code'][0]
@@ -263,7 +264,7 @@ class OAuth2FlowTests(OAuth2Tests):
                         headers=headers,expected_status=200)
 
     def test_obtain_access_token(self):
-        #TODO(garcianavalon) test all the stuff
+        # TODO(garcianavalon) test all the stuff
         response = self._obtain_access_token()
         json_response = json.loads(response.result)
         self.assertIsNotNone(json_response['access_token'])
@@ -273,3 +274,29 @@ class OAuth2FlowTests(OAuth2Tests):
 
         scope = json_response['scope']
         self.assertEqual(scope,self.DEFAULT_SCOPES[0])
+
+    def _exchange_access_token_for_keystone_token(self):
+        token_data = json.loads(self._obtain_access_token().result)
+        body = {
+            "auth": {
+                "identity": {  
+                    "methods": [
+                        "oauth2"
+                    ],
+                    "oauth2": {
+                        'access_token_id':token_data['access_token'],
+                        'project_id':self.project_id
+                    },
+                }
+            }
+        }
+        # POST to the auth url to get a keystone token
+        return self.post('/auth/tokens',body=body)
+
+    def test_exchange_access_token_for_keystone_token(self):
+        response = self._exchange_access_token_for_keystone_token()
+        token = json.loads(response.body)['token']
+        self.assertEqual(token['project']['id'],self.project_id)
+        self.assertEqual(token['user']['id'],self.user_id)
+        self.assertEqual(token['methods'],["oauth2"])
+        self.assertIsNotNone(token['expires_at'])

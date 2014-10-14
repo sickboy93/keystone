@@ -44,16 +44,18 @@ class OAuth2(auth.AuthMethodHandler):
             raise exception.ValidationError(
                 attribute='oauth2_token', target='request')
 
-        access_token = self.oauth2_api.get_access_token(access_token_id)
+        #access_token = self.oauth2_api.get_access_token(access_token_id)
 
+        project_id = auth_payload['project_id']
         headers = context['headers']
         uri = controller.V3Controller.base_url(context, context['path'])
         http_method = 'POST'
-        # TODO(garcianavalon) figure out how are we going to use scopes!
-        required_scopes = ['basic_scope'] 
+        required_scopes = ['all_info'] 
         request_validator = validator.OAuth2Validator()
         server = WebApplicationServer(request_validator)
-        body = access_token # TODO(garcianavalon) check this
+        body = {
+            'access_token':access_token_id
+        }
         valid, oauthlib_request = server.verify_request(
             uri, http_method, body, headers, required_scopes)
 
@@ -61,11 +63,10 @@ class OAuth2(auth.AuthMethodHandler):
         # oauthlib_request.client = the client associated with the token
         # oauthlib_request.user = the user associated with the token
         # oauthlib_request.scopes = the scopes bound to this token
-
         if valid:
-            auth_context['user_id'] = access_token['authorizing_user_id']
+            auth_context['user_id'] = oauthlib_request.user
             auth_context['access_token_id'] = access_token_id
-            auth_context['project_id'] = access_token['scopes'] # TODO(garcianavalon) see required_scopes
+            auth_context['project_id'] = project_id
             return None
         else:
             msg = _('Could not validate the access token')
