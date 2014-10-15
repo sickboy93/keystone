@@ -225,7 +225,7 @@ class OAuth2FlowTests(OAuth2Tests):
         return 'Basic ' + auth_string.encode('base64')
 
     def _generate_urlencoded_request(self,authorization_code,consumer_id,consumer_secret):
-        # No use for now, keystone only accepts JSON bodys
+        # NOTE(garcianavalon) No use for now, keystone only accepts JSON bodies
         body = 'grant_type=authorization_code&code=%s&redirect_uri=%s' %authorization_code,self.DEFAULT_REDIRECT_URIS[0]
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
