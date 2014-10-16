@@ -266,6 +266,10 @@ class OAuth2ControllerV3(controller.V3Controller):
         # status will be a suggested status code, 200 on ok, 400 on bad request
         # and 401 if client is trying to use an invalid authorization code,
         # fail to authenticate etc.
+
+        # NOTE(garcianavalon) oauthlib returns the body as a JSON string already,
+        # and the Keystone base controlers expect a dictionary  
+        body = json.loads(body)
         response = wsgi.render_response(body,
                                         status=(status,'TODO(garcianavalon):name'),
                                         headers=headers.items())# oauthlib returns a dict, we expect a list of tuples

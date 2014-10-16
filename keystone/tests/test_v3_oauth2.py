@@ -12,8 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import uuid
-
+import base64
 import copy
 import json
 import urlparse
@@ -222,7 +221,7 @@ class OAuth2FlowTests(OAuth2Tests):
 
     def _http_basic(self,consumer_id,consumer_secret):
         auth_string = consumer_id + ':' + consumer_secret
-        return 'Basic ' + auth_string.encode('base64')
+        return 'Basic ' + base64.b64encode(auth_string)
 
     def _generate_urlencoded_request(self,authorization_code,consumer_id,consumer_secret):
         # NOTE(garcianavalon) No use for now, keystone only accepts JSON bodies

@@ -72,7 +72,7 @@ API OAUTH2
 			}
 		}
 
-/access_token
+/access_token # TODO update this doc
 	POST	#change an Authorization Code for an Access Token
 		#parameters
 			grant_type #has to be set to authorization_code
