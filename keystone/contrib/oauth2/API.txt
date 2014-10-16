@@ -50,11 +50,12 @@ API OAUTH2
 #OAUTH2
 
 /authorize/
-	GET 	#Requests authorization. The Authorization Server saves the credentials until the 					#Resource Owner grants the authorization via /authorize
+	GET 	#Requests authorization. The Authorization Server saves the credentials until 		  #the Resource Owner grants the authorization via /authorize
 		#query
 			client_id
 			redirect_uri
-	    	response_type #Has to be set to 'code',
+	    	response_type #Has to be set to 'code'
+	    	scope #String or list
 			state #Optional. For use of the Client
 
 	POST	#give authorization to a consumer, returns an Authorization Code

@@ -43,7 +43,7 @@ class AuthorizationCode(sql.ModelBase, sql.ModelDictMixin):
                 'state','redirect_uri']
 
     code = sql.Column(sql.String(64),primary_key=True,nullable=False)
-    consumer_id = sql.Column(sql.String(64), sql.ForeignKey('consumer.id'),
+    consumer_id = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
                              nullable=False, index=True)
     authorizing_user_id = sql.Column(sql.String(64), nullable=False)#TODO shouldnt it be a Foreign Key??
     expires_at = sql.Column(sql.String(64), nullable=False)#TODO datetime type or similar?
@@ -56,7 +56,7 @@ class ConsumerCredentials(sql.ModelBase, sql.ModelDictMixin):
     attributes = ['id', 'client_id','redirect_uri','response_type','state']
 
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
-    client_id = sql.Column(sql.String(64), sql.ForeignKey('consumer.id'),
+    client_id = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
                              nullable=False, index=True)
     redirect_uri = sql.Column(sql.String(64), nullable=False)
     response_type = sql.Column(VALID_RESPONSE_TYPES,nullable=False)
@@ -68,7 +68,7 @@ class AccessToken(sql.ModelBase, sql.ModelDictMixin):
     attributes = ['id', 'consumer_id','authorizing_user_id','expires_at','scopes']
 
     id = sql.Column(sql.String(64),primary_key=True,nullable=False)
-    consumer_id = sql.Column(sql.String(64), sql.ForeignKey('consumer.id'),
+    consumer_id = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
                              nullable=False, index=True)
     authorizing_user_id = sql.Column(sql.String(64), nullable=False)#TODO shouldnt it be a Foreign Key??
     expires_at = sql.Column(sql.String(64), nullable=False)#TODO datetime type or similar?
