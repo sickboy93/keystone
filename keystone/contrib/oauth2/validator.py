@@ -130,6 +130,8 @@ class OAuth2Validator(RequestValidator):
         # Validate the code belongs to the client. Add associated scopes,
         # state and user to request.scopes, request.state and request.user.
         authorization_code = self.oauth2_api.get_authorization_code(code)
+        if not authorization_code['valid']:
+            return False
         if not authorization_code['consumer_id'] == request.client.client_id:
             return False
         request.scopes = authorization_code['scopes']
@@ -184,7 +186,7 @@ class OAuth2Validator(RequestValidator):
     def invalidate_authorization_code(self, client_id, code, request, *args, **kwargs):
         # Authorization codes are use once, invalidate it when a Bearer token
         # has been acquired.
-        pass
+        self.oauth2_api.invalidate_authorization_code(code)
         
     # Protected resource request
     def validate_bearer_token(self, token, scopes, request):

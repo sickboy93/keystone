@@ -40,7 +40,7 @@ class AuthorizationCode(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'authorization_code_oauth2'
 
     attributes = ['code', 'consumer_id','authorizing_user_id','expires_at','scopes',
-                'state','redirect_uri']
+                'state','redirect_uri','valid']
 
     code = sql.Column(sql.String(64),primary_key=True,nullable=False)
     consumer_id = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
@@ -50,6 +50,7 @@ class AuthorizationCode(sql.ModelBase, sql.ModelDictMixin):
     scopes = sql.Column(sql.JsonBlob(),nullable=True)
     state = sql.Column(sql.String(64), nullable=True)
     redirect_uri = sql.Column(sql.String(64), nullable=False)
+    valid = sql.Column(sql.Boolean(), default=True, nullable=False)
 
 class ConsumerCredentials(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'consumer_credentials_oauth2'
@@ -65,7 +66,8 @@ class ConsumerCredentials(sql.ModelBase, sql.ModelDictMixin):
 class AccessToken(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'access_token_oauth2'
 
-    attributes = ['id', 'consumer_id','authorizing_user_id','expires_at','scopes']
+    attributes = ['id', 'consumer_id','authorizing_user_id','expires_at',
+                'scopes','valid']
 
     id = sql.Column(sql.String(64),primary_key=True,nullable=False)
     consumer_id = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
@@ -74,6 +76,7 @@ class AccessToken(sql.ModelBase, sql.ModelDictMixin):
     expires_at = sql.Column(sql.String(64), nullable=False)#TODO datetime type or similar?
     scopes = sql.Column(sql.JsonBlob(),nullable=True)
     refresh_token = sql.Column(sql.String(64),nullable=True)
+    valid = sql.Column(sql.Boolean(), default=True, nullable=False)
 
 class OAuth2(oauth2.Driver):
     """ CRUD driver for the SQL backend """
@@ -137,15 +140,25 @@ class OAuth2(oauth2.Driver):
             session.add(authorization_code_ref)
         return authorization_code_ref.to_dict()
 
-    def get_authorization_code(self, code):
-        session = sql.get_session()
-        with session.begin():
-            authorization_code_ref =  session.query(AuthorizationCode).get(code)
+    def _get_authorization_code(self, session, code):
+        authorization_code_ref =  session.query(AuthorizationCode).get(code)
 
         if authorization_code_ref is None:
             msg = _('Authorization Code %s not found') %code
             raise exception.NotFound(message=msg)
+        return authorization_code_ref
+        
+    def get_authorization_code(self, code):
+        session = sql.get_session()
+        with session.begin():
+            authorization_code_ref = self._get_authorization_code(session,code)
         return authorization_code_ref.to_dict()
+
+    def invalidate_authorization_code(self, code):
+        session = sql.get_session()
+        with session.begin():
+            authorization_code_ref = self._get_authorization_code(session,code)
+            setattr(authorization_code_ref,'valid',False)
 
     # CONSUMER CREDENTIALS
     def store_consumer_credentials(self, credentials):

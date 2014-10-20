@@ -152,6 +152,19 @@ class Driver(object):
         """
         raise exception.NotImplemented()
 
+    @abc.abstractmethod
+    def invalidate_authorization_code(self, code):
+        """Invalidate an authorization_code. 
+        This method is called from the oauth2 flow through the validator but
+        is safe to expose it in the REST API if the use case is needed.
+
+        :param code: the code
+        :type code: string
+        :returns: Nothing
+
+        """
+        raise exception.NotImplemented()
+
     # CONSUMER CREDENTIALS
     @abc.abstractmethod
     def store_consumer_credentials(self, credentials):

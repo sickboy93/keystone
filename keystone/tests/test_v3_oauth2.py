@@ -203,15 +203,18 @@ class OAuth2FlowTests(OAuth2Tests):
         data = self._authorization_data(consumer_id)
         return self.post('/OS-OAUTH2/authorize',body=data,expected_status=302)
 
+    def _extract_header_query_string(self, response):
+        redirect_uri = response.headers['Location']
+        query_params = urlparse.parse_qs(urlparse.urlparse(redirect_uri).query)
+        return query_params
+
     def test_grant_authorization(self):
         response = self._grant_authorization()
 
         self.assertIsNotNone(response.headers['Location'])
-        ###
-        # TODO(garcianavalon) extract method
-        redirect_uri = response.headers['Location']
-        query_params = urlparse.parse_qs(urlparse.urlparse(redirect_uri).query)
-        ###
+    
+        query_params = self._extract_header_query_string(response)
+
         self.assertIsNotNone(query_params['code'][0])
         self.assertIsNotNone(query_params['state'][0])
 
@@ -241,14 +244,15 @@ class OAuth2FlowTests(OAuth2Tests):
         }
         return headers,body
 
+    def _extract_authorization_code_from_header(self, response):
+        query_params = self._extract_header_query_string(response)
+        authorization_code = query_params['code'][0]
+        return authorization_code
+
     def _obtain_access_token(self):
         response = self._grant_authorization()
-        ###
-        # TODO(garcianavalon) extract method
-        redirect_uri = response.headers['Location']
-        query_params = urlparse.parse_qs(urlparse.urlparse(redirect_uri).query)
-        authorization_code = query_params['code'][0]
-        ###
+        authorization_code = self._extract_authorization_code_from_header(response)
+
         consumer_id = self.consumer['id']
         consumer_secret = self.consumer['secret']
 
@@ -269,6 +273,23 @@ class OAuth2FlowTests(OAuth2Tests):
 
         scope = response.result['scope']
         self.assertEqual(scope,self.DEFAULT_SCOPES[0])
+
+    def test_access_code_only_one_use(self):
+        # TODO(garcianavalon) refractor this for better code reuse
+        response = self._grant_authorization()
+        authorization_code = self._extract_authorization_code_from_header(response)
+
+        consumer_id = self.consumer['id']
+        consumer_secret = self.consumer['secret']
+
+        headers,body = self._generate_json_request(authorization_code,
+                                                   consumer_id,consumer_secret)
+        # POST to the token url
+        response1 = self.post('/OS-OAUTH2/access_token',body=body,
+                        headers=headers,expected_status=200)
+        # POST again to check its invalid
+        response2 = self.post('/OS-OAUTH2/access_token',body=body,
+                        headers=headers,expected_status=401)
 
     def _auth_body(self, access_token, project=None):
         body = {

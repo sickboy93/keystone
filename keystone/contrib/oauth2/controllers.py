@@ -224,7 +224,7 @@ class OAuth2ControllerV3(controller.V3Controller):
         # check headers for authentication
         authmethod, auth = headers['Authorization'].split(' ', 1)
         if authmethod.lower() != 'basic':
-            msg = _('Authorization error: %s. Only HTPP Basic is supported') %headers['Authorization']
+            msg = _('Authorization error: %s. Only HTTP Basic is supported') %headers['Authorization']
             raise exception.ValidationError(message=msg)
 
         uri = self.base_url(context, context['path'])
@@ -267,7 +267,18 @@ class OAuth2ControllerV3(controller.V3Controller):
         # NOTE(garcianavalon) oauthlib returns the body as a JSON string already,
         # and the Keystone base controlers expect a dictionary  
         body = json.loads(body)
-        response = wsgi.render_response(body,
-                                        status=(status,'TODO(garcianavalon):name'),
-                                        headers=headers.items())# oauthlib returns a dict, we expect a list of tuples
-        return response
+        if status == 200:
+            response = wsgi.render_response(body,
+                                        status=(status,'OK'),
+                                        headers=headers.items())
+            return response
+        # Build the error message and raise the corresponding error
+        msg = _(body['error'])
+        if hasattr(body,'description'):
+            msg= msg +': '+_(body['description'])
+        if status == 400:
+            raise exception.ValidationError(message=msg)
+        elif status == 401:
+            # TODO(garcianavalon) custom exception class
+            raise exception.Unauthorized(message=msg)
+        
