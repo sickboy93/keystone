@@ -99,7 +99,7 @@ class OAuth2ControllerV3(controller.V3Controller):
         headers = context['headers']
         body=context['query_string']
         uri = self.base_url(context, context['path'])
-        http_method='GET'# TODO(garcianavalon) get it from context
+        http_method='GET'
 
         try:
             scopes, credentials = server.validate_authorization_request(
@@ -119,7 +119,8 @@ class OAuth2ControllerV3(controller.V3Controller):
             # should be persisted between. None of them are secret but take care
             # to ensure their integrity if embedding them in the form or cookies.
 
-            # (garcianavalon) We are not storing this for now, might do it in the future
+            # NOTE(garcianavalon) We are not storing this for now, 
+            # but might do it in the future
             request = credentials.pop('request')
 
             credentials_ref = self._assign_unique_id(self._normalize_dict(credentials))
@@ -154,7 +155,7 @@ class OAuth2ControllerV3(controller.V3Controller):
         headers = context['headers']
         body=user_auth
         uri = self.base_url(context, context['path'])
-        http_method='POST'# TODO(garcianavalon) get it from context
+        http_method='POST'
 
         # Fetch authorized scopes from the request
         scopes = body.get('scopes')
@@ -182,7 +183,7 @@ class OAuth2ControllerV3(controller.V3Controller):
 
             response = wsgi.render_response(body,
                                             status=(302,'Found'),
-                                            headers=headers.items())# oauthlib returns a dict, keystone expects a list of tuples
+                                            headers=headers.items())
             return response
 
         except FatalClientError as e:
@@ -194,16 +195,14 @@ class OAuth2ControllerV3(controller.V3Controller):
             raise exception.ValidationError(message=e.error)
 
     def _dict_to_urlencoded(self,dict):
-        # This method is to work around the keystone limitation with content types
-        # Keystone only accepts JSON bodies while OAuth2.0 (RFC 6749) requires x-www-form-urlencoded    
-        # This method converts a dictionary into a urlencoded string
+        
 
         # TODO(garcianavalon) this check shouldnt be here
         if not 'code' in dict:
             msg = _('code missing in request body: %s') %dict
             raise exception.ValidationError(message=msg)
 
-        return urllib.urlencode(dict)
+        return 
 
     def create_access_token(self,context,token_request):
         request_validator = validator.OAuth2Validator()
@@ -212,11 +211,19 @@ class OAuth2ControllerV3(controller.V3Controller):
         # Validate request
 
         headers = context['headers']
-        # (garcianavalon) to support future versions where the use of x-www-form-urlencoded is accepted
+        # NOTE(garcianavalon) Work around the keystone limitation with content types
+        # Keystone only accepts JSON bodies while OAuth2.0 (RFC 6749) requires 
+        # x-www-form-urlencoded
+        # We leave it like this to support future versions where the use of 
+        # x-www-form-urlencoded is accepted
         if headers['Content-Type'] == 'application/x-www-form-urlencoded':
             body=context['query_string']
         elif headers['Content-Type'] == 'application/json':
-            body = self._dict_to_urlencoded(token_request)
+            
+            if not 'code' in token_request:
+                msg = _('code missing in request body: %s') %token_request
+                raise exception.ValidationError(message=msg)
+            body = urllib.urlencode(token_request)
         else:
             msg = _('Content-Type: %s is not supported') %headers['Content-Type']
             raise exception.ValidationError(message=msg) 
@@ -228,7 +235,7 @@ class OAuth2ControllerV3(controller.V3Controller):
             raise exception.ValidationError(message=msg)
 
         uri = self.base_url(context, context['path'])
-        http_method='POST'# TODO(garcianavalon) get it from context
+        http_method='POST'
         
         # Extra credentials you wish to include
         credentials = None # TODO(garcianavalon)
