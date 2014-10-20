@@ -21,7 +21,6 @@ from keystone import clean
 from keystone.common import driver_hints
 from keystone.common import ldap as common_ldap
 from keystone.common import models
-from keystone.common import utils
 from keystone import config
 from keystone import exception
 from keystone.i18n import _
@@ -217,7 +216,14 @@ class UserApi(common_ldap.EnabledEmuMixIn, common_ldap.BaseLdap):
             obj['enabled'] = ((enabled & self.enabled_mask) !=
                               self.enabled_mask)
         elif self.enabled_invert and not self.enabled_emulation:
+            # This could be a bool or a string.  If it's a string,
+            # we need to convert it so we can invert it properly.
             enabled = obj.get('enabled', self.enabled_default)
+            if type(enabled) is str:
+                if enabled.lower == 'true':
+                    enabled = True
+                else:
+                    enabled = False
             obj['enabled'] = not enabled
         obj['dn'] = res[0]
 
@@ -247,10 +253,6 @@ class UserApi(common_ldap.EnabledEmuMixIn, common_ldap.BaseLdap):
                                  not self.enabled_emulation):
             values['enabled'] = orig_enabled
         return values
-
-    def check_password(self, user_id, password):
-        user = self.get(user_id)
-        return utils.check_password(password, user.password)
 
     def get_filtered(self, user_id):
         user = self.get(user_id)

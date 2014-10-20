@@ -35,7 +35,6 @@ class OAuth2(auth.AuthMethodHandler):
 
     def authenticate(self, context, auth_payload, auth_context):
         """Turn a signed request with an access key into a keystone token."""
-
         if not self.oauth2_api:
             raise exception.Unauthorized(_('%s not supported') % self.method)
 
@@ -44,9 +43,6 @@ class OAuth2(auth.AuthMethodHandler):
             raise exception.ValidationError(
                 attribute='oauth2_token', target='request')
 
-        #access_token = self.oauth2_api.get_access_token(access_token_id)
-
-        project_id = auth_payload['project_id']
         headers = context['headers']
         uri = controller.V3Controller.base_url(context, context['path'])
         http_method = 'POST'
@@ -65,8 +61,8 @@ class OAuth2(auth.AuthMethodHandler):
         # oauthlib_request.scopes = the scopes bound to this token
         if valid:
             auth_context['user_id'] = oauthlib_request.user
-            auth_context['access_token_id'] = access_token_id
-            auth_context['project_id'] = project_id
+            #auth_context['access_token_id'] = access_token_id
+            #auth_context['project_id'] = project_id
             return None
         else:
             msg = _('Could not validate the access token')

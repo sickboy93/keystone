@@ -378,7 +378,7 @@ class TestCase(BaseTestCase):
             driver='keystone.token.persistence.backends.kvs.Token')
         self.config_fixture.config(
             group='trust',
-            driver='keystone.trust.backends.kvs.Trust')
+            driver='keystone.trust.backends.sql.Trust')
         self.config_fixture.config(
             group='saml', certfile=signing_certfile, keyfile=signing_keyfile)
         self.config_fixture.config(
@@ -395,6 +395,7 @@ class TestCase(BaseTestCase):
                 'routes.middleware=INFO',
                 'stevedore.extension=INFO',
                 'keystone.notifications=INFO',
+                'keystone.common._memcache_pool=INFO',
             ])
         self.auth_plugin_config_override()
 

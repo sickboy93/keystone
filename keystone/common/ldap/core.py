@@ -159,7 +159,7 @@ def convert_ldap_result(ldap_result):
             try:
                 ldap_attrs[kind] = [ldap2py(x) for x in values]
             except UnicodeDecodeError:
-                LOG.debug('Unable to decode value for attribute %s ', kind)
+                LOG.debug('Unable to decode value for attribute %s', kind)
 
         py_result.append((utf8_decode(dn), ldap_attrs))
     if at_least_one_referral:
@@ -287,9 +287,9 @@ def is_dn_equal(dn1, dn2):
     """
 
     if not isinstance(dn1, list):
-        dn1 = ldap.dn.str2dn(dn1)
+        dn1 = ldap.dn.str2dn(utf8_encode(dn1))
     if not isinstance(dn2, list):
-        dn2 = ldap.dn.str2dn(dn2)
+        dn2 = ldap.dn.str2dn(utf8_encode(dn2))
 
     if len(dn1) != len(dn2):
         return False
@@ -309,9 +309,9 @@ def dn_startswith(descendant_dn, dn):
     """
 
     if not isinstance(descendant_dn, list):
-        descendant_dn = ldap.dn.str2dn(descendant_dn)
+        descendant_dn = ldap.dn.str2dn(utf8_encode(descendant_dn))
     if not isinstance(dn, list):
-        dn = ldap.dn.str2dn(dn)
+        dn = ldap.dn.str2dn(utf8_encode(dn))
 
     if len(descendant_dn) <= len(dn):
         return False
@@ -582,7 +582,8 @@ def _common_ldap_initialization(url, use_tls=False, tls_cacertfile=None,
     if use_tls and using_ldaps:
         raise AssertionError(_('Invalid TLS / LDAPS combination'))
 
-    if use_tls:
+    # The certificate trust options apply for both LDAPS and TLS.
+    if use_tls or using_ldaps:
         if not ldap.TLS_AVAIL:
             raise ValueError(_('Invalid LDAP TLS_AVAIL option: %s. TLS '
                                'not available') % ldap.TLS_AVAIL)
@@ -1662,8 +1663,18 @@ class EnabledEmuMixIn(BaseLdap):
         enabled_emulation_dn = '%s_enabled_emulation_dn' % self.options_name
         self.enabled_emulation_dn = getattr(conf.ldap, enabled_emulation_dn)
         if not self.enabled_emulation_dn:
-            self.enabled_emulation_dn = ('cn=enabled_%ss,%s' %
-                                         (self.options_name, self.tree_dn))
+            naming_attr_name = 'cn'
+            naming_attr_value = 'enabled_%ss' % self.options_name
+            sub_vals = (naming_attr_name, naming_attr_value, self.tree_dn)
+            self.enabled_emulation_dn = '%s=%s,%s' % sub_vals
+            naming_attr = (naming_attr_name, [naming_attr_value])
+        else:
+            # Extract the attribute name and value from the configured DN.
+            naming_dn = ldap.dn.str2dn(utf8_encode(self.enabled_emulation_dn))
+            naming_rdn = naming_dn[0][0]
+            naming_attr = (utf8_decode(naming_rdn[0]),
+                           utf8_decode(naming_rdn[1]))
+        self.enabled_emulation_naming_attr = naming_attr
 
     def _get_enabled(self, object_id):
         dn = self._id_to_dn(object_id)
@@ -1688,8 +1699,8 @@ class EnabledEmuMixIn(BaseLdap):
                     conn.modify_s(self.enabled_emulation_dn, modlist)
                 except ldap.NO_SUCH_OBJECT:
                     attr_list = [('objectClass', ['groupOfNames']),
-                                 ('member',
-                                     [self._id_to_dn(object_id)])]
+                                 ('member', [self._id_to_dn(object_id)]),
+                                 self.enabled_emulation_naming_attr]
                     if self.use_dumb_member:
                         attr_list[1][1].append(self.dumb_member)
                     conn.add_s(self.enabled_emulation_dn, attr_list)

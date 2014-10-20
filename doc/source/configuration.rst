@@ -35,9 +35,11 @@ This may overlap with your system's ephemeral port range, so another process
 may already be using this port without being explicitly configured to do so. To
 prevent this scenario from occurring, it's recommended that you explicitly
 exclude port 35357 from the available ephemeral port range. On a Linux system,
-this would be accomplished by::
+this would be accomplished by:
 
-    # sysctl -w 'sys.net.ipv4.ip_local_reserved_ports=35357'
+.. code-block:: bash
+
+    $ sysctl -w 'sys.net.ipv4.ip_local_reserved_ports=35357'
 
 To make the above change persistent, `net.ipv4.ip_local_reserved_ports = 35357`
 should be added to ``/etc/sysctl.conf`` or to ``/etc/sysctl.d/keystone.conf``.
@@ -96,7 +98,6 @@ following sections:
 * ``[saml]`` - SAML configuration options
 * ``[signing]`` - Cryptographic signatures for PKI based tokens
 * ``[ssl]`` - SSL configuration
-* ``[stats]`` - Stats system driver configuration
 * ``[token]`` - Token driver & token provider configuration
 * ``[trust]`` - Trust extension configuration
 
@@ -111,8 +112,11 @@ order:
 * ``/etc/keystone/``
 * ``/etc/``
 
-PasteDeploy configuration file is specified by the ``config_file`` parameter in ``[paste_deploy]`` section of the primary configuration file. If the parameter
-is not an absolute path, then Keystone looks for it in the same directories as above. If not specified, WSGI pipeline definitions are loaded from the primary configuration file.
+PasteDeploy configuration file is specified by the ``config_file`` parameter in
+``[paste_deploy]`` section of the primary configuration file. If the parameter
+is not an absolute path, then Keystone looks for it in the same directories as
+above. If not specified, WSGI pipeline definitions are loaded from the primary
+configuration file.
 
 Domain-specific Drivers
 -----------------------
@@ -124,7 +128,9 @@ Domain-specific Drivers
 Keystone supports the option (disabled by default) to specify identity driver
 configurations on a domain by domain basis, allowing, for example, a specific
 domain to have its own LDAP or SQL server. This is configured by specifying the
-following options::
+following options:
+
+.. code-block:: ini
 
  [identity]
  domain_specific_drivers_enabled = True
@@ -146,6 +152,13 @@ configuration file.
     Keystone does not support moving the contents of a domain (i.e. "it's"
     users and groups) from one backend to another, nor group membership across
     backend boundaries.
+
+.. NOTE::
+
+    Although Keystone supports multiple LDAP backends via domain specific
+    configuration files, it currently only supports one SQL backend. This
+    could be either the default driver or a single domain-specific backend,
+    perhaps for storing service users in a predominantly LDAP installation.
 
 Due to the need for user and group IDs to be unique across an OpenStack
 installation and for Keystone to be able to deduce which domain and backend to
@@ -234,7 +247,8 @@ authentication plugin may also have its own section in the configuration
 file. It is up to the plugin to register its own configuration options.
 
 * ``methods`` - comma-delimited list of authentication plugin names
-* ``<plugin name>`` - specify the class which handles to authentication method, in the same manner as one would specify a backend driver.
+* ``<plugin name>`` - specify the class which handles to authentication method,
+  in the same manner as one would specify a backend driver.
 
 Keystone provides three authentication methods by default. ``password`` handles password
 authentication and ``token`` handles token authentication.  ``external`` is used in conjunction
@@ -252,7 +266,9 @@ following parameters.
 
 * ``context`` - Keystone's request context
 * ``auth_payload`` - the content of the authentication for a given method
-* ``auth_context`` - user authentication context, a dictionary shared by all plugins. It contains ``method_names`` and ``extras`` by default. ``method_names`` is a list and ``extras`` is a dictionary.
+* ``auth_context`` - user authentication context, a dictionary shared by all
+  plugins. It contains ``method_names`` and ``extras`` by default.
+  ``method_names`` is a list and ``extras`` is a dictionary.
 
 If successful, the ``authenticate()`` method must provide a valid ``user_id``
 in ``auth_context`` and return ``None``. ``method_name`` is used to convey
@@ -282,11 +298,44 @@ invoked, all plugins must succeed in order to for the entire
 authentication to be successful. Furthermore, all the plugins invoked must
 agree on the ``user_id`` in the ``auth_context``.
 
-The ``REMOTE_USER`` environment variable is only set from a containing webserver.  However,
-to ensure that a user must go through other authentication mechanisms, even if this variable
-is set, remove ``external`` from the list of plugins specified in ``methods``.  This effectively
-disables external authentication.  For more details, refer to :doc:`External
-Authentication <external-auth>`.
+The ``REMOTE_USER`` environment variable is only set from a containing webserver.
+However, to ensure that a user must go through other authentication mechanisms,
+even if this variable is set, remove ``external`` from the list of plugins
+specified in ``methods``. This effectively disables external authentication.
+For more details, refer to :doc:`ExternalAuthentication <external-auth>`.
+
+
+Token Persistence Driver
+------------------------
+
+Keystone supports customizable token persistence drivers. These can be specified
+in the ``[token]`` section of the configuration file. Keystone provides three
+non-test persistence backends. These can be set with the ``[token]\driver``
+configuration option.
+
+The drivers Keystone provides are:
+
+* ``keystone.token.persistence.backends.memcache_pool.Token`` - The pooled memcached
+  token persistence engine. This backend supports the concept of pooled memcache
+  client object (allowing for the re-use of the client objects). This backend has
+  a number of extra tunable options in the ``[memcache]`` section of the config.
+
+* ``keystone.token.persistence.backends.sql.Token`` - The SQL-based (default)
+  token persistence engine.
+
+* ``keystone.token.persistence.backends.memcache.Token`` - The memcached based
+  token persistence backend. This backend relies on ``dogpile.cache`` and stores
+  the token data in a set of memcached servers. The servers URLs are specified
+  in the ``[memcache]\servers`` configuration option in the Keystone config.
+
+
+.. WARNING::
+    It is recommended you use the ``keystone.token.persistence.backend.memcache_pool.Token``
+    backend instead of ``keystone.token.persistence.backend.memcache.Token`` as the token
+    persistence driver if you are deploying Keystone under eventlet instead of
+    Apache + mod_wsgi. This recommendation is due to known issues with the
+    use of ``thread.local`` under eventlet that can allow the leaking of
+    memcache client objects and consumption of extra sockets.
 
 
 Token Provider
@@ -306,8 +355,7 @@ to ``keystone.token.providers.pki.Provider``, ``token_format`` must be ``PKI``.
 Conversely, if ``provider`` is ``keystone.token.providers.uuid.Provider``,
 ``token_format`` must be ``UUID``.
 
-For a customized provider, ``token_format`` must not set to ``PKI`` or
-``UUID``.
+For a customized provider, ``token_format`` must not set to ``PKI`` or ``UUID``.
 
 PKI or UUID?
 ^^^^^^^^^^^^
@@ -328,10 +376,10 @@ either headers or URLs if they contain extensive service catalogs or other
 additional attributes.
 
 .. WARNING::
-    Both UUID- and PKI-based tokens are bearer tokens, meaning that they must
+    Both UUID and PKI-based tokens are bearer tokens, meaning that they must
     be protected from unnecessary disclosure to prevent unauthorized access.
 
-The current architectural approaches for both UUID- and PKI-based tokens have
+The current architectural approaches for both UUID and PKI-based tokens have
 pain points exposed by environments under heavy load (search bugs and
 blueprints for the latest details and potential solutions).
 
@@ -365,6 +413,8 @@ behavior is that subsystem caching is enabled, but the global toggle is set to d
     * ``dogpile.cache.dbm`` - local DBM file backend
     * ``dogpile.cache.memory`` - in-memory cache
     * ``keystone.cache.mongo`` - MongoDB as caching backend
+    * ``keystone.cache.memcache_pool`` - An eventlet safe implementation of ``dogpile.cache.memcached``.
+                                         This implementation also provides client connection re-use.
 
         .. WARNING::
             ``dogpile.cache.memory`` is not suitable for use outside of unit testing
@@ -375,6 +425,12 @@ behavior is that subsystem caching is enabled, but the global toggle is set to d
             and cache invalidation will not be consistent or reliable
             when using ``Keystone`` and the ``dogpile.cache.memory`` backend under
             any real workload.
+
+        .. WARNING::
+            Do not use ``dogpile.cache.memcached`` backend if you are deploying
+            Keystone under eventlet. There are known issues with the use of ``thread.local``
+            under eventlet that can allow the leaking of memcache client objects and
+            consumption of extra sockets.
 
 * ``expiration_time`` - int, the default length of time to cache a specific value. A value of ``0``
     indicates to not cache anything.  It is recommended that the ``enabled`` option be used to disable
@@ -468,9 +524,12 @@ The values that specify where to read the certificates are under the
 * ``token_format`` - Determines the algorithm used to generate tokens.  Can be
   either ``UUID`` or ``PKI``. Defaults to ``PKI``. This option must be used in
   conjunction with ``provider`` configuration in the ``[token]`` section.
-* ``certfile`` - Location of certificate used to verify tokens.  Default is ``/etc/keystone/ssl/certs/signing_cert.pem``
-* ``keyfile`` - Location of private key used to sign tokens.  Default is ``/etc/keystone/ssl/private/signing_key.pem``
-* ``ca_certs`` - Location of certificate for the authority that issued the above certificate. Default is ``/etc/keystone/ssl/certs/ca.pem``
+* ``certfile`` - Location of certificate used to verify tokens.  Default is
+  ``/etc/keystone/ssl/certs/signing_cert.pem``
+* ``keyfile`` - Location of private key used to sign tokens.  Default is
+  ``/etc/keystone/ssl/private/signing_key.pem``
+* ``ca_certs`` - Location of certificate for the authority that issued the
+  above certificate. Default is ``/etc/keystone/ssl/certs/ca.pem``
 * ``ca_key`` - Default is ``/etc/keystone/ssl/private/cakey.pem``
 * ``key_size`` - Default is ``2048``
 * ``valid_days`` - Default is ``3650``
@@ -502,7 +561,9 @@ Request Signing Certificate from External CA
 One way to request a signing certificate from an external CA is to first
 generate a PKCS #10 Certificate Request Syntax (CRS) using OpenSSL CLI.
 
-First create a certificate request configuration file (e.g. ``cert_req.conf``)::
+First create a certificate request configuration file (e.g. ``cert_req.conf``):
+
+.. code-block:: ini
 
     [ req ]
     default_bits            = 2048
@@ -532,7 +593,9 @@ For example:
 
 
 If everything is successfully, you should end up with ``signing_cert_req.pem``
-and ``signing_key.pem``. Send ``signing_cert_req.pem`` to your CA to request a token signing certificate and make sure to ask the certificate to be in PEM format. Also, make sure your trusted CA certificate chain is also in PEM format.
+and ``signing_key.pem``. Send ``signing_cert_req.pem`` to your CA to request a
+token signing certificate and make sure to ask the certificate to be in PEM
+format. Also, make sure your trusted CA certificate chain is also in PEM format.
 
 
 Install External Signing Certificate
@@ -556,8 +619,9 @@ Copy the above to your certificate directory. For example:
 
 **Make sure the certificate directory is root-protected.**
 
-If your certificate directory path is different from the default ``/etc/keystone/ssl/certs``, make sure it is reflected in the ``[signing]`` section of the
-configuration file.
+If your certificate directory path is different from the default
+``/etc/keystone/ssl/certs``, make sure it is reflected in the
+``[signing]`` section of the configuration file.
 
 
 Service Catalog
@@ -568,10 +632,11 @@ Keystone provides two configuration options for your service catalog.
 SQL-based Service Catalog (``sql.Catalog``)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-A dynamic database-backed driver fully supporting persistent configuration via
-keystoneclient administration commands (e.g. ``keystone endpoint-create``).
+A dynamic database-backed driver fully supporting persistent configuration.
 
-``keystone.conf`` example::
+``keystone.conf`` example:
+
+.. code-block:: ini
 
     [catalog]
     driver = keystone.catalog.backends.sql.Catalog
@@ -584,9 +649,9 @@ To build your service catalog using this driver, see the built-in help:
 
 .. code-block:: bash
 
-    $ keystone
-    $ keystone help service-create
-    $ keystone help endpoint-create
+    $ openstack --help
+    $ openstack help service create
+    $ openstack help endpoint create
 
 You can also refer to `an example in Keystone (tools/sample_data.sh)
 <https://github.com/openstack/keystone/blob/master/tools/sample_data.sh>`_.
@@ -600,13 +665,14 @@ service catalog will not change very much over time.
 
 .. NOTE::
 
-    Attempting to manage your service catalog using keystoneclient commands
-    (e.g. ``keystone endpoint-create``) against this driver will result in
+    Attempting to change your service catalog against this driver will result in
     ``HTTP 501 Not Implemented`` errors. This is the expected behavior. If you
     want to use these commands, you must instead use the SQL-based Service
     Catalog driver.
 
-``keystone.conf`` example::
+``keystone.conf`` example:
+
+.. code-block:: ini
 
     [catalog]
     driver = keystone.catalog.backends.templated.Catalog
@@ -636,43 +702,6 @@ choosing the output levels and formats.
 .. _Paste: http://pythonpaste.org/
 .. _`Python logging module`: http://docs.python.org/library/logging.html
 
-Monitoring
-----------
-
-Keystone provides some basic request/response monitoring statistics out of the
-box.
-
-Enable data collection by defining a ``stats_monitoring`` filter and including
-it at the beginning of any desired WSGI pipelines::
-
-    [filter:stats_monitoring]
-    paste.filter_factory = keystone.contrib.stats:StatsMiddleware.factory
-
-    [pipeline:public_api]
-    pipeline = stats_monitoring [...] public_service
-
-Enable the reporting of collected data by defining a ``stats_reporting`` filter
-and including it near the end of your ``admin_api`` WSGI pipeline (After
-``*_body`` middleware and before ``*_extension`` filters is recommended)::
-
-    [filter:stats_reporting]
-    paste.filter_factory = keystone.contrib.stats:StatsExtension.factory
-
-    [pipeline:admin_api]
-    pipeline = [...] json_body stats_reporting ec2_extension [...] admin_service
-
-Query the admin API for statistics using:
-
-.. code-block:: bash
-
-    $ curl -H 'X-Auth-Token: ADMIN' http://localhost:35357/v2.0/OS-STATS/stats
-
-Reset collected data using:
-
-.. code-block:: bash
-
-    $ curl -H 'X-Auth-Token: ADMIN' -X DELETE http://localhost:35357/v2.0/OS-STATS/stats
-
 SSL
 ---
 
@@ -685,20 +714,11 @@ Here is the description of each of them and their purpose:
 Types of certificates
 ^^^^^^^^^^^^^^^^^^^^^
 
-cacert.pem
-    Certificate Authority chain to validate against.
-
-ssl_cert.pem
-    Public certificate for Keystone server.
-
-middleware.pem
-    Public and private certificate for Keystone middleware/client.
-
-cakey.pem
-    Private key for the CA.
-
-ssl_key.pem
-    Private key for the Keystone server.
+* ``cacert.pem``: Certificate Authority chain to validate against.
+* ``ssl_cert.pem``: Public certificate for Keystone server.
+* ``middleware.pem``: Public and private certificate for Keystone middleware/client.
+* ``cakey.pem``: Private key for the CA.
+* ``ssl_key.pem``: Private key for the Keystone server.
 
 Note that you may choose whatever names you want for these certificates, or combine
 the public/private keys in the same file if you wish.  These certificates are just
@@ -709,7 +729,9 @@ Configuration
 
 To enable SSL modify the etc/keystone.conf file accordingly
 under the [ssl] section.  SSL configuration example using the included sample
-certificates::
+certificates:
+
+.. code-block:: ini
 
     [ssl]
     enable = True
@@ -730,7 +752,9 @@ When generating SSL certificates the following values are read
 * ``key_size``: Key size to create. Defaults to 1024.
 * ``valid_days``: How long the certificate is valid for. Defaults to 3650 (10 years).
 * ``ca_key``: The private key for the CA. Defaults to ``/etc/keystone/ssl/certs/cakey.pem``.
-* ``cert_subject``: The subject to set in the certificate. Defaults to /C=US/ST=Unset/L=Unset/O=Unset/CN=localhost. When setting the subject it is important to set CN to be the address of the server so client validation will succeed. This generally means having the subject be at least /CN=<keystone ip>
+* ``cert_subject``: The subject to set in the certificate. Defaults to /C=US/ST=Unset/L=Unset/O=Unset/CN=localhost.
+  When setting the subject it is important to set CN to be the address of the server so client validation will
+  succeed. This generally means having the subject be at least /CN=<keystone ip>
 
 Generating SSL certificates
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -759,13 +783,15 @@ pipeline. This user crud filter allows users to use a HTTP PATCH to change
 their own password. To enable this extension you should define a
 user_crud_extension filter, insert it after the ``*_body`` middleware
 and before the ``public_service`` app in the public_api WSGI pipeline in
-``keystone-paste.ini`` e.g.::
+``keystone-paste.ini`` e.g.:
+
+.. code-block:: ini
 
     [filter:user_crud_extension]
     paste.filter_factory = keystone.contrib.user_crud:CrudExtension.factory
 
     [pipeline:public_api]
-    pipeline = stats_monitoring url_normalize token_auth admin_token_auth xml_body json_body debug ec2_extension user_crud_extension public_service
+    pipeline = url_normalize token_auth admin_token_auth xml_body json_body debug ec2_extension user_crud_extension public_service
 
 Each user can then change their own password with a HTTP PATCH :
 
@@ -781,9 +807,12 @@ deleted (if the backend used is SQL)
 Inherited Role Assignment Extension
 -----------------------------------
 
-Keystone provides an optional extension that adds the capability to assign roles to a domain that, rather than
-affect the domain itself, are instead inherited to all projects owned by that domain.  This extension is disabled by
-default, but can be enabled by including the following in ``keystone.conf``::
+Keystone provides an optional extension that adds the capability to assign
+roles to a domain that, rather than affect the domain itself, are instead
+inherited to all projects owned by that domain.  This extension is disabled by
+default, but can be enabled by including the following in ``keystone.conf``:
+
+.. code-block:: ini
 
     [os_inherit]
     enabled = True
@@ -800,7 +829,9 @@ means that if a token is stolen it will not be usable without also providing the
 external authentication.
 
 To activate token binding you must specify the types of authentication that
-token binding should be used for in ``keystone.conf`` e.g.::
+token binding should be used for in ``keystone.conf`` e.g.:
+
+.. code-block:: ini
 
     [token]
     bind = kerberos
@@ -818,7 +849,9 @@ should be set to one of the following modes:
 * ``required`` enable bind checking and require that at least 1 bind mechanism
   is used for tokens.
 * named enable bind checking and require that the specified authentication
-  mechanism is used. e.g.::
+  mechanism is used. e.g.:
+
+  .. code-block:: ini
 
     [token]
     enforce_token_bind = kerberos
@@ -834,7 +867,9 @@ returned in a collection, which is useful to prevent overly long response times
 for list queries that have not specified a sufficiently narrow filter. This
 limit can be set globally by setting ``list_limit`` in the default section of
 ``keystone.conf``, with no limit set by default.  Individual driver sections
-may override this global value with a specific limit, for example::
+may override this global value with a specific limit, for example:
+
+.. code-block:: ini
 
     [assignment]
     list_limit = 100
@@ -865,30 +900,32 @@ JSON policy file, the name and location of which is set in the main Keystone
 configuration file.
 
 Each Keystone v3 API has a line in the policy file which dictates what level
-of protection is applied to it, where each line is of the form:
+of protection is applied to it, where each line is of the form::
 
-<api name>: <rule statement> or <match statement>
+  <api name>: <rule statement> or <match statement>
 
-where
+where:
 
-<rule statement> can be contain <rule statement> or <match statement>
+``<rule statement>`` can contain ``<rule statement>`` or ``<match statement>``
 
-<match statement> is a set of identifiers that must match between the token
+``<match statement>`` is a set of identifiers that must match between the token
 provided by the caller of the API and the parameters or target entities of
 the API call in question. For example:
 
+.. code-block:: javascript
+
     "identity:create_user": [["role:admin", "domain_id:%(user.domain_id)s"]]
 
-indicates that to create a user you must have the admin role in your token and
+Indicates that to create a user you must have the admin role in your token and
 in addition the domain_id in your token (which implies this must be a domain
 scoped token) must match the domain_id in the user object you are trying to
 create.  In other words, you must have the admin role on the domain in which
 you are creating the user, and the token you are using must be scoped to that
 domain.
 
-Each component of a match statement is of the form:
+Each component of a match statement is of the form::
 
-<attribute from token>:<constant> or <attribute related to API call>
+  <attribute from token>:<constant> or <attribute related to API call>
 
 The following attributes are available
 
@@ -900,6 +937,8 @@ The following attributes are available
   string. Attributes of objects passed can be referenced using an
   object.attribute syntax (e.g. user.domain_id). The target objects of an
   API are also available using a target.object.attribute syntax.  For instance:
+
+  .. code-block:: javascript
 
     "identity:delete_user": [["role:admin", "domain_id:%(target.user.domain_id)s"]]
 
@@ -966,15 +1005,19 @@ Preparing your deployment
 Step 1: Configure keystone.conf
 -------------------------------
 
-Ensure that your ``keystone.conf`` is configured to use a SQL driver::
+Ensure that your ``keystone.conf`` is configured to use a SQL driver:
+
+.. code-block:: ini
 
     [identity]
     driver = keystone.identity.backends.sql.Identity
 
-You may also want to configure your ``[sql]`` settings to better reflect your
-environment::
+You may also want to configure your ``[database]`` settings to better reflect your
+environment:
 
-    [sql]
+.. code-block:: ini
+
+    [database]
     connection = sqlite:///keystone.db
     idle_timeout = 200
 
@@ -993,23 +1036,19 @@ You should now be ready to initialize your new database without error, using:
     $ keystone-manage db_sync
 
 To test this, you should now be able to start ``keystone-all`` and use the
-Keystone Client to list your tenants (which should successfully return an
+OpenStack Client to list your projects (which should successfully return an
 empty list from your new database):
 
 .. code-block:: bash
 
-    $ keystone --os-token ADMIN --os-endpoint http://127.0.0.1:35357/v2.0/ tenant-list
-    +----+------+---------+
-    | id | name | enabled |
-    +----+------+---------+
-    +----+------+---------+
+    $ openstack --os-token ADMIN --os-url http://127.0.0.1:35357/v2.0/ project list
 
 .. NOTE::
 
-    We're providing the default OS_SERVICE_TOKEN and OS_SERVICE_ENDPOINT values
-    from ``keystone.conf`` to connect to the Keystone service. If you changed
-    those values, or deployed Keystone to a different endpoint, you will need
-    to change the provided command accordingly.
+    We're providing the default OS_TOKEN and OS_URL values from ``keystone.conf``
+    to connect to the Keystone service. If you changed those values, or deployed
+    Keystone to a different endpoint, you will need to change the provided
+    command accordingly.
 
 Initializing Keystone
 =====================
@@ -1017,10 +1056,13 @@ Initializing Keystone
 ``keystone-manage`` is designed to execute commands that cannot be administered
 through the normal REST API. At the moment, the following calls are supported:
 
-* ``db_sync``: Sync the database schema.
-* ``pki_setup``: Initialize the certificates for PKI based tokens.
-* ``purge_mapping``: Purge user and group public ID mappings.
-* ``ssl_setup``: Generate certificates for HTTPS.
+* ``db_sync``: Sync the database.
+* ``db_version``: Print the current migration version of the database.
+* ``mapping_purge``: Purge the identity mapping table.
+* ``pki_setup``: Initialize the certificates used to sign tokens.
+* ``saml_idp_metadata``: Generate identity provider metadata.
+* ``ssl_setup``: Generate certificates for SSL.
+* ``token_flush``: Purge expired tokens
 
 Invoking ``keystone-manage`` by itself will give you additional usage
 information.
@@ -1031,12 +1073,29 @@ prevents unauthorized users from spuriously signing tokens.
 be running the Keystone service to ensure proper ownership for the private key
 file and the associated certificates.
 
-Adding Users, Tenants, and Roles with python-keystoneclient
-===========================================================
+Adding Users, Projects, and Roles via Command Line Interfaces
+=============================================================
 
-User, tenants, and roles must be administered using admin credentials.
-There are two ways to configure ``python-keystoneclient`` to use admin
-credentials, using the either an existing token or password credentials.
+Keystone APIs are protected by the rules in the policy file. The default policy
+rules require admin credentials to administer ``users``, ``projects``, and
+``roles``. See section `Keystone API protection with Role Based Access Control (RBAC)`_
+for more details on policy files.
+
+The Keystone command line interface packaged in `python-keystoneclient`_ only
+supports the Identity v2.0 API. The OpenStack common command line interface
+packaged in `python-openstackclient`_  supports both v2.0 and v3 APIs.
+
+With both command line interfaces there are two ways to configure the client to
+use admin credentials, using either an existing token or password credentials.
+
+.. NOTE::
+
+    As of the Juno release, it is recommended to use ``python-openstackclient``,
+    as it supports both v2.0 and v3 APIs. For the purpose of backwards compatibility,
+    the CLI packaged in ``python-keystoneclient`` is not being removed.
+
+.. _`python-openstackclient`: http://docs.openstack.org/developer/python-openstackclient/
+.. _`python-keystoneclient`: http://docs.openstack.org/developer/python-keystoneclient/
 
 Authenticating with a Token
 ---------------------------
@@ -1046,11 +1105,11 @@ Authenticating with a Token
     If your Keystone deployment is brand new, you will need to use this
     authentication method, along with your ``[DEFAULT] admin_token``.
 
-To use Keystone with a token, set the following flags:
+To authenticate with Keystone using a token and ``python-openstackclient``, set
+the following flags.
 
-* ``--os-endpoint OS_SERVICE_ENDPOINT``: allows you to specify the Keystone endpoint
-  to communicate with. The default endpoint is ``http://localhost:35357/v2.0``
-* ``--os-token OS_SERVICE_TOKEN``: your service token
+* ``--os-url OS_URL``: Keystone endpoint the user communicates with
+* ``--os-token OS_TOKEN``: User's service token
 
 To administer a Keystone endpoint, your token should be either belong to a user
 with the ``admin`` role, or, if you haven't created one yet, should be equal to
@@ -1061,20 +1120,27 @@ to be passed as arguments each time:
 
 .. code-block:: bash
 
-    $ export OS_SERVICE_ENDPOINT=http://localhost:35357/v2.0
-    $ export OS_SERVICE_TOKEN=ADMIN
+    $ export OS_URL=http://localhost:35357/v2.0
+    $ export OS_TOKEN=ADMIN
+
+Instead of ``python-openstackclient``, if using ``python-keystoneclient``,
+set the following:
+
+* ``--os-endpoint OS_SERVICE_ENDPOINT``: equivalent to ``--os-url OS_URL``
+* ``--os-service-token OS_SERVICE_TOKEN``: equivalent to ``--os-token OS_TOKEN``
+
 
 Authenticating with a Password
 ------------------------------
 
-To administer a Keystone endpoint, the following user referenced below should
+To authenticate with Keystone using a password and ``python-openstackclient``, set
+the following flags, note that the following user referenced below should
 be granted the ``admin`` role.
 
-* ``--os_username OS_USERNAME``: Name of your user
-* ``--os_password OS_PASSWORD``: Password for your user
-* ``--os_tenant_name OS_TENANT_NAME``: Name of your tenant
-* ``--os_auth_url OS_AUTH_URL``: URL of your Keystone auth server, e.g.
-  ``http://localhost:35357/v2.0``
+* ``--os-username OS_USERNAME``: Name of your user
+* ``--os-password OS_PASSWORD``: Password for your user
+* ``--os-project-name OS_PROJECT_NAME``: Name of your project
+* ``--os-auth-url OS_AUTH_URL``: URL of the Keystone authentication server
 
 You can also set these variables in your environment so that they do not need
 to be passed as arguments each time:
@@ -1083,316 +1149,59 @@ to be passed as arguments each time:
 
     $ export OS_USERNAME=my_username
     $ export OS_PASSWORD=my_password
-    $ export OS_TENANT_NAME=my_tenant
+    $ export OS_PROJECT_NAME=my_project
+    $ export OS_AUTH_URL=http://localhost:35357/v2.0
+
+If using ``python-keystoneclient``, set the following instead:
+
+* ``--os-tenant-name OS_TENANT_NAME``: equivalent to ``--os-project-name OS_PROJECT_NAME``
+
 
 Example usage
 -------------
 
-``keystone`` is set up to expect commands in the general form of
-``keystone`` ``command`` ``argument``, followed by flag-like keyword arguments to
-provide additional (often optional) information. For example, the command
-``user-list`` and ``tenant-create`` can be invoked as follows:
+``python-openstackclient`` is set up to expect commands in the general form of:
 
 .. code-block:: bash
 
-    # Using token auth env variables
-    $ export OS_SERVICE_ENDPOINT=http://127.0.0.1:35357/v2.0/
-    $ export OS_SERVICE_TOKEN=secrete_token
-    $ keystone user-list
-    $ keystone tenant-create --name=demo
+  $ openstack [<global-options>] <object-1> <action> [<object-2>] [<command-arguments>]
 
-    # Using token auth flags
-    $ keystone --os-token=secrete --os-endpoint=http://127.0.0.1:35357/v2.0/ user-list
-    $ keystone --os-token=secrete --os-endpoint=http://127.0.0.1:35357/v2.0/ tenant-create --name=demo
+For example, the commands ``user list`` and ``project create`` can be invoked
+as follows:
 
-    # Using user + password + tenant_name env variables
+.. code-block:: bash
+
+    # Using token authentication, with environment variables
+    $ export OS_URL=http://127.0.0.1:35357/v2.0/
+    $ export OS_TOKEN=secrete_token
+    $ openstack user list
+    $ openstack project create demo
+
+    # Using token authentication, with flags
+    $ openstack --os-token=secrete --os-url=http://127.0.0.1:35357/v2.0/ user list
+    $ openstack --os-token=secrete --os-url=http://127.0.0.1:35357/v2.0/ project create demo
+
+    # Using password authentication, with environment variables
     $ export OS_USERNAME=admin
     $ export OS_PASSWORD=secrete
-    $ export OS_TENANT_NAME=admin
-    $ keystone user-list
-    $ keystone tenant-create --name=demo
-
-    # Using user + password + tenant_name flags
-    $ keystone --os_username=admin --os_password=secrete --os_tenant_name=admin user-list
-    $ keystone --os_username=admin --os_password=secrete --os_tenant_name=admin tenant-create --name=demo
-
-Tenants
--------
-
-Tenants are the high level grouping within Keystone that represent groups of
-users. A tenant is the grouping that owns virtual machines within Nova, or
-containers within Swift. A tenant can have zero or more users, Users can
-be associated with more than one tenant, and each tenant - user pairing can
-have a role associated with it.
-
-``tenant-create``
-^^^^^^^^^^^^^^^^^
-
-keyword arguments
-
-* name
-* description (optional, defaults to None)
-* enabled (optional, defaults to True)
-
-example:
-
-.. code-block:: bash
-
-    $ keystone tenant-create --name=demo
-
-creates a tenant named "demo".
-
-``tenant-delete``
-^^^^^^^^^^^^^^^^^
-
-arguments
-
-* tenant_id
-
-example:
-
-.. code-block:: bash
-
-    $ keystone tenant-delete f2b7b39c860840dfa47d9ee4adffa0b3
-
-Users
------
-
-``user-create``
-^^^^^^^^^^^^^^^
-
-keyword arguments
-
-* name
-* pass
-* email
-* tenant_id (optional, defaults to None)
-* enabled (optional, defaults to True)
-
-example:
-
-.. code-block:: bash
-
-    $ keystone user-create
-    --name=admin \
-    --pass=secrete \
-    --tenant_id=2395953419144b67955ac4bab96b8fd2 \
-    --email=admin@example.com
-
-``user-delete``
-^^^^^^^^^^^^^^^
-
-keyword arguments
-
-* user_id
-
-example:
-
-.. code-block:: bash
-
-    $ keystone user-delete f2b7b39c860840dfa47d9ee4adffa0b3
-
-``user-list``
-^^^^^^^^^^^^^
-
-list users in the system, optionally by a specific tenant (identified by tenant_id)
-
-arguments
-
-* tenant_id (optional, defaults to None)
-
-example:
-
-.. code-block:: bash
-
-    $ keystone user-list
-
-``user-update``
-^^^^^^^^^^^^^^^^^^^^^
-
-arguments
-
-* user_id
-
-keyword arguments
-
-* name     Desired new user name (Optional)
-* email    Desired new email address (Optional)
-* enabled <true|false>   Enable or disable user (Optional)
-
-
-example:
-
-.. code-block:: bash
-
-    $ keystone user-update 03c84b51574841ba9a0d8db7882ac645 --email=newemail@example.com
-
-``user-password-update``
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-arguments
-
-* user_id
-* password
-
-example:
-
-.. code-block:: bash
-
-    $ keystone user-password-update --pass foo 03c84b51574841ba9a0d8db7882ac645
-
-Roles
------
-
-``role-create``
-^^^^^^^^^^^^^^^
-
-arguments
-
-* name
-
-example:
-
-.. code-block:: bash
-
-    $ keystone role-create --name=demo
-
-``role-delete``
-^^^^^^^^^^^^^^^
-
-arguments
-
-* role_id
-
-example:
-
-.. code-block:: bash
-
-    $ keystone role-delete 19d1d3344873464d819c45f521ff9890
-
-``role-list``
-^^^^^^^^^^^^^
-
-example:
-
-.. code-block:: bash
-
-    $ keystone role-list
-
-``role-get``
-^^^^^^^^^^^^
-
-arguments
-
-* role_id
-
-example:
-
-.. code-block:: bash
-
-    $ keystone role-get 19d1d3344873464d819c45f521ff9890
-
-
-``user-role-add``
-^^^^^^^^^^^^^^^^^
-
-keyword arguments
-
-* user <user-id>
-* role <role-id>
-* tenant_id <tenant-id>
-
-example:
-
-.. code-block:: bash
-
-    $ keystone user-role-add  \
-      --user=96a6ebba0d4c441887aceaeced892585  \
-      --role=f8dd5a2e4dc64a41b96add562d9a764e  \
-      --tenant_id=2395953419144b67955ac4bab96b8fd2
-
-``user-role-remove``
-^^^^^^^^^^^^^^^^^^^^
-
-keyword arguments
-
-* user <user-id>
-* role <role-id>
-* tenant_id <tenant-id>
-
-example:
-
-.. code-block:: bash
-
-    $ keystone user-role-remove  \
-      --user=96a6ebba0d4c441887aceaeced892585  \
-      --role=f8dd5a2e4dc64a41b96add562d9a764e  \
-      --tenant_id=2395953419144b67955ac4bab96b8fd2
-
-Services
---------
-
-``service-create``
-^^^^^^^^^^^^^^^^^^
-
-keyword arguments
-
-* name
-* type
-* description
-
-example:
-
-.. code-block:: bash
-
-    $ keystone service-create \
-    --name=nova \
-    --type=compute \
-    --description="Nova Compute Service"
-
-``service-list``
-^^^^^^^^^^^^^^^^
-
-arguments
-
-* service_id
-
-example:
-
-.. code-block:: bash
-
-    $ keystone service-list
-
-``service-get``
-^^^^^^^^^^^^^^^
-
-arguments
-
-* service_id
-
-example:
-
-.. code-block:: bash
-
-    $ keystone service-get 08741d8ed88242ca88d1f61484a0fe3b
-
-``service-delete``
-^^^^^^^^^^^^^^^^^^
-
-arguments
-
-* service_id
-
-example:
-
-.. code-block:: bash
-
-    $ keystone service-delete 08741d8ed88242ca88d1f61484a0fe3b
-
+    $ export OS_PROJECT_NAME=admin
+    $ export OS_AUTH_URL=http://localhost:35357/v2.0
+    $ openstack user list
+    $ openstack project create demo
+
+    # Using password authentication, with flags
+    $ openstack --os-username=admin --os-password=secrete --os-project-name=admin --os-auth-url=http://localhost:35357/v2.0 user list
+    $ openstack --os-username=admin --os-password=secrete --os-project-name=admin --os-auth-url=http://localhost:35357/v2.0 project create demo
+
+For additional examples using ``python-keystoneclient`` refer to `python-keystoneclient examples`_,
+likewise, for additional examples using ``python-openstackclient``, refer to `python-openstackclient examples`_.
+
+.. _`python-keystoneclient examples`: cli_examples.html#using-python-keystoneclient-v2-0
+.. _`python-openstackclient examples`: cli_examples.html#using-python-openstackclient-v3
 
 
 Removing Expired Tokens
-===========================================================
+=======================
 
 In the SQL backend expired tokens are not automatically removed. These tokens
 can be removed with:
@@ -1406,7 +1215,7 @@ is unnecessary and if attempted will fail with a NotImplemented error.
 
 
 Configuring the LDAP Identity Provider
-===========================================================
+======================================
 
 As an alternative to the SQL Database backing store, Keystone can use a
 directory server to provide the Identity service.  An example Schema
@@ -1433,7 +1242,9 @@ for OpenStack would look like this::
   objectClass: organizationalUnit
   ou: roles
 
-The corresponding entries in the Keystone configuration file are::
+The corresponding entries in the Keystone configuration file are:
+
+.. code-block:: ini
 
   [ldap]
   url = ldap://localhost
@@ -1459,7 +1270,9 @@ preexisting, more complex schema.  For example,  in the user object,  the
 objectClass posixAccount from RFC2307 is very common.  If this is the
 underlying objectclass, then the *uid* field should probably be *uidNumber* and
 *username* field either *uid* or *cn*.  To change these two fields,  the
-corresponding entries in the Keystone configuration file are::
+corresponding entries in the Keystone configuration file are:
+
+.. code-block:: ini
 
   [ldap]
   user_id_attribute = uidNumber
@@ -1469,7 +1282,9 @@ corresponding entries in the Keystone configuration file are::
 There is a set of allowed actions per object type that you can modify
 depending on your specific deployment. For example, the users are managed by
 another tool and you have only read access, in such case the configuration
-is::
+is:
+
+.. code-block:: ini
 
   [ldap]
   user_allow_create = False
@@ -1486,7 +1301,9 @@ is::
 
 There are some configuration options for filtering users, tenants and roles,
 if the backend is providing too much output, in such case the configuration
-will look like::
+will look like:
+
+.. code-block:: ini
 
   [ldap]
   user_filter = (memberof=CN=openstack-users,OU=workgroups,DC=openstack,DC=org)
@@ -1495,7 +1312,9 @@ will look like::
 
 In case that the directory server does not have an attribute enabled of type
 boolean for the user, there is several configuration parameters that can be used
-to extract the value from an integer attribute like in Active Directory::
+to extract the value from an integer attribute like in Active Directory:
+
+.. code-block:: ini
 
   [ldap]
   user_enabled_attribute = userAccountControl
@@ -1515,7 +1334,9 @@ status like password expiration. Last setting *user_enabled_mask* is needed in o
 to create a default value on the integer attribute (512 = NORMAL ACCOUNT on AD)
 
 In case of Active Directory the classes and attributes could not match the
-specified classes in the LDAP module so you can configure them like::
+specified classes in the LDAP module so you can configure them like:
+
+.. code-block:: ini
 
   [ldap]
   user_objectclass          = person
@@ -1544,7 +1365,9 @@ Debugging LDAP
 
 For additional information on LDAP connections, performance (such as slow
 response time), or field mappings, setting ``debug_level`` in the [ldap]
-section is used to enable debugging::
+section is used to enable debugging:
+
+.. code-block:: ini
 
   debug_level = 4095
 
@@ -1567,7 +1390,9 @@ flags to True. Then the attributes ``user_enabled_emulation_dn`` and
 and projects (tenants) are selected.  These attributes work by using a
 ``groupOfNames`` and adding whichever users or projects (tenants) that
 you want enabled to the respective group. For example, this will
-mark any user who is a member of ``enabled_users`` as enabled::
+mark any user who is a member of ``enabled_users`` as enabled:
+
+.. code-block:: ini
 
   [ldap]
   user_enabled_emulation = True
@@ -1588,7 +1413,9 @@ basic configuration options for enabling TLS, identifying a single
 file or directory that contains certificates for all the Certificate
 Authorities that the Keystone LDAP client will recognize, and declaring
 what checks the client should perform on server certificates.  This
-functionality can easily be configured as follows::
+functionality can easily be configured as follows:
+
+.. code-block:: ini
 
   [ldap]
   use_tls = True
@@ -1618,7 +1445,9 @@ entities (which comprises users, groups, and group memberships) to be
 served out of directories while assignments (which comprises projects, roles,
 role assignments, and domains) are to be served from a different Keystone
 backend (i.e. SQL). To enable this option, you must have the following
-``keystone.conf`` options set::
+``keystone.conf`` options set:
+
+.. code-block:: ini
 
   [identity]
   driver = keystone.identity.backends.ldap.Identity
@@ -1637,7 +1466,9 @@ the options as shown above will always be correct.  Finally, it is also
 worth noting that whether or not the LDAP accessible directory is to be
 considered read only is still configured as described in a previous section
 above by setting values such as the following in the ``[ldap]`` configuration
-section::
+section:
+
+.. code-block:: ini
 
   [ldap]
   user_allow_create = False
@@ -1673,7 +1504,9 @@ the connection with provided creds and works reliably in end user password
 change case. When ``use_pool`` is false (disabled), then auth pool
 configuration is also not used.
 
-Connection pool configuration is added in ``[ldap]`` configuration section::
+Connection pool configuration is added in ``[ldap]`` configuration section:
+
+.. code-block:: ini
 
   [ldap]
   # Enable LDAP connection pooling. (boolean value)

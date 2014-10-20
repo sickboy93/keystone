@@ -536,7 +536,8 @@ class RoleApi(common_ldap.BaseLdap):
                 raise Exception(_("Role %s not found") % (role_id,))
 
             attrs = [('objectClass', [self.object_class]),
-                     (self.member_attribute, [user_dn])]
+                     (self.member_attribute, [user_dn]),
+                     (self.id_attr, [role_id])]
 
             if self.use_dumb_member:
                 attrs[1][1].append(self.dumb_member)
@@ -594,6 +595,7 @@ class RoleApi(common_ldap.BaseLdap):
             # element is the first segment.
             # For a role assignment, this contains the role ID,
             # The remainder is the DN of the tenant.
+            # role_dn is already utf8 encoded since it came from LDAP.
             tenant = ldap.dn.str2dn(role_dn)
             tenant.pop(0)
             tenant_dn = ldap.dn.dn2str(tenant)
@@ -626,6 +628,7 @@ class RoleApi(common_ldap.BaseLdap):
             # element is the first RDN.
             # For a role assignment, this contains the role ID,
             # the remainder is the DN of the project.
+            # role_dn is already utf8 encoded since it came from LDAP.
             project = ldap.dn.str2dn(role_dn)
             project.pop(0)
             project_dn = ldap.dn.dn2str(project)
@@ -662,6 +665,7 @@ class RoleApi(common_ldap.BaseLdap):
             roles = []
         res = []
         for role_dn, role in roles:
+            # role_dn is already utf8 encoded since it came from LDAP.
             tenant = ldap.dn.str2dn(role_dn)
             tenant.pop(0)
             # It obtains the tenant DN to construct the UserRoleAssociation

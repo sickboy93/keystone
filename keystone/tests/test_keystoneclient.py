@@ -17,11 +17,11 @@ import os
 import uuid
 
 import mock
+from oslo.serialization import jsonutils
 from oslo.utils import timeutils
 import webob
 
 from keystone import config
-from keystone.openstack.common import jsonutils
 from keystone import tests
 from keystone.tests import default_fixtures
 from keystone.tests.ksfixtures import appserver
@@ -1084,6 +1084,12 @@ class KeystoneClientTests(object):
 
 class KcMasterTestCase(CompatTestCase, KeystoneClientTests):
     checkout_info = (KEYSTONECLIENT_REPO, 'master')
+
+    def setUp(self):
+        if os.environ.get('KSCTEST_PATH'):
+            self.skip('KSCTEST_PATH env set, running tests with local '
+                      'client instead.')
+        super(KcMasterTestCase, self).setUp()
 
 
 class KcOptTestCase(KcMasterTestCase):

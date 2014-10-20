@@ -60,12 +60,14 @@
 #admin_endpoint=<None>
 
 # The number of worker processes to serve the public WSGI
-# application (integer value)
-#public_workers=1
+# application. Defaults to number of CPUs (minimum of 2).
+# (integer value)
+#public_workers=<None>
 
 # The number of worker processes to serve the admin WSGI
-# application (integer value)
-#admin_workers=1
+# application. Defaults to number of CPUs (minimum of 2).
+# (integer value)
+#admin_workers=<None>
 
 # Enforced by optional sizelimit middleware
 # (keystone.middleware:RequestBodySizeLimiter). (integer
@@ -79,17 +81,16 @@
 # token values. (integer value)
 #max_token_size=8192
 
-# During a SQL upgrade member_role_id will be used to create a
-# new role that will replace records in the assignment table
-# with explicit role grants. After migration, the
-# member_role_id will be used in the API add_user_to_project.
-# (string value)
+# Similar to the member_role_name option, this represents the
+# default role ID used to associate users with their default
+# projects in the v2 API. This will be used as the explicit
+# role where one is not specified by the v2 API. (string
+# value)
 #member_role_id=9fe2ff9ee4384b1894a90878d3e92bab
 
-# During a SQL upgrade member_role_name will be used to create
-# a new role that will replace records in the assignment table
-# with explicit role grants. After migration, member_role_name
-# will be ignored. (string value)
+# This is the role name used in combination with the
+# member_role_id option; see that option for more detail.
+# (string value)
 #member_role_name=_member_
 
 # The value passed as the keyword "rounds" to passlib's
@@ -505,10 +506,10 @@
 #expiration_time=600
 
 # Dogpile.cache backend module. It is recommended that
-# Memcache (dogpile.cache.memcached) or Redis
-# (dogpile.cache.redis) be used in production deployments.
-# Small workloads (single process) like devstack can use the
-# dogpile.cache.memory backend. (string value)
+# Memcache with pooling (keystone.cache.memcache_pool) or
+# Redis (dogpile.cache.redis) be used in production
+# deployments.  Small workloads (single process) like devstack
+# can use the dogpile.cache.memory backend. (string value)
 #backend=keystone.common.cache.noop
 
 # Arguments supplied to the backend module. Specify this
@@ -531,6 +532,35 @@
 # with the keys/values.  Typically this should be left set to
 # false. (boolean value)
 #debug_cache_backend=false
+
+# Memcache servers in the format of "host:port".
+# (dogpile.cache.memcache and keystone.cache.memcache_pool
+# backends only). (list value)
+#memcache_servers=localhost:11211
+
+# Number of seconds memcached server is considered dead before
+# it is tried again. (dogpile.cache.memcache and
+# keystone.cache.memcache_pool backends only). (integer value)
+#memcache_dead_retry=300
+
+# Timeout in seconds for every call to a server.
+# (dogpile.cache.memcache and keystone.cache.memcache_pool
+# backends only). (integer value)
+#memcache_socket_timeout=3
+
+# Max total number of open connections to every memcached
+# server. (keystone.cache.memcache_pool backend only).
+# (integer value)
+#memcache_pool_maxsize=10
+
+# Number of seconds a connection to memcached is held unused
+# in the pool before it is closed.
+# (keystone.cache.memcache_pool backend only). (integer value)
+#memcache_pool_unused_timeout=60
+
+# Number of seconds that an operation will wait to get a
+# memcache client connection. (integer value)
+#memcache_pool_connection_get_timeout=10
 
 
 [catalog]
@@ -558,6 +588,13 @@
 # Maximum number of entities that will be returned in a
 # catalog collection. (integer value)
 #list_limit=<None>
+
+# (Deprecated) List of possible substitutions for use in
+# formatting endpoints. Use caution when modifying this list.
+# It will give users with permission to create endpoints the
+# ability to see those values in your configuration file. This
+# option will be removed in Juno. (list value)
+#endpoint_substitution_whitelist=tenant_id,user_id,public_bind_host,admin_bind_host,compute_host,compute_port,admin_port,public_port,public_endpoint,admin_endpoint
 
 
 [credential]
@@ -1203,10 +1240,33 @@
 # Memcache servers in the format of "host:port". (list value)
 #servers=localhost:11211
 
-# Number of compare-and-set attempts to make when using
-# compare-and-set in the token memcache back end. (integer
-# value)
-#max_compare_and_set_retry=16
+# Number of seconds memcached server is considered dead before
+# it is tried again. This is used by the key value store
+# system (e.g. token pooled memcached persistence backend).
+# (integer value)
+#dead_retry=300
+
+# Timeout in seconds for every call to a server. This is used
+# by the key value store system (e.g. token pooled memcached
+# persistence backend). (integer value)
+#socket_timeout=3
+
+# Max total number of open connections to every memcached
+# server. This is used by the key value store system (e.g.
+# token pooled memcached persistence backend). (integer value)
+#pool_maxsize=10
+
+# Number of seconds a connection to memcached is held unused
+# in the pool before it is closed. This is used by the key
+# value store system (e.g. token pooled memcached persistence
+# backend). (integer value)
+#pool_unused_timeout=60
+
+# Number of seconds that an operation will wait to get a
+# memcache client connection. This is used by the key value
+# store system (e.g. token pooled memcached persistence
+# backend). (integer value)
+#pool_connection_get_timeout=10
 
 
 [oauth1]
@@ -1438,16 +1498,6 @@
 # SSL certificate subject (auto generated certificate).
 # (string value)
 #cert_subject=/C=US/ST=Unset/L=Unset/O=Unset/CN=localhost
-
-
-[stats]
-
-#
-# Options defined in keystone
-#
-
-# Stats backend driver. (string value)
-#driver=keystone.contrib.stats.backends.kvs.Stats
 
 
 [token]

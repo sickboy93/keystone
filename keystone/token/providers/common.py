@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from oslo.serialization import jsonutils
 from oslo.utils import timeutils
 import six
 from six.moves.urllib import parse
@@ -21,7 +22,6 @@ from keystone import config
 from keystone.contrib import federation
 from keystone import exception
 from keystone.i18n import _
-from keystone.openstack.common import jsonutils
 from keystone.openstack.common import log
 from keystone import token
 from keystone.token import provider
@@ -221,7 +221,9 @@ class V3TokenDataHelper(object):
         if CONF.trust.enabled and trust and 'OS-TRUST:trust' not in token_data:
             trustor_user_ref = (self.identity_api.get_user(
                                 trust['trustor_user_id']))
-            if not trustor_user_ref['enabled']:
+            try:
+                self.identity_api.assert_user_enabled(trust['trustor_user_id'])
+            except AssertionError:
                 raise exception.Forbidden(_('Trustor is disabled.'))
             if trust['impersonation']:
                 user_ref = trustor_user_ref

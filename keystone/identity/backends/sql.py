@@ -14,6 +14,7 @@
 
 from keystone.common import sql
 from keystone.common import utils
+from keystone import config
 from keystone import exception
 from keystone.i18n import _
 from keystone import identity
@@ -21,6 +22,9 @@ from keystone import identity
 # Import assignment sql to ensure that the models defined in there are
 # available for the reference from User and Group to Domain.id.
 from keystone.assignment.backends import sql as assignment_sql  # noqa
+
+
+CONF = config.CONF
 
 
 class User(sql.ModelBase, sql.DictBase):
@@ -72,15 +76,21 @@ class UserGroupMembership(sql.ModelBase, sql.DictBase):
 
 
 class Identity(identity.Driver):
+    # NOTE(henry-nash): Override the __init__() method so as to take a
+    # config parameter to enable sql to be used as a domain-specific driver.
+    def __init__(self, conf=None):
+        super(Identity, self).__init__()
+
     def default_assignment_driver(self):
         return "keystone.assignment.backends.sql.Assignment"
+
+    @property
+    def is_sql(self):
+        return True
 
     def _check_password(self, password, user_ref):
         """Check the specified password against the data store.
 
-        This is modeled on ldap/core.py.  The idea is to make it easier to
-        subclass Identity so that you can still use it to store all the data,
-        but use some other means to check the password.
         Note that we'll pass in the entire user_ref in case the subclass
         needs things like user_ref.get('name')
         For further justification, please see the follow up suggestion at

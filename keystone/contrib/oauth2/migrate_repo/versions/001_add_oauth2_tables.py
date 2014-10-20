@@ -60,6 +60,7 @@ def upgrade(migrate_engine):
 
     access_token_table = sql.Table(
         'access_token_oauth2',
+        meta,
         sql.Column('id', sql.String(64), primary_key=True, nullable=False),
         sql.Column('consumer_id', sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
                              nullable=False, index=True),

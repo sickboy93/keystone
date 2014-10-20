@@ -1,5 +1,3 @@
-# Copyright 2012 OpenStack Foundation
-#
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
@@ -12,4 +10,18 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from keystone.contrib.stats.core import *  # noqa
+from keystone.common import config
+from keystone.token.persistence.backends import memcache
+
+
+CONF = config.CONF
+
+
+class Token(memcache.Token):
+    memcached_backend = 'pooled_memcached'
+
+    def __init__(self, *args, **kwargs):
+        for arg in ('dead_retry', 'socket_timeout', 'pool_maxsize',
+                    'pool_unused_timeout', 'pool_connection_get_timeout'):
+            kwargs[arg] = getattr(CONF.memcache, arg)
+        super(Token, self).__init__(*args, **kwargs)

@@ -23,6 +23,7 @@ import hashlib
 import os
 import pwd
 
+from oslo.serialization import jsonutils
 from oslo.utils import strutils
 import passlib.hash
 import six
@@ -32,7 +33,6 @@ from keystone.common import config
 from keystone.common import environment
 from keystone import exception
 from keystone.i18n import _
-from keystone.openstack.common import jsonutils
 from keystone.openstack.common import log
 
 
@@ -491,7 +491,7 @@ def set_permissions(path, mode=None, user=None, group=None, log=None):
 def make_dirs(path, mode=None, user=None, group=None, log=None):
     '''Assure directory exists, set ownership and permissions.
 
-    Assure the directory exists and optionally set it's ownership
+    Assure the directory exists and optionally set its ownership
     and permissions.
 
     Each of the mode, user and group are optional, if None then
@@ -526,3 +526,15 @@ def make_dirs(path, mode=None, user=None, group=None, log=None):
             raise EnvironmentError("makedirs('%s'): %s" % (path, exc.strerror))
 
     set_permissions(path, mode, user, group, log)
+
+
+class WhiteListedItemFilter(object):
+
+    def __init__(self, whitelist, data):
+        self._whitelist = set(whitelist or [])
+        self._data = data
+
+    def __getitem__(self, name):
+        if name not in self._whitelist:
+            raise KeyError
+        return self._data[name]

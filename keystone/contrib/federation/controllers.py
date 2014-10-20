@@ -262,8 +262,7 @@ class Auth(auth_controllers.Auth):
         :returns: SAML Assertion based on properties from the token
         """
 
-        issuer = wsgi.Application.base_url(context, 'public')
-
+        issuer = CONF.saml.idp_entity_id
         region_id = auth['scope']['region']['id']
         region = self.catalog_api.get_region(region_id)
         recipient = region['url']
@@ -339,7 +338,7 @@ class SAMLMetadataV3(_ControllerBase):
     member_name = 'metadata'
 
     def get_metadata(self, context):
-        metadata_path = CONF.federation.idp_metadata_path
+        metadata_path = CONF.saml.idp_metadata_path
         try:
             with open(metadata_path, 'r') as metadata_handler:
                 metadata = metadata_handler.read()

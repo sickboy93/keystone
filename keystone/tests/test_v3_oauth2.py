@@ -12,18 +12,13 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import uuid
-
+import base64
 import copy
 import json
 import urlparse
 import uuid
-import mock
 
-from keystone import auth
 from keystone import config
-from keystone import exception
-from keystone import tests
 from keystone.contrib.oauth2 import core
 from keystone.tests import test_v3
 # TODO(garcianavalon) remove the request_oauthlib dependency
@@ -222,10 +217,10 @@ class OAuth2FlowTests(OAuth2Tests):
 
     def _http_basic(self,consumer_id,consumer_secret):
         auth_string = consumer_id + ':' + consumer_secret
-        return 'Basic ' + auth_string.encode('base64')
+        return 'Basic ' + base64.b64encode(auth_string)
 
     def _generate_urlencoded_request(self,authorization_code,consumer_id,consumer_secret):
-        # No use for now, keystone only accepts JSON bodys
+        # NOTE(garcianavalon) No use for now, keystone only accepts JSON bodies
         body = 'grant_type=authorization_code&code=%s&redirect_uri=%s' %authorization_code,self.DEFAULT_REDIRECT_URIS[0]
         headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
@@ -266,17 +261,16 @@ class OAuth2FlowTests(OAuth2Tests):
     def test_obtain_access_token(self):
         # TODO(garcianavalon) test all the stuff
         response = self._obtain_access_token()
-        json_response = json.loads(response.result)
-        self.assertIsNotNone(json_response['access_token'])
-        self.assertIsNotNone(json_response['token_type'])
-        self.assertIsNotNone(json_response['expires_in'])
-        self.assertIsNotNone(json_response['scope'])
+        access_token = response.result
 
-        scope = json_response['scope']
+        self.assertIsNotNone(access_token['access_token'])
+        self.assertIsNotNone(access_token['token_type'])
+        self.assertIsNotNone(access_token['expires_in'])
+
+        scope = response.result['scope']
         self.assertEqual(scope,self.DEFAULT_SCOPES[0])
 
-    def _exchange_access_token_for_keystone_token(self):
-        token_data = json.loads(self._obtain_access_token().result)
+    def _auth_body(self, access_token, project=None):
         body = {
             "auth": {
                 "identity": {  
@@ -284,19 +278,36 @@ class OAuth2FlowTests(OAuth2Tests):
                         "oauth2"
                     ],
                     "oauth2": {
-                        'access_token_id':token_data['access_token'],
-                        'project_id':self.project_id
+                        'access_token_id':access_token['access_token']
                     },
                 }
             }
         }
-        # POST to the auth url to get a keystone token
-        return self.post('/auth/tokens',body=body)
+        if project:
+            body['auth']['scope'] = {
+                "project": {
+                    "id": project
+                }
+            }
+        return body
 
-    def test_exchange_access_token_for_keystone_token(self):
-        response = self._exchange_access_token_for_keystone_token()
+    def _exchange_access_token_assertions(self, response):
         token = json.loads(response.body)['token']
-        self.assertEqual(token['project']['id'],self.project_id)
+        #self.assertEqual(token['project']['id'],self.project_id)
         self.assertEqual(token['user']['id'],self.user_id)
         self.assertEqual(token['methods'],["oauth2"])
         self.assertIsNotNone(token['expires_at'])
+
+    def test_auth_with_access_token_no_scope(self):
+        access_token = self._obtain_access_token().result
+        body = self._auth_body(access_token)
+        # POST to the auth url to get a keystone token
+        response = self.post('/auth/tokens',body=body)
+        self._exchange_access_token_assertions(response)
+
+    def test_auth_with_access_token_with_scope(self):
+        access_token = self._obtain_access_token().result
+        body = self._auth_body(access_token, project=self.project_id)
+        # POST to the auth url to get a keystone token
+        response = self.post('/auth/tokens',body=body)
+        self._exchange_access_token_assertions(response)

@@ -17,6 +17,7 @@ import uuid
 
 from lxml import etree
 import mock
+from oslo.serialization import jsonutils
 from oslotest import mockpatch
 import saml2
 from saml2 import saml
@@ -32,7 +33,6 @@ from keystone.contrib.federation import idp as keystone_idp
 from keystone.contrib.federation import utils as mapping_utils
 from keystone import exception
 from keystone import notifications
-from keystone.openstack.common import jsonutils
 from keystone.openstack.common import log
 from keystone.tests import federation_fixtures
 from keystone.tests import mapping_fixtures
@@ -1665,6 +1665,7 @@ class SAMLGenerationTests(FederationTests):
     ROLES = ['admin', 'member']
     PROJECT = 'development'
     SAML_GENERATION_ROUTE = '/auth/OS-FEDERATION/saml2'
+    ASSERTION_VERSION = "2.0"
 
     def setUp(self):
         super(SAMLGenerationTests, self).setUp()
@@ -1703,6 +1704,22 @@ class SAMLGenerationTests(FederationTests):
         project_attribute = assertion.attribute_statement[0].attribute[2]
         self.assertEqual(self.PROJECT,
                          project_attribute.attribute_value[0].text)
+
+    def test_verify_assertion_object(self):
+        """Test if the Assertion object is build properly.
+
+        The Assertion doesn't need to be signed in this test, so
+        _sign_assertion method is patched and doesn't alter the assertion.
+
+        """
+        with mock.patch.object(keystone_idp, '_sign_assertion',
+                               side_effect=lambda x: x):
+            generator = keystone_idp.SAMLGenerator()
+            response = generator.samlize_token(self.ISSUER, self.RECIPIENT,
+                                               self.SUBJECT, self.ROLES,
+                                               self.PROJECT)
+        assertion = response.assertion
+        self.assertEqual(self.ASSERTION_VERSION, assertion.version)
 
     def test_valid_saml_xml(self):
         """Test the generated SAML object can become valid XML.
@@ -1810,14 +1827,10 @@ class SAMLGenerationTests(FederationTests):
         provide a valid SAML (XML) document back.
 
         """
-
+        CONF.saml.idp_entity_id = self.ISSUER
         region_id = self._create_region_with_url()
         token_id = self._fetch_valid_token()
         body = self._create_generate_saml_request(token_id, region_id)
-
-        # NOTE(stevemar): The issuer is the identity provider, in this
-        # case, the host running Keystone.
-        real_issuer = 'http://localhost'
 
         with mock.patch.object(keystone_idp, '_sign_assertion',
                                return_value=self.signed_assertion):
@@ -1830,7 +1843,7 @@ class SAMLGenerationTests(FederationTests):
         assertion = response[2]
 
         self.assertEqual(self.RECIPIENT, response.get('Destination'))
-        self.assertEqual(real_issuer, issuer.text)
+        self.assertEqual(self.ISSUER, issuer.text)
 
         # NOTE(stevemar): We should test this against expected values,
         # but the self.xyz attribute names are uuids, and we mock out
@@ -2019,7 +2032,7 @@ class IdPMetadataGenerationTests(FederationTests):
         self.get(self.METADATA_URL, expected_status=500)
 
     def test_get_metadata(self):
-        CONF.federation.idp_metadata_path = XMLDIR + '/idp_saml2_metadata.xml'
+        CONF.saml.idp_metadata_path = XMLDIR + '/idp_saml2_metadata.xml'
         r = self.get(self.METADATA_URL, response_content_type='text/xml',
                      expected_status=200)
         self.assertEqual('text/xml', r.headers.get('Content-Type'))
