@@ -267,6 +267,7 @@ class OAuth2ControllerV3(controller.V3Controller):
         # NOTE(garcianavalon) oauthlib returns the body as a JSON string already,
         # and the Keystone base controlers expect a dictionary  
         body = json.loads(body)
+
         if status == 200:
             response = wsgi.render_response(body,
                                         status=(status,'OK'),
@@ -281,4 +282,3 @@ class OAuth2ControllerV3(controller.V3Controller):
         elif status == 401:
             # TODO(garcianavalon) custom exception class
             raise exception.Unauthorized(message=msg)
-        
