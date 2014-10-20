@@ -1,4 +1,4 @@
-# Copyright 2014 OpenStack Foundation
+    # Copyright 2014 OpenStack Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -125,6 +125,7 @@ class OAuth2Validator(RequestValidator):
     def authenticate_client_id(self, client_id, request, *args, **kwargs):
         # Don't allow public (non-authenticated) clients
         return False
+
     def validate_code(self, client_id, code, client, request, *args, **kwargs):
         # Validate the code belongs to the client. Add associated scopes,
         # state and user to request.scopes, request.state and request.user.
@@ -188,7 +189,6 @@ class OAuth2Validator(RequestValidator):
     # Protected resource request
     def validate_bearer_token(self, token, scopes, request):
         # Remember to check expiration and scope membership
-
         try:
             access_token = self.oauth2_api.get_access_token(token)
         except exception.NotFound:

@@ -92,7 +92,6 @@ class OAuth2ControllerV3(controller.V3Controller):
     member_name = 'not_used'
     
 
-    @controller.protected()
     def request_authorization_code(self, context):
 
         request_validator = validator.OAuth2Validator()
@@ -207,7 +206,6 @@ class OAuth2ControllerV3(controller.V3Controller):
 
         return urllib.urlencode(dict)
 
-    @controller.protected()# TODO(garcianavalon) Clients authenticate  using HTTP Basic Authentication
     def create_access_token(self,context,token_request):
         request_validator = validator.OAuth2Validator()
         server = WebApplicationServer(request_validator)
