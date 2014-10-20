@@ -15,14 +15,13 @@
 import base64
 import copy
 import json
+import urllib
 import urlparse
 import uuid
 
 from keystone import config
 from keystone.contrib.oauth2 import core
 from keystone.tests import test_v3
-# TODO(garcianavalon) remove the request_oauthlib dependency
-from  requests_oauthlib import OAuth2Session
 
 CONF = config.CONF
 
@@ -149,15 +148,18 @@ class ConsumerCRUDTests(OAuth2Tests):
 class OAuth2FlowTests(OAuth2Tests):
     
     def _create_authorization_url(self,consumer):
-
+        # NOTE(garcianavalon) we use a list of tuples to ensure param order
+        # in the query string to be able to mock it during testing.
+        credentials = [
+            ('response_type','code'),
+            ('client_id',consumer['id']),
+            ('redirect_uri',consumer['redirect_uris'][0]),
+            ('scope',consumer['scopes'][0]),
+            ('state',uuid.uuid4().hex)
+        ]
+        query= urllib.urlencode(credentials)
+        authorization_url ='/OS-OAUTH2/authorize?%s' %query
         
-        oauth = OAuth2Session(consumer['id'], 
-                              redirect_uri=consumer['redirect_uris'][0],
-                              scope=consumer['scopes'][0])
-        authorization_url, state = oauth.authorization_url('https://remove.this/OS-OAUTH2/authorize')
-        # NOTE(garcianavalon)hack to work around the need for https in request_oauthilb authorization_url 
-        # and the fact that RestfulTestCase prepends the base_url when calling get
-        authorization_url = authorization_url.replace('https://remove.this','')
         return authorization_url
 
     def _request_authorization(self):
