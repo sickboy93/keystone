@@ -24,63 +24,64 @@ VALID_GRANT_TYPES = sql.Enum('authorization_code')
 
 class Consumer(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'consumer_oauth2'
-    attributes = ['id', 'description','secret','client_type', 'redirect_uris',
-                    'grant_type','response_type','scopes']
+    attributes = ['id', 'description', 'secret', 'client_type', 'redirect_uris',
+                    'grant_type', 'response_type', 'scopes']
                     
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
     description = sql.Column(sql.String(64), nullable=True)
     secret = sql.Column(sql.String(64), nullable=False)
-    client_type = sql.Column(VALID_CLIENT_TYPES,nullable=False) 
+    client_type = sql.Column(VALID_CLIENT_TYPES, nullable=False) 
     redirect_uris = sql.Column(sql.JsonBlob(), nullable=False)
-    grant_type = sql.Column(VALID_GRANT_TYPES,nullable=False) 
-    response_type = sql.Column(VALID_RESPONSE_TYPES,nullable=False)
+    grant_type = sql.Column(VALID_GRANT_TYPES, nullable=False) 
+    response_type = sql.Column(VALID_RESPONSE_TYPES, nullable=False)
     # TODO(garcianavalon) better naming to reflect they are the allowed scopes for the client
-    scopes = sql.Column(sql.JsonBlob(),nullable=True)
+    scopes = sql.Column(sql.JsonBlob(), nullable=True)
 
 class AuthorizationCode(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'authorization_code_oauth2'
 
-    attributes = ['code', 'consumer_id','authorizing_user_id','expires_at','scopes',
-                'state','redirect_uri','valid']
+    attributes = ['code', 'consumer_id', 'authorizing_user_id', 'expires_at', 'scopes',
+                'state', 'redirect_uri', 'valid']
 
-    code = sql.Column(sql.String(64),primary_key=True,nullable=False)
+    code = sql.Column(sql.String(64), primary_key=True, nullable=False)
     consumer_id = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
                              nullable=False, index=True)
     # TODO(garcianavalon) shouldnt it be a Foreign Key??
     authorizing_user_id = sql.Column(sql.String(64), nullable=False)
     # TODO(garcianavalon) datetime type or similar?
     expires_at = sql.Column(sql.String(64), nullable=False)
-    scopes = sql.Column(sql.JsonBlob(),nullable=True)
+    scopes = sql.Column(sql.JsonBlob(), nullable=True)
     state = sql.Column(sql.String(64), nullable=True)
     redirect_uri = sql.Column(sql.String(64), nullable=False)
     valid = sql.Column(sql.Boolean(), default=True, nullable=False)
 
 class ConsumerCredentials(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'consumer_credentials_oauth2'
-    attributes = ['id', 'client_id','redirect_uri','response_type','state']
+    attributes = ['id', 'client_id', 'redirect_uri',
+                'response_type', 'state']
 
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
     client_id = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
                              nullable=False, index=True)
     redirect_uri = sql.Column(sql.String(64), nullable=False)
-    response_type = sql.Column(VALID_RESPONSE_TYPES,nullable=False)
+    response_type = sql.Column(VALID_RESPONSE_TYPES, nullable=False)
     state = sql.Column(sql.String(64), nullable=True)
 
 class AccessToken(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'access_token_oauth2'
 
-    attributes = ['id', 'consumer_id','authorizing_user_id','expires_at',
-                'scopes','valid']
+    attributes = ['id', 'consumer_id', 'authorizing_user_id', 'expires_at',
+                'scopes', 'valid']
 
-    id = sql.Column(sql.String(64),primary_key=True,nullable=False)
+    id = sql.Column(sql.String(64), primary_key=True, nullable=False)
     consumer_id = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
                              nullable=False, index=True)
     # TODO(garcianavalon) shouldnt it be a Foreign Key??
     authorizing_user_id = sql.Column(sql.String(64), nullable=False)
     # TODO(garcianavalon) datetime type or similar?
     expires_at = sql.Column(sql.String(64), nullable=False)
-    scopes = sql.Column(sql.JsonBlob(),nullable=True)
-    refresh_token = sql.Column(sql.String(64),nullable=True)
+    scopes = sql.Column(sql.JsonBlob(), nullable=True)
+    refresh_token = sql.Column(sql.String(64), nullable=True)
     valid = sql.Column(sql.Boolean(), default=True, nullable=False)
 
 class OAuth2(oauth2.Driver):
@@ -91,12 +92,13 @@ class OAuth2(oauth2.Driver):
         if consumer_ref is None:
             raise exception.NotFound(_('No Consumer found with id: %s' %consumer_id))
         return consumer_ref
+
     def list_consumers(self):
         session = sql.get_session()
         cons = session.query(Consumer)
         return [consumer.to_dict() for consumer in cons]
 
-    def create_consumer(self,consumer):
+    def create_consumer(self, consumer):
         consumer['secret'] = uuid.uuid4().hex
         if not consumer.get('description'):
             consumer['description'] = None
@@ -109,18 +111,18 @@ class OAuth2(oauth2.Driver):
             session.add(consumer_ref)
         return consumer_ref.to_dict()
 
-    def get_consumer(self,consumer_id):
+    def get_consumer(self, consumer_id):
         session = sql.get_session()
         with session.begin():
             consumer_ref = self._get_consumer(session,consumer_id) 
         return consumer_ref.to_dict()
 
-    def update_consumer(self,consumer_id,consumer):
+    def update_consumer(self, consumer_id, consumer):
         session = sql.get_session()
         with session.begin():
             consumer_ref = self._get_consumer(session, consumer_id)
             for k in consumer:
-                setattr(consumer_ref,k,consumer[k])
+                setattr(consumer_ref, k, consumer[k])
         return consumer_ref.to_dict()
 
     def delete_consumer(self, consumer_id):
@@ -138,7 +140,7 @@ class OAuth2(oauth2.Driver):
         cons = session.query(AuthorizationCode)
         return [authorization_code.to_dict() for authorization_code in cons]
 
-    def store_authorization_code(self,authorization_code):
+    def store_authorization_code(self, authorization_code):
         session = sql.get_session()
         with session.begin():
             authorization_code_ref = AuthorizationCode.from_dict(authorization_code)
@@ -146,7 +148,7 @@ class OAuth2(oauth2.Driver):
         return authorization_code_ref.to_dict()
 
     def _get_authorization_code(self, session, code):
-        authorization_code_ref =  session.query(AuthorizationCode).get(code)
+        authorization_code_ref = session.query(AuthorizationCode).get(code)
 
         if authorization_code_ref is None:
             msg = _('Authorization Code %s not found') %code
@@ -156,14 +158,14 @@ class OAuth2(oauth2.Driver):
     def get_authorization_code(self, code):
         session = sql.get_session()
         with session.begin():
-            authorization_code_ref = self._get_authorization_code(session,code)
+            authorization_code_ref = self._get_authorization_code(session, code)
         return authorization_code_ref.to_dict()
 
     def invalidate_authorization_code(self, code):
         session = sql.get_session()
         with session.begin():
-            authorization_code_ref = self._get_authorization_code(session,code)
-            setattr(authorization_code_ref,'valid',False)
+            authorization_code_ref = self._get_authorization_code(session, code)
+            setattr(authorization_code_ref, 'valid', False)
 
     # CONSUMER CREDENTIALS
     def store_consumer_credentials(self, credentials):
@@ -178,7 +180,8 @@ class OAuth2(oauth2.Driver):
     def get_consumer_credentials(self, client_id):
         session = sql.get_session()
         with session.begin():
-            credentials_ref =  session.query(ConsumerCredentials).filter_by(client_id=client_id).first() #TODO see interface definition in core to decide what to do
+            # TODO(garcianavalon) see interface definition in core to decide what to do
+            credentials_ref =  session.query(ConsumerCredentials).filter_by(client_id=client_id).first()
         if credentials_ref is None:
             raise exception.NotFound(_('Credentials not found'))
         return credentials_ref.to_dict()
