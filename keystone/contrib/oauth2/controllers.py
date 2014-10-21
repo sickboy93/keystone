@@ -169,6 +169,8 @@ class OAuth2ControllerV3(controller.V3Controller):
 
         credentials = self.oauth2_api.get_consumer_credentials(client_id)
         # Add the user_id to the credential for later use
+        # TODO(garcianavalon) it would be better to obtain it implicitly,
+        # for example from the keystone token authorizing this request
         user_id = body.get('user_id')
         if not user_id:
             raise exception.ValidationError(attribute='user_id',target='request')
