@@ -40,7 +40,7 @@ class OAuth2Validator(RequestValidator):
         client_dict = self.oauth2_api.get_consumer(client_id)
         if client_dict:
             return True
-        return False #Currently the sql driver raises an exception if the consumer doesnt exist
+        return False # Currently the sql driver raises an exception if the consumer doesnt exist
 
     def validate_redirect_uri(self, client_id, redirect_uri, request, *args, **kwargs):
         # Is the client allowed to use the supplied redirect_uri? i.e. has
@@ -53,7 +53,7 @@ class OAuth2Validator(RequestValidator):
         # The redirect used if none has been supplied.
         # Prefer your clients to pre register a redirect uri rather than
         # supplying one on each authorization request.
-        #TODO implement
+        # TODO(garcianavalon) implement
         pass
 
     def validate_scopes(self, client_id, scopes, client, request, *args, **kwargs):
@@ -74,7 +74,7 @@ class OAuth2Validator(RequestValidator):
     def get_default_scopes(self, client_id, request, *args, **kwargs):
         # Scopes a client will authorize for if none are supplied in the
         # authorization request.
-        #TODO implement
+        # TODO(garcianavalon) implement
         pass
 
     def validate_response_type(self, client_id, response_type, client, request, *args, **kwargs):
@@ -108,7 +108,7 @@ class OAuth2Validator(RequestValidator):
     # Token request
     def authenticate_client(self, request, *args, **kwargs):
         # Whichever authentication method suits you, HTTP Basic might work 
-        #TODO(garcianavalon) write it cleaner
+        # TODO(garcianavalon) write it cleaner
         authmethod, auth = request.headers['Authorization'].split(' ', 1)
         auth = auth.decode('unicode_escape')
         if authmethod.lower() == 'basic':
@@ -123,6 +123,7 @@ class OAuth2Validator(RequestValidator):
 
     def authenticate_client_id(self, client_id, request, *args, **kwargs):
         # Don't allow public (non-authenticated) clients
+        # TODO(garcianavalon)
         return False
 
     def validate_code(self, client_id, code, client, request, *args, **kwargs):
@@ -150,7 +151,7 @@ class OAuth2Validator(RequestValidator):
         # TODO(garcianavalon) support for refresh tokens
         # client_id comes as None, we use the one in request
         client_dict = self.oauth2_api.get_consumer(request.client.client_id)
-        return grant_type==client_dict['grant_type']
+        return grant_type == client_dict['grant_type']
 
     def save_bearer_token(self, token, request, *args, **kwargs):
         # Remember to associate it with request.scopes, request.user and
@@ -217,4 +218,5 @@ class OAuth2Validator(RequestValidator):
         # return its scopes, these will be passed on to the refreshed
         # access token if the client did not specify a scope during the
         # request.
+        # TODO(garcianavalon)
         pass
