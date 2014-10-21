@@ -89,17 +89,16 @@ class OAuth2Validator(RequestValidator):
         # Remember to associate it with request.scopes, request.redirect_uri
         # request.client, request.state and request.user (the last is passed in
         # post_authorization credentials, i.e. { 'user': request.user}.
-        #TODO write it cleaner
-        authorization_code = {}
-        authorization_code['code'] = code['code']#code is a dict with state and the code
-        authorization_code['consumer_id'] = client_id
-        #TODO authorization_code['redirect_uri'] = request.redirect_uri
-        authorization_code['scopes'] = request.scopes
-        authorization_code['authorizing_user_id'] = request.user_id#populated through the credentials
-        authorization_code['state'] = request.state
-        authorization_code['redirect_uri'] = request.redirect_uri
-        token_duration=28800#TODO extract as configuration option
-        #TODO find a better place to do this
+        authorization_code = {
+            'code': code['code'], # code is a dict with state and the code
+            'consumer_id': client_id,
+            'scopes': request.scopes,
+            'authorizing_user_id': request.user_id, # populated through the credentials
+            'state': request.state,
+            'redirect_uri': request.redirect_uri
+        }
+        token_duration=28800 # TODO(garcianavalon) extract as configuration option
+        # TODO(garcianavalon) find a better place to do this
         now = timeutils.utcnow()
         future = now + datetime.timedelta(seconds=token_duration)
         expiry_date = timeutils.isotime(future, subsecond=True)
