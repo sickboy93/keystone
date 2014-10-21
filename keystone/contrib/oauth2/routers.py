@@ -36,7 +36,7 @@ class OAuth2Extension(wsgi.V3ExtensionRouter):
         authorization_code_controller = controllers.AuthorizationCodeCrudV3()
         oauth2_controller = controllers.OAuth2ControllerV3() 
 
-        #Admin only consumer CRUD
+        # Admin only consumer CRUD
         self._add_resource(
             mapper, consumer_controller,
             path=self.PATH_PREFIX + '/consumers',
@@ -54,7 +54,7 @@ class OAuth2Extension(wsgi.V3ExtensionRouter):
                 'consumer_id':
                 build_parameter_relation(parameter_name='consumer_id'),
             })
-        #Resource Owner CRUD for Access Tokens
+        # Resource Owner CRUD for Access Tokens
         self._add_resource(
             mapper, authorization_code_controller,
             path=self.PATH_PREFIX + '/users/{user_id}/authorization_codes',
@@ -64,7 +64,7 @@ class OAuth2Extension(wsgi.V3ExtensionRouter):
                 'user_id':
                 build_parameter_relation(parameter_name='user_id'),
             })
-        # oauth2 flow calls
+        # OAuth2 flow calls
         self._add_resource(
             mapper, oauth2_controller,
             path=self.PATH_PREFIX + '/authorize',
@@ -78,7 +78,7 @@ class OAuth2Extension(wsgi.V3ExtensionRouter):
             post_action='create_access_token',
             rel=build_resource_relation(resource_name='access_token'))
 
-        #Resource Owner CRUD for Access Tokens
+        # Resource Owner CRUD for Access Tokens
         # self._add_resource(
         #     mapper, access_token_controller,
         #     path=self.PATH_PREFIX + '/users/{user_id}/access_tokens',

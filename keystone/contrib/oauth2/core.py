@@ -35,7 +35,7 @@ EXTENSION_DATA = {
     'links': [
         {
             'rel': 'describedby',
-            # TODO: needs a description
+            # TODO(garcianavalon): needs a description
             'type': 'text/html',
             'href': 'https://github.com/openstack/identity-api',
         }
@@ -54,7 +54,7 @@ class Manager(manager.Manager):
 
     def __init__(self):
         super(Manager, self).__init__(
-            'keystone.contrib.oauth2.backends.sql.OAuth2')#TODO set as configuration option in keystone.conf
+            'keystone.contrib.oauth2.backends.sql.OAuth2')# TODO(garcianavalon) set as configuration option in keystone.conf
 
 
 @six.add_metaclass(abc.ABCMeta)
