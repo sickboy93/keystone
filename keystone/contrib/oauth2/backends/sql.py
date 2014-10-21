@@ -33,8 +33,9 @@ class Consumer(sql.ModelBase, sql.ModelDictMixin):
     client_type = sql.Column(VALID_CLIENT_TYPES,nullable=False) 
     redirect_uris = sql.Column(sql.JsonBlob(), nullable=False)
     grant_type = sql.Column(VALID_GRANT_TYPES,nullable=False) 
-    response_type = sql.Column(VALID_RESPONSE_TYPES,nullable=False) 
-    scopes = sql.Column(sql.JsonBlob(),nullable=True)#TODO better naming to reflect they are the allowed scopes for the client
+    response_type = sql.Column(VALID_RESPONSE_TYPES,nullable=False)
+    # TODO(garcianavalon) better naming to reflect they are the allowed scopes for the client
+    scopes = sql.Column(sql.JsonBlob(),nullable=True)
 
 class AuthorizationCode(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'authorization_code_oauth2'
@@ -45,8 +46,10 @@ class AuthorizationCode(sql.ModelBase, sql.ModelDictMixin):
     code = sql.Column(sql.String(64),primary_key=True,nullable=False)
     consumer_id = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
                              nullable=False, index=True)
-    authorizing_user_id = sql.Column(sql.String(64), nullable=False)#TODO shouldnt it be a Foreign Key??
-    expires_at = sql.Column(sql.String(64), nullable=False)#TODO datetime type or similar?
+    # TODO(garcianavalon) shouldnt it be a Foreign Key??
+    authorizing_user_id = sql.Column(sql.String(64), nullable=False)
+    # TODO(garcianavalon) datetime type or similar?
+    expires_at = sql.Column(sql.String(64), nullable=False)
     scopes = sql.Column(sql.JsonBlob(),nullable=True)
     state = sql.Column(sql.String(64), nullable=True)
     redirect_uri = sql.Column(sql.String(64), nullable=False)
@@ -72,8 +75,10 @@ class AccessToken(sql.ModelBase, sql.ModelDictMixin):
     id = sql.Column(sql.String(64),primary_key=True,nullable=False)
     consumer_id = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
                              nullable=False, index=True)
-    authorizing_user_id = sql.Column(sql.String(64), nullable=False)#TODO shouldnt it be a Foreign Key??
-    expires_at = sql.Column(sql.String(64), nullable=False)#TODO datetime type or similar?
+    # TODO(garcianavalon) shouldnt it be a Foreign Key??
+    authorizing_user_id = sql.Column(sql.String(64), nullable=False)
+    # TODO(garcianavalon) datetime type or similar?
+    expires_at = sql.Column(sql.String(64), nullable=False)
     scopes = sql.Column(sql.JsonBlob(),nullable=True)
     refresh_token = sql.Column(sql.String(64),nullable=True)
     valid = sql.Column(sql.Boolean(), default=True, nullable=False)
@@ -96,7 +101,7 @@ class OAuth2(oauth2.Driver):
         if not consumer.get('description'):
             consumer['description'] = None
         session = sql.get_session()
-        #set the response_type based on the grant_type
+        # set the response_type based on the grant_type
         if consumer['grant_type'] == 'authorization_code':
             consumer['response_type'] = 'code'
         with session.begin():
