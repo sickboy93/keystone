@@ -54,7 +54,6 @@ class OAuth2(auth.AuthMethodHandler):
         }
         valid, oauthlib_request = server.verify_request(
             uri, http_method, body, headers, required_scopes)
-
         # oauthlib_request has a few convenient attributes set such as
         # oauthlib_request.client = the client associated with the token
         # oauthlib_request.user = the user associated with the token

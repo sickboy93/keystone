@@ -22,6 +22,7 @@ from keystone.common import wsgi
 from keystone.contrib.oauth2 import core as oauth2
 from keystone.contrib.oauth2 import validator
 from keystone.i18n import _
+from keystone.models import token_model
 
 from oauthlib.oauth2 import WebApplicationServer, FatalClientError, OAuth2Error
 
@@ -85,14 +86,21 @@ class AuthorizationCodeCrudV3(controller.V3Controller):
         ref = self.oauth2_api.list_authorization_codes()
         return AuthorizationCodeCrudV3.wrap_collection(context, ref)
 
-@dependency.requires('oauth2_api')  
+@dependency.requires('oauth2_api', 'token_provider_api')  
 class OAuth2ControllerV3(controller.V3Controller):
 
     collection_name = 'not_used'
     member_name = 'not_used'
-    
-    def request_authorization_code(self, context):
 
+    def _extract_user_id_from_token(self, token_id):
+        user_token = token_model.KeystoneToken(
+                            token_id=token_id,
+                            token_data=self.token_provider_api.validate_token(
+                                token_id))
+        return user_token.user_id
+
+    @controller.protected()
+    def request_authorization_code(self, context):
         request_validator = validator.OAuth2Validator()
         server = WebApplicationServer(request_validator)
         # Validate request
@@ -122,12 +130,13 @@ class OAuth2ControllerV3(controller.V3Controller):
             # NOTE(garcianavalon) We are not storing this for now, 
             # but might do it in the future
             request = credentials.pop('request')
-
+            
+            # get the user id to identify the credentials in later stages
+            credentials['user_id'] = self._extract_user_id_from_token(
+                                                    context['token_id'])
+            
             credentials_ref = self._assign_unique_id(self._normalize_dict(credentials))
-            self.oauth2_api.store_consumer_credentials(credentials_ref) 
-            # TODO(garcianavalon) there are some issues here with GET not being idempotent, related to the issues commented on
-            # the definition of store_consumer_credentials. The best fix for all probably is to only allow
-            # one pending authorization request for each client, even if it is to different users.
+            self.oauth2_api.store_consumer_credentials(credentials_ref)
 
             # Present user with a nice form where client (id foo) request access to
             # his default scopes (omitted from request), after which you will
@@ -148,33 +157,29 @@ class OAuth2ControllerV3(controller.V3Controller):
 
 
     @controller.protected()
-    def create_authorization_code(self, context,user_auth):
+    def create_authorization_code(self, context, user_auth):
         request_validator = validator.OAuth2Validator()
         server = WebApplicationServer(request_validator)
         # Validate request
         headers = context['headers']
-        body=user_auth
+        body = user_auth
         uri = self.base_url(context, context['path'])
-        http_method='POST'
+        http_method = 'POST'
 
         # Fetch authorized scopes from the request
         scopes = body.get('scopes')
         if not scopes:
-            raise exception.ValidationError(attribute='scopes',target='request')
+            raise exception.ValidationError(attribute='scopes', target='request')
 
         # Fetch the credentials saved in the pre authorization phase
         client_id = body.get('client_id')
         if not client_id:
-            raise exception.ValidationError(attribute='client_id',target='request')
+            raise exception.ValidationError(attribute='client_id', target='request')
 
-        credentials = self.oauth2_api.get_consumer_credentials(client_id)
-        # Add the user_id to the credential for later use
-        # TODO(garcianavalon) it would be better to obtain it implicitly,
-        # for example from the keystone token authorizing this request
-        user_id = body.get('user_id')
-        if not user_id:
-            raise exception.ValidationError(attribute='user_id',target='request')
-        credentials['user_id'] = user_id
+        user_id = self._extract_user_id_from_token(context['token_id'])
+        credentials = self.oauth2_api.get_consumer_credentials(client_id,
+                                                            user_id)
+
         try:
             headers, body, status = server.create_authorization_response(
                 uri, http_method, body, headers, scopes, credentials)
@@ -184,7 +189,7 @@ class OAuth2ControllerV3(controller.V3Controller):
             # status = 302, suggested HTTP status code
 
             response = wsgi.render_response(body,
-                                            status=(302,'Found'),
+                                            status=(302, 'Found'),
                                             headers=headers.items())
             return response
 
@@ -279,13 +284,13 @@ class OAuth2ControllerV3(controller.V3Controller):
 
         if status == 200:
             response = wsgi.render_response(body,
-                                        status=(status,'OK'),
+                                        status=(status, 'OK'),
                                         headers=headers.items())
             return response
         # Build the error message and raise the corresponding error
         msg = _(body['error'])
-        if hasattr(body,'description'):
-            msg= msg +': '+_(body['description'])
+        if hasattr(body, 'description'):
+            msg = msg + ': ' + _(body['description'])
         if status == 400:
             raise exception.ValidationError(message=msg)
         elif status == 401:

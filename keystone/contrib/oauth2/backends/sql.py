@@ -12,11 +12,14 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import uuid
+
 from keystone.common import sql
 from keystone.contrib import oauth2
 from keystone import exception
 from keystone.i18n import _
-import uuid
+from oslo.utils import timeutils
+
 
 VALID_RESPONSE_TYPES = sql.Enum('code')
 VALID_CLIENT_TYPES = sql.Enum('confidential')
@@ -57,15 +60,19 @@ class AuthorizationCode(sql.ModelBase, sql.ModelDictMixin):
 
 class ConsumerCredentials(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'consumer_credentials_oauth2'
-    attributes = ['id', 'client_id', 'redirect_uri',
-                'response_type', 'state']
-
+    attributes = ['id', 'user_id', 'client_id', 'redirect_uri',
+                'response_type', 'state', 'created_at']
+    
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
+    # TODO(garcianavalon) shouldnt it be a Foreign Key??
+    user_id = sql.Column(sql.String(64), index=True, nullable=False)
     client_id = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
                              nullable=False, index=True)
     redirect_uri = sql.Column(sql.String(64), nullable=False)
     response_type = sql.Column(VALID_RESPONSE_TYPES, nullable=False)
     state = sql.Column(sql.String(64), nullable=True)
+    created_at = sql.Column(sql.DateTime(), default=None, nullable=False)
+    
 
 class AccessToken(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'access_token_oauth2'
@@ -171,17 +178,31 @@ class OAuth2(oauth2.Driver):
     def store_consumer_credentials(self, credentials):
         if not credentials.get('state'):
             credentials['state'] = None
+            
+        if not credentials.get('created_at'):
+            credentials['created_at'] = timeutils.utcnow()
+
         session = sql.get_session()
         with session.begin():
             credentials_ref = ConsumerCredentials.from_dict(credentials)
             session.add(credentials_ref)
         return credentials_ref.to_dict()
 
-    def get_consumer_credentials(self, client_id):
+    def get_consumer_credentials(self, client_id, user_id):
         session = sql.get_session()
         with session.begin():
-            # TODO(garcianavalon) see interface definition in core to decide what to do
-            credentials_ref =  session.query(ConsumerCredentials).filter_by(client_id=client_id).first()
+            # NOTE(garcianavalon) I have decided to keep the credentials stored
+            # after the client grants the authorization, so the client can POST
+            # again to get a new authorization code with out needing the redirect
+            # with the query string before. Therefore, this query retrieves the 
+            #last row for that user-client tuple
+            query = (
+                session.query(ConsumerCredentials)
+                    .filter_by(user_id=user_id, 
+                            client_id=client_id)
+                    .order_by(sql.sql.desc(ConsumerCredentials.created_at))
+            )
+            credentials_ref =  query.first()
         if credentials_ref is None:
             raise exception.NotFound(_('Credentials not found'))
         return credentials_ref.to_dict()

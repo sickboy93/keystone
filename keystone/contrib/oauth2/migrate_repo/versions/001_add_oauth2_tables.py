@@ -44,18 +44,21 @@ def upgrade(migrate_engine):
         sql.Column('expires_at',sql.String(64), nullable=False),
         sql.Column('scopes',sql.Text(),nullable=True),
         sql.Column('redirect_uri',sql.String(64), nullable=False),
-        sql.Column('state',sql.String(64), nullable=True))
+        sql.Column('state',sql.String(64), nullable=True),
+        sql.Column('valid', sql.Boolean(), default=True, nullable=False))
     authorization_code_table.create(migrate_engine,checkfirst=True)
 
     consumer_credentials_table = sql.Table(
         'consumer_credentials_oauth2',
         meta,
         sql.Column('id',sql.String(64), primary_key=True, nullable=False),
+        sql.Column('user_id',sql.String(64), index=True, nullable=False),
         sql.Column('client_id',sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
                              nullable=False, index=True),
         sql.Column('redirect_uri',sql.String(64), nullable=False),
         sql.Column('response_type',sql.Enum('code',name='response_type'),nullable=False),
-        sql.Column('state',sql.String(64), nullable=True))
+        sql.Column('state',sql.String(64), nullable=True),
+        sql.Column('created_at',sql.DateTime(), default=None, nullable=False))
     consumer_credentials_table.create(migrate_engine,checkfirst=True)
 
     access_token_table = sql.Table(
@@ -67,7 +70,8 @@ def upgrade(migrate_engine):
         sql.Column('authorizing_user_id', sql.String(64), nullable=False),
         sql.Column('expires_at', sql.String(64), nullable=False),
         sql.Column('scopes', sql.Text(), nullable=True),
-        sql.Column('refresh_token', sql.String(64), nullable=True))
+        sql.Column('refresh_token', sql.String(64), nullable=True),
+        sql.Column('valid', sql.Boolean(), default=True, nullable=False))
     access_token_table.create(migrate_engine,checkfirst=True)
 
 def downgrade(migrate_engine):

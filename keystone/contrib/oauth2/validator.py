@@ -40,7 +40,8 @@ class OAuth2Validator(RequestValidator):
         client_dict = self.oauth2_api.get_consumer(client_id)
         if client_dict:
             return True
-        return False # Currently the sql driver raises an exception if the consumer doesnt exist
+        # Currently the sql driver raises an exception if the consumer doesnt exist
+        return False 
 
     def validate_redirect_uri(self, client_id, redirect_uri, request, *args, **kwargs):
         # Is the client allowed to use the supplied redirect_uri? i.e. has

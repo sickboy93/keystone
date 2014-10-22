@@ -11,6 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+
 from __future__ import absolute_import
 
 import six
@@ -72,7 +73,7 @@ class Driver(object):
         raise exception.NotImplemented()  
 
     @abc.abstractmethod
-    def create_consumer(self,consumer):
+    def create_consumer(self, consumer):
         """Register a consumer
 
         :param consumer: consumer data
@@ -83,7 +84,7 @@ class Driver(object):
         raise exception.NotImplemented()
 
     @abc.abstractmethod
-    def get_consumer(self,consumer_id):
+    def get_consumer(self, consumer_id):
         """Get consumer details, except the private ones
         like secret
         
@@ -95,7 +96,7 @@ class Driver(object):
         raise exception.NotImplemented()
 
     @abc.abstractmethod
-    def update_consumer(self,consumer_id,consumer):
+    def update_consumer(self, consumer_id, consumer):
         """Update consumer details
         
         :param consumer_id: id of consumer to update
@@ -108,7 +109,7 @@ class Driver(object):
         raise exception.NotImplemented()
 
     @abc.abstractmethod
-    def delete_consumer(self,consumer_id):
+    def delete_consumer(self, consumer_id):
         """Delete consumer.
 
         :param consumer_id: id of consumer to delete
@@ -178,17 +179,17 @@ class Driver(object):
         raise exception.NotImplemented()
 
     @abc.abstractmethod
-    def get_consumer_credentials(self, client_id):
+    def get_consumer_credentials(self, client_id, user_id):
         """Retrieves the consumer credentials saved when the authorization request
 
         :param client_id: client_id
         :type client_id: string
+        :param user_id: the id of the keystone user that stored the client credentials
+            in the request_authorization step
+        :type user_id: string
         :returns: The stored credentials
 
         """
-        # TODO(garcianavalon) we need more info to get the credentials, or define constrains like
-        # only allowing one pending authorization request from each consumer so consumer_id
-        # could be use as a PK and/or a unique value
         raise exception.NotImplemented()
 
     # ACCESS TOKEN
