@@ -60,12 +60,12 @@ class OAuth2Validator(RequestValidator):
     def validate_scopes(self, client_id, scopes, client, request, *args, **kwargs):
         # Is the client allowed to access the requested scopes?
         if not scopes:
-            return True #the client is not requesting any scope
+            return True # the client is not requesting any scope
 
         client_dict = self.oauth2_api.get_consumer(client_id)
 
         if not client_dict['scopes']:
-            return False #the client isnt allowed any scopes
+            return False # the client isnt allowed any scopes
 
         for scope in scopes:
             if not scope in client_dict['scopes']:

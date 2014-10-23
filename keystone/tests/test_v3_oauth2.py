@@ -25,7 +25,7 @@ from keystone.tests import test_v3
 
 CONF = config.CONF
 
-class OAuth2Tests(test_v3.RestfulTestCase):
+class OAuth2BaseTests(test_v3.RestfulTestCase):
 
     EXTENSION_NAME = 'oauth2'
     EXTENSION_TO_ADD = 'oauth2_extension'
@@ -43,7 +43,7 @@ class OAuth2Tests(test_v3.RestfulTestCase):
     ]
 
     def setUp(self):
-        super(OAuth2Tests, self).setUp()
+        super(OAuth2BaseTests, self).setUp()
 
         # Now that the app has been served, we can query CONF values
         self.base_url = 'http://localhost/v3'
@@ -69,30 +69,29 @@ class OAuth2Tests(test_v3.RestfulTestCase):
     def _create_user_and_tenant(self):
         pass
 
-class ConsumerCRUDTests(OAuth2Tests):
+class ConsumerCRUDTests(OAuth2BaseTests):
 
-    def _consumer_assertions(self, consumer,data):
+
+    def test_create_consumer(self):
+        consumer, data = self._create_consumer()
         self.assertEqual(consumer['description'], data['description'])
         self.assertIsNotNone(consumer['id'])
         self.assertIsNotNone(consumer['secret'])
 
-        return consumer
-
-    def _test_create_consumer(self,consumer_data=None):
-        consumer,data = self._create_consumer(consumer_data)
-        self._consumer_assertions(consumer,data)
-
-    def test_create_consumer_no_data(self):
-        self._test_create_consumer()
-
     def test_consumer_delete(self):
-        consumer,data = self._create_consumer()
+        consumer, data = self._create_consumer()
         consumer_id = consumer['id']
-        response = self.delete(self.CONSUMER_URL + '/%s' % consumer_id)
-        self.assertResponseStatus(response, 204)
+        response = self.delete(self.CONSUMER_URL + '/%s' % consumer_id,
+                                expected_status=204)
+
+    def test_consumer_delete_bad_id(self):
+        consumer, data = self._create_consumer()
+        consumer_id = uuid.uuid4().hex
+        response = self.delete(self.CONSUMER_URL + '/%s' % consumer_id,
+                                expected_status=404)
 
     def test_consumer_get(self):
-        consumer,data = self._create_consumer()
+        consumer, data = self._create_consumer()
         consumer_id = consumer['id']
         response = self.get(self.CONSUMER_URL + '/%s' % consumer_id)
         self_url = ['http://localhost/v3', self.CONSUMER_URL,
@@ -101,31 +100,47 @@ class ConsumerCRUDTests(OAuth2Tests):
         self.assertEqual(response.result['consumer']['links']['self'], self_url)
         self.assertEqual(response.result['consumer']['id'], consumer_id)
 
+    def test_consumer_get_bad_id(self):
+        self.get(self.CONSUMER_URL + '/%(consumer_id)s'
+                 % {'consumer_id': uuid.uuid4().hex},
+                 expected_status=404)
+
     def test_consumer_list(self):
         self._create_consumer()
         response = self.get(self.CONSUMER_URL)
         entities = response.result['consumers']
         self.assertIsNotNone(entities)
+
         self_url = ['http://localhost/v3', self.CONSUMER_URL]
         self_url = ''.join(self_url)
         self.assertEqual(response.result['links']['self'], self_url)
         self.assertValidListLinks(response.result['links'])
 
     def test_consumer_update(self):
-        consumer,data = self._create_consumer()
+        consumer, data = self._create_consumer()
         original_id = consumer['id']
         original_description = consumer['description'] or ''
         update_description = original_description + '_new'
+        update_scopes = ['new_scopes']
+        update_redirect_uris = ['new_uris']
 
-        update_ref = {'description': update_description}
+        body = {
+            'consumer': {
+                'description': update_description,
+                'scopes': update_scopes,
+                'redirect_uris': update_redirect_uris
+            }
+        }
         update_response = self.patch(self.CONSUMER_URL + '/%s' % original_id,
-                                 body={'consumer': update_ref})
+                                 body=body)
         consumer = update_response.result['consumer']
         self.assertEqual(consumer['description'], update_description)
+        self.assertEqual(consumer['scopes'], update_scopes)
+        self.assertEqual(consumer['redirect_uris'], update_redirect_uris)
         self.assertEqual(consumer['id'], original_id)
 
     def test_consumer_update_bad_secret(self):
-        consumer,data = self._create_consumer()
+        consumer, data = self._create_consumer()
         original_id = consumer['id']
         update_ref = copy.deepcopy(consumer)
         update_ref['description'] = uuid.uuid4().hex
@@ -135,42 +150,41 @@ class ConsumerCRUDTests(OAuth2Tests):
                    expected_status=400)
 
     def test_consumer_update_bad_id(self):
-        consumer,data = self._create_consumer()
+        consumer, data = self._create_consumer()
         original_id = consumer['id']
         original_description = consumer['description'] or ''
         update_description = original_description + "_new"
 
         update_ref = copy.deepcopy(consumer)
         update_ref['description'] = update_description
-        update_ref['id'] = update_description
+        update_ref['id'] = uuid.uuid4().hex
         self.patch(self.CONSUMER_URL + '/%s' % original_id,
                    body={'consumer': update_ref},
-                   expected_status=400)
+                   expected_status=400) 
 
-    def test_consumer_get_bad_id(self):
-        self.get(self.CONSUMER_URL + '/%(consumer_id)s'
-                 % {'consumer_id': uuid.uuid4().hex},
-                 expected_status=404)
-
-
-class OAuth2FlowTests(OAuth2Tests):
+class OAuth2FlowBaseTests(OAuth2BaseTests):
 
     def setUp(self):
-        super(OAuth2FlowTests, self).setUp()
+        super(OAuth2FlowBaseTests, self).setUp()
         self.consumer, self.data = self._create_consumer()
 
     def _flowstep_request_authorization(self, redirect_uri, scope, expected_status=200):
+        # Transform the array with the requested scopes into a list of 
+        # space-delimited, case-sensitive strings as specified in RFC 6749
+        # http://tools.ietf.org/html/rfc6749#section-3.3
+        scope_string = ' '.join(scope)
+
         # NOTE(garcianavalon) we use a list of tuples to ensure param order
         # in the query string to be able to mock it during testing.
         credentials = [
             ('response_type', 'code'),
             ('client_id', self.consumer['id']),
             ('redirect_uri', redirect_uri),
-            ('scope', scope),
+            ('scope', scope_string),
             ('state', uuid.uuid4().hex)
         ]
-        query= urllib.urlencode(credentials)
-        authorization_url ='/OS-OAUTH2/authorize?%s' %query
+        query = urllib.urlencode(credentials)
+        authorization_url = '/OS-OAUTH2/authorize?%s' %query
 
         # GET authorization_url to request the authorization
         return self.get(authorization_url, 
@@ -180,7 +194,7 @@ class OAuth2FlowTests(OAuth2Tests):
     def _flowstep_grant_authorization(self, redirect_uri=None, scope=None, 
                                     expected_status=302, **kwargs):
         if not scope:
-            scope = self.DEFAULT_SCOPES[0]
+            scope = [self.DEFAULT_SCOPES[0]]
         if not redirect_uri:
             redirect_uri = self.DEFAULT_REDIRECT_URIS[0]
 
@@ -189,7 +203,7 @@ class OAuth2FlowTests(OAuth2Tests):
                                     scope=scope)
 
         return self._simulate_authorization(get_response, 
-                                scopes=[scope], 
+                                scopes=scope, 
                                 expected_status=expected_status,
                                 **kwargs)
 
@@ -247,7 +261,7 @@ class OAuth2FlowTests(OAuth2Tests):
 
     def _flowstep_obtain_access_token(self, redirect_uri=None, scope=None):
         if not scope:
-            scope = self.DEFAULT_SCOPES[0]
+            scope = [self.DEFAULT_SCOPES[0]]
         if not redirect_uri:
             redirect_uri = self.DEFAULT_REDIRECT_URIS[0]
 
@@ -287,14 +301,14 @@ class OAuth2FlowTests(OAuth2Tests):
         return body
 
 
-class OAuth2AuthorizationCodeFlowTests(OAuth2FlowTests):
+class OAuth2AuthorizationCodeFlowTests(OAuth2FlowBaseTests):
 
 
     def test_flowstep_request_authorization(self):
-        expected_redirect_uri = self.DEFAULT_REDIRECT_URIS[0]
-        expected_scope = self.DEFAULT_SCOPES[0]
+        expected_redirect_uri = self.DEFAULT_REDIRECT_URIS[0] 
+        expected_scopes = self.DEFAULT_SCOPES
         response = self._flowstep_request_authorization(
-                                scope=expected_scope,
+                                scope=expected_scopes,
                                 redirect_uri=expected_redirect_uri)
 
         self.assertIsNotNone(response.result['data'])
@@ -308,7 +322,7 @@ class OAuth2AuthorizationCodeFlowTests(OAuth2FlowTests):
         consumer_id = data['consumer']['id']
         self.assertEqual(consumer_id, self.consumer['id'])
 
-        self.assertEqual(data['requested_scopes'], [expected_scope])
+        self.assertEqual(data['requested_scopes'], expected_scopes)
 
         self.assertEqual(data['redirect_uri'], expected_redirect_uri)
 
@@ -340,7 +354,7 @@ class OAuth2AuthorizationCodeFlowTests(OAuth2FlowTests):
         user_foo = self.identity_api.create_user(user_foo)
         user_foo['password'] = password
 
-        # FIXME(garcianavalon) Im sure there is a better way to do this
+        # TODO(garcianavalon) Im sure there is a better way to do this
         roles = self.assignment_api.list_roles()
         role_admin = next(r for r in roles if r['name'] == 'admin')
 
@@ -366,19 +380,19 @@ class OAuth2AuthorizationCodeFlowTests(OAuth2FlowTests):
         """
         # First make two requests with different scopes
         expected_redirect_uri = self.DEFAULT_REDIRECT_URIS[0]
-        expected_scope1 = self.DEFAULT_SCOPES[0]
+        expected_scope1 = [self.DEFAULT_SCOPES[0]]
         get_response1 = self._flowstep_request_authorization(
                                 scope=expected_scope1,
                                 redirect_uri=expected_redirect_uri)
         scopes1 = get_response1.result['data']['requested_scopes']
-        self.assertEqual(scopes1, [expected_scope1])
+        self.assertEqual(scopes1, expected_scope1)
 
-        expected_scope2 = self.DEFAULT_SCOPES[1]
+        expected_scope2 = [self.DEFAULT_SCOPES[1]]
         get_response2 = self._flowstep_request_authorization(
                                 scope=expected_scope2,
                                 redirect_uri=expected_redirect_uri)
         scopes2 = get_response2.result['data']['requested_scopes']
-        self.assertEqual(scopes2, [expected_scope2])
+        self.assertEqual(scopes2, expected_scope2)
 
         self.assertNotEqual(scopes2, scopes1)
 
@@ -402,37 +416,35 @@ class OAuth2AuthorizationCodeFlowTests(OAuth2FlowTests):
                                     scopes=scopes2, 
                                     expected_status=302)
 
-class OAuth2AccessTokenFlowTests(OAuth2FlowTests):
+class OAuth2AccessTokenFlowTests(OAuth2FlowBaseTests):
 
 
     def test_flowstep_obtain_access_token(self):
         response = self._flowstep_obtain_access_token()
-        # TODO(garcianavalon) test more stuff
         access_token = response.result
 
         self.assertIsNotNone(access_token['access_token'])
         self.assertIsNotNone(access_token['token_type'])
         self.assertIsNotNone(access_token['expires_in'])
+        self.assertIsNotNone(access_token['refresh_token'])
 
         scope = response.result['scope']
-        # TODO(garcianavalon) this is not working
-        #self.assertEqual(scope, self.DEFAULT_SCOPES)
+        self.assertEqual(scope, self.DEFAULT_SCOPES[0])
 
     def test_access_code_only_one_use(self):
-        # TODO(garcianavalon) refractor this for better code reuse
         response = self._flowstep_grant_authorization()
         authorization_code = self._extract_authorization_code_from_header(response)
 
         consumer_id = self.consumer['id']
         consumer_secret = self.consumer['secret']
 
-        headers,body = self._generate_json_request(authorization_code,
+        headers, body = self._generate_json_request(authorization_code,
                                                    consumer_id, consumer_secret)
         # POST to the token url
-        response1 = self.post('/OS-OAUTH2/access_token',body=body,
+        response1 = self.post('/OS-OAUTH2/access_token', body=body,
                         headers=headers, expected_status=200)
         # POST again to check its invalid
-        response2 = self.post('/OS-OAUTH2/access_token',body=body,
+        response2 = self.post('/OS-OAUTH2/access_token', body=body,
                         headers=headers, expected_status=401)        
 
 
@@ -444,7 +456,7 @@ class OAuth2AccessTokenFlowTests(OAuth2FlowTests):
         self.assertIsNotNone(token['expires_at'])
 
     def test_auth_with_access_token_no_scope(self):
-        access_token = self._flowstep_obtain_access_token(scope='all_info').result
+        access_token = self._flowstep_obtain_access_token(scope=['all_info']).result
         body = self._auth_body(access_token)
 
         # POST to the auth url as an unauthenticated user to get a keystone token
@@ -452,7 +464,7 @@ class OAuth2AccessTokenFlowTests(OAuth2FlowTests):
         self._exchange_access_token_assertions(response)
 
     def test_auth_with_access_token_with_scope(self):
-        access_token = self._flowstep_obtain_access_token(scope='all_info').result
+        access_token = self._flowstep_obtain_access_token(scope=['all_info']).result
         body = self._auth_body(access_token, project=self.project_id)
         
         # POST to the auth url as an unauthenticated user to get a keystone token

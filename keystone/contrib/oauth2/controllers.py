@@ -46,18 +46,18 @@ class ConsumerCrudV3(controller.V3Controller):
         return ConsumerCrudV3.wrap_collection(context, ref)
 
     @controller.protected()
-    def create_consumer(self, context,consumer):
+    def create_consumer(self, context, consumer):
         ref = self._assign_unique_id(self._normalize_dict(consumer))
         consumer_ref = self.oauth2_api.create_consumer(ref)
         return ConsumerCrudV3.wrap_member(context, consumer_ref)
 
     @controller.protected()
-    def get_consumer(self, context,consumer_id):
+    def get_consumer(self, context, consumer_id):
         consumer_ref = self.oauth2_api.get_consumer(consumer_id)
         return ConsumerCrudV3.wrap_member(context, consumer_ref)
 
     @controller.protected() 
-    def update_consumer(self, context,consumer_id,consumer):
+    def update_consumer(self, context, consumer_id, consumer):
         self._require_matching_id(consumer_id, consumer)
         ref = self._normalize_dict(consumer)
         self._validate_consumer_ref(ref)
@@ -70,12 +70,12 @@ class ConsumerCrudV3(controller.V3Controller):
             raise exception.ValidationError(message=msg)
 
     @controller.protected()
-    def delete_consumer(self, context,consumer_id):
+    def delete_consumer(self, context, consumer_id):
         # TODO(garcianavalon) revoke and delete consumer tokens
         self.oauth2_api.delete_consumer(consumer_id)
 
 @dependency.requires('oauth2_api')  
-class AuthorizationCodeCrudV3(controller.V3Controller):
+class AuthorizationCodeEndpointV3(controller.V3Controller):
 
     collection_name = 'authorization_codes'
     member_name = 'authorization_code'
@@ -84,7 +84,7 @@ class AuthorizationCodeCrudV3(controller.V3Controller):
     def list_authorization_codes(self, context):
         """Description of the controller logic."""
         ref = self.oauth2_api.list_authorization_codes()
-        return AuthorizationCodeCrudV3.wrap_collection(context, ref)
+        return AuthorizationCodeEndpointV3.wrap_collection(context, ref)
 
 @dependency.requires('oauth2_api', 'token_provider_api')  
 class OAuth2ControllerV3(controller.V3Controller):
@@ -105,9 +105,9 @@ class OAuth2ControllerV3(controller.V3Controller):
         server = WebApplicationServer(request_validator)
         # Validate request
         headers = context['headers']
-        body=context['query_string']
+        body = context['query_string']
         uri = self.base_url(context, context['path'])
-        http_method='GET'
+        http_method = 'GET'
 
         try:
             scopes, credentials = server.validate_authorization_request(
@@ -201,17 +201,7 @@ class OAuth2ControllerV3(controller.V3Controller):
             # TODO(garcianavalon) decide how I'm I going to redirect cos redirects should be handled by an upper layer
             raise exception.ValidationError(message=e.error)
 
-    def _dict_to_urlencoded(self,dict):
-        
-
-        # TODO(garcianavalon) this check shouldnt be here
-        if not 'code' in dict:
-            msg = _('code missing in request body: %s') %dict
-            raise exception.ValidationError(message=msg)
-
-        return 
-
-    def create_access_token(self,context,token_request):
+    def create_access_token(self, context, token_request):
         request_validator = validator.OAuth2Validator()
         server = WebApplicationServer(request_validator)
 
@@ -224,7 +214,7 @@ class OAuth2ControllerV3(controller.V3Controller):
         # We leave it like this to support future versions where the use of 
         # x-www-form-urlencoded is accepted
         if headers['Content-Type'] == 'application/x-www-form-urlencoded':
-            body=context['query_string']
+            body = context['query_string']
         elif headers['Content-Type'] == 'application/json':
             
             if not 'code' in token_request:
@@ -242,7 +232,7 @@ class OAuth2ControllerV3(controller.V3Controller):
             raise exception.ValidationError(message=msg)
 
         uri = self.base_url(context, context['path'])
-        http_method='POST'
+        http_method = 'POST'
         
         # Extra credentials you wish to include
         credentials = None # TODO(garcianavalon)
