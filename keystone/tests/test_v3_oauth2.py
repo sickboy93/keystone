@@ -50,7 +50,7 @@ class OAuth2Tests(test_v3.RestfulTestCase):
         # TODO(garcianavalon) I've put this line for dependency injection to work, but I don't know if its the right way to do it...
         self.manager = core.Manager()
 
-    def _create_consumer(self,description=None,
+    def _create_consumer(self, description=None,
                          client_type='confidential',
                          redirect_uris=DEFAULT_REDIRECT_URIS,
                          grant_type='authorization_code',
@@ -62,9 +62,9 @@ class OAuth2Tests(test_v3.RestfulTestCase):
             'grant_type': grant_type,
             'scopes': scopes
         }
-        response = self.post(self.CONSUMER_URL,body={'consumer': data})
+        response = self.post(self.CONSUMER_URL, body={'consumer': data})
 
-        return response.result['consumer'],data
+        return response.result['consumer'], data
 
     def _create_user_and_tenant(self):
         pass
