@@ -40,7 +40,10 @@ class OAuth2Validator(RequestValidator):
         client_dict = self.oauth2_api.get_consumer(client_id)
         if client_dict:
             return True
-        # Currently the sql driver raises an exception if the consumer doesnt exist
+        # NOTE(garcianavalon) Currently the sql driver raises an exception 
+        # if the consumer doesnt exist so we throw the Keystone NotFound 
+        # 404 Not Found exception instead of the OAutlib InvalidClientId 
+        # 400 Bad Request exception.
         return False 
 
     def validate_redirect_uri(self, client_id, redirect_uri, request, *args, **kwargs):
@@ -174,6 +177,7 @@ class OAuth2Validator(RequestValidator):
 
         # TODO(garcinanavalon) create a custom TokenCreator instead of
         # hacking the dictionary
+
         access_token = {
             'id':token['access_token'],
             'consumer_id':request.client.client_id,

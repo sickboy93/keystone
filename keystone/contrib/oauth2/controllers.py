@@ -109,9 +109,10 @@ class OAuth2ControllerV3(controller.V3Controller):
         uri = self.base_url(context, context['path'])
         http_method = 'GET'
 
+        response = {}
         try:
             scopes, credentials = server.validate_authorization_request(
-                uri, http_method , body, headers)
+                uri, http_method, body, headers)
             # scopes will hold default scopes for client, i.e.
             #['https://example.com/userProfile', 'https://example.com/pictures']
 
@@ -142,19 +143,45 @@ class OAuth2ControllerV3(controller.V3Controller):
             # his default scopes (omitted from request), after which you will
             # redirect to his default redirect uri (omitted from request).
             
-            # This JSON is to be used by the next layer (ie a Django server) to populate the view
-            return { 'data': { # TODO(garcianavalon) find a better name for this
-                        'consumer': {
-                            'id':credentials['client_id']
-                            # TODO(garcianavalon) add consumer description
-                        },
-                        'redirect_uri':credentials['redirect_uri'],
-                        'requested_scopes':request.scopes
-                    }}
+            # This JSON is to be used by the next layer (ie a Django server) to 
+            # populate the view
+            response['data'] = { 
+                'consumer': {
+                    'id':credentials['client_id']
+                    # TODO(garcianavalon) add consumer description
+                },
+                'redirect_uri':credentials['redirect_uri'],
+                'requested_scopes':request.scopes
+            }
             
         except FatalClientError as e:
-            raise exception.ValidationError(message=e.error)
+            # NOTE(garcianavalon) form the OAuthLib documentation and comments:
+            # Errors during authorization where user should not be redirected back.
+            # If the request fails due to a missing, invalid, or mismatching
+            # redirection URI, or if the client identifier is missing or invalid,
+            # the authorization server SHOULD inform the resource owner of the
+            # error and MUST NOT automatically redirect the user-agent to the
+            # invalid redirection URI.
+            # Instead the user should be informed of the error by the provider itself.
+            # Fatal errors occur when the client_id or redirect_uri is invalid or
+            # missing. These must be caught by the provider and handled, how this
+            # is done is outside of the scope of OAuthLib but showing an error
+            # page describing the issue is a good idea.
+            msg = e.json
+            raise exception.ValidationError(message=msg)
 
+        except OAuth2Error as e:
+            # NOTE(garcianavalon) form the OAuthLib documentation and comments:
+            # A normal error could be a missing response_type parameter or the client
+            # attempting to access scope it is not allowed to ask authorization for.
+            # Normal errors can safely be included in the redirection URI and
+            # sent back to the client.
+
+            # We send back the errors in the response body
+            response['error'] = json.loads(e.json)
+
+        return response
+            
 
     @controller.protected()
     def create_authorization_code(self, context, user_auth):
@@ -194,12 +221,20 @@ class OAuth2ControllerV3(controller.V3Controller):
             return response
 
         except FatalClientError as e:
-            raise exception.ValidationError(message=e.error)
-
-        except OAuth2Error as e:
-            # Less grave errors will be reported back to client
-            # TODO(garcianavalon) decide how I'm I going to redirect cos redirects should be handled by an upper layer
-            raise exception.ValidationError(message=e.error)
+            # NOTE(garcianavalon) form the OAuthLib documentation and comments:
+            # Errors during authorization where user should not be redirected back.
+            # If the request fails due to a missing, invalid, or mismatching
+            # redirection URI, or if the client identifier is missing or invalid,
+            # the authorization server SHOULD inform the resource owner of the
+            # error and MUST NOT automatically redirect the user-agent to the
+            # invalid redirection URI.
+            # Instead the user should be informed of the error by the provider itself.
+            # Fatal errors occur when the client_id or redirect_uri is invalid or
+            # missing. These must be caught by the provider and handled, how this
+            # is done is outside of the scope of OAuthLib but showing an error
+            # page describing the issue is a good ideaself.
+            msg = e.json
+            raise exception.ValidationError(message=msg)
 
     def create_access_token(self, context, token_request):
         request_validator = validator.OAuth2Validator()
@@ -271,7 +306,9 @@ class OAuth2ControllerV3(controller.V3Controller):
         # NOTE(garcianavalon) oauthlib returns the body as a JSON string already,
         # and the Keystone base controlers expect a dictionary  
         body = json.loads(body)
-
+        # TODO(garcianavalon) body contains scope instead of scopes and is only a
+        # space separated string instead of a list. We can wait for a fix from
+        # Oauthlib or implement our own TokenProvider
         if status == 200:
             response = wsgi.render_response(body,
                                         status=(status, 'OK'),
