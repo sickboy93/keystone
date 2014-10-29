@@ -287,10 +287,7 @@ class OAuth2ControllerV3(controller.V3Controller):
         #     'access_token': 'sldafh309sdf',
         #     'refresh_token': 'alsounguessablerandomstring',
         #     'expires_in': 3600,
-        #     'scopes': [
-        #         'https://example.com/userProfile',
-        #         'https://example.com/pictures'
-        #     ],
+        #     'scope': 'https://example.com/userProfile https://example.com/pictures',
         #     'token_type': 'Bearer'
         # }
         # body will contain an error code and possibly an error description if

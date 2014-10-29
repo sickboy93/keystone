@@ -511,10 +511,8 @@ class OAuth2AccessTokenFlowTests(OAuth2FlowBaseTests):
         self.assertIsNotNone(access_token['expires_in'])
         self.assertIsNotNone(access_token['refresh_token'])
 
-        # FIXME(garcianavalon) this is broken, check controler.py and
-        # validator.py
-        # scope = response.result['scopes']
-        # self.assertEqual(scope, expected_scopes)
+        scope = response.result['scope']
+        self.assertEqual(scope, ' '.join(expected_scopes))
 
     def test_access_code_only_one_use(self):
         expected_redirect_uri = self.DEFAULT_REDIRECT_URIS[0] 
