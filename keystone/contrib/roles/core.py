@@ -118,7 +118,6 @@ class RolesDriver(object):
         """
         raise exception.NotImplemented()
 
-
     # PERMISSIONS
     @abc.abstractmethod
     def list_permissions(self):
@@ -136,6 +135,41 @@ class RolesDriver(object):
         :param permission: permission data
         :type permission: dict
         :returns: permission as dict
+
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def get_permission(self, permission_id):
+        """Get permission details
+        
+        :param permission_id: permission id
+        :type permission_id: string
+        :returns: permission
+
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def update_permission(self, permission_id, permission):
+        """Update permission details
+        
+        :param permission_id: id of permission to update
+        :type permission_id: string
+        :param permission: new permission data
+        :type permission: dict
+        :returns: permission
+
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def delete_permission(self, permission_id):
+        """Delete permission.
+
+        :param permission_id: id of permission to delete
+        :type permission_id: string
+        :returns: None.
 
         """
         raise exception.NotImplemented()

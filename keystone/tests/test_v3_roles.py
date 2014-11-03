@@ -139,44 +139,60 @@ class RoleCrudTests(RolesBaseTests):
         response = self.delete(self.ROLES_URL + '/%s' %role_id,
                                 expected_status=204)
 
+    def test_add_permissions_to_role(self):
+        role_name = uuid.uuid4().hex
+        role = self._create_role(role_name)
+        role_id = role['id']
+        permission_name = uuid.uuid4().hex
+        permission = self._create_permission(permission_name)
+
+        body = {
+            'role': {
+                'permissions': [permission['id']],
+            }
+        }
+        response = self.patch(self.ROLES_URL + '/%s' %role_id,
+                                 body=body)
+        update_role = response.result['role']
+
+        self._assert_role(update_role, role_name, True)
+        self.assertIsNotNone(role['permissions'])
+        self.assertEqual(1, len(role['permissions']))
+        self.assertEqual(permission_name, role['permissions'][0]['name'])
+
 class PermissionCrudTests(RolesBaseTests):
+
+    def _assert_permission(self, permission, expected_name, expected_is_editable):
+        self.assertIsNotNone(permission)
+        self.assertIsNotNone(permission['id'])
+        self.assertEqual(expected_name, permission['name'])
+        self.assertEqual(expected_is_editable, permission['is_editable'])
 
     def test_permission_create_default(self):
         name = uuid.uuid4().hex
         permission = self._create_permission(name)
 
-        self.assertIsNotNone(permission)
-
-        self.assertEqual(name, permission['name'])
-        self.assertEqual(True, permission['is_editable'])
+        self._assert_permission(permission, name, True)
 
     def test_permission_create_explicit(self):
         name = uuid.uuid4().hex
         permission = self._create_permission(name, is_editable=True)
 
-        self.assertIsNotNone(permission)
-
-        self.assertEqual(name, permission['name'])
-        self.assertEqual(True, permission['is_editable'])
+        self._assert_permission(permission, name, True)
 
     def test_permission_create_not_editable(self):
         name = uuid.uuid4().hex
         permission = self._create_permission(name, is_editable=False)
 
-        self.assertIsNotNone(permission)
-
-        self.assertEqual(name, permission['name'])
-        self.assertEqual(False, permission['is_editable'])
-
-    def test_permission_to_application(self):
-        # TODO(garcianavalon)
-        pass
+        self._assert_permission(permission, name, False)
 
     def test_permissions_list(self):
         permission1 = self._create_permission(uuid.uuid4().hex)
         permission2 = self._create_permission(uuid.uuid4().hex)
+
         response = self.get(self.PERMISSIONS_URL)
         entities = response.result['permissions']
+
         self.assertIsNotNone(entities)
 
         self_url = ['http://localhost/v3', self.PERMISSIONS_URL]
@@ -186,3 +202,41 @@ class PermissionCrudTests(RolesBaseTests):
 
         self.assertEqual(2, len(entities))
 
+    def test_get_permission(self):
+        name = uuid.uuid4().hex
+        permission = self._create_permission(name)
+        permission_id = permission['id']
+        response = self.get(self.PERMISSIONS_URL + '/%s' %permission_id)
+        get_permission = response.result['permission']
+
+        self._assert_permission(permission, name, True)
+        self_url = ['http://localhost/v3', self.PERMISSIONS_URL, '/', permission_id]
+        self_url = ''.join(self_url)
+        self.assertEqual(self_url, get_permission['links']['self'])
+        self.assertEqual(permission_id, get_permission['id'])
+
+    def test_update_permission(self):
+        name = uuid.uuid4().hex
+        permission = self._create_permission(name)
+        original_id = permission['id']
+        original_name = permission['name']
+        update_name = original_name + '_new'
+       
+        body = {
+            'permission': {
+                'name': update_name,
+            }
+        }
+        response = self.patch(self.PERMISSIONS_URL + '/%s' %original_id,
+                                 body=body)
+        update_permission = response.result['permission']
+
+        self._assert_permission(update_permission, update_name, True)
+        self.assertEqual(original_id, update_permission['id'])
+
+    def test_delete_permission(self):
+        name = uuid.uuid4().hex
+        permission = self._create_permission(name)
+        permission_id = permission['id']
+        response = self.delete(self.PERMISSIONS_URL + '/%s' %permission_id,
+                                expected_status=204)

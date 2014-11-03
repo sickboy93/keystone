@@ -53,7 +53,6 @@ class RoleCrudV3(BaseCrudV3):
         ref = self.roles_api.update_role(role_id, self._normalize_dict(role))
         return RoleCrudV3.wrap_member(context, ref)
 
-
     @controller.protected()
     def delete_role(self, context, role_id):
         self.roles_api.delete_role(role_id)
@@ -75,3 +74,19 @@ class PermissionCrudV3(BaseCrudV3):
         ref = self._assign_unique_id(self._normalize_dict(permission))
         permission_ref = self.roles_api.create_permission(ref)
         return PermissionCrudV3.wrap_member(context, permission_ref)
+
+    @controller.protected()
+    def get_permission(self, context, permission_id):
+        permission_ref = self.roles_api.get_permission(permission_id)
+        return PermissionCrudV3.wrap_member(context, permission_ref)
+
+    @controller.protected() 
+    def update_permission(self, context, permission_id, permission):
+        self._require_matching_id(permission_id, permission)
+        ref = self.roles_api.update_permission(permission_id, 
+                                self._normalize_dict(permission))
+        return PermissionCrudV3.wrap_member(context, ref)
+
+    @controller.protected()
+    def delete_permission(self, context, permission_id):
+        self.roles_api.delete_permission(permission_id)    

@@ -12,6 +12,9 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy.orm import relationship
+
 from keystone.common import sql
 from keystone.contrib import roles
 from keystone import exception
@@ -41,8 +44,9 @@ class Role(sql.ModelBase, sql.ModelDictMixin):
     is_editable = sql.Column(sql.Boolean(), default=True, nullable=False)
     application = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
                              nullable=True)
-    permissions = sql.sql.orm.relationship("Permission",
+    permissions_relationship = relationship("Permission",
                                             secondary=role_permission_fiware_table)
+    permissions = association_proxy('permissions_relationship', 'permissions')
 
 class Permission(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'permission_fiware'
@@ -54,6 +58,14 @@ class Permission(sql.ModelBase, sql.ModelDictMixin):
     is_editable = sql.Column(sql.Boolean(), default=True, nullable=False)
     application = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
                              nullable=True)
+
+    def __init__(self, *args, **kwargs):
+        id = kwargs.get('id', None)
+        if id:
+            self.id = id
+        name = kwargs.get('name', None)
+        if name:
+            self.name = name
 
 class Roles(roles.RolesDriver):
     """ CRUD driver for the SQL backend """
@@ -111,5 +123,31 @@ class Roles(roles.RolesDriver):
             permission_ref = Permission.from_dict(permission)
             session.add(permission_ref)
         return permission_ref.to_dict()
+
+    def _get_permission(self, session, permission_id):
+        permission_ref = session.query(Permission).get(permission_id)
+        if permission_ref is None:
+            raise exception.NotFound(_('No Permission found with id: %s' %permission_id))
+        return permission_ref
+
+    def get_permission(self, permission_id):
+        session = sql.get_session()
+        with session.begin():
+            permission_ref = self._get_permission(session, permission_id) 
+        return permission_ref.to_dict()
+
+    def update_permission(self, permission_id, permission):
+        session = sql.get_session()
+        with session.begin():
+            permission_ref = self._get_permission(session, permission_id)
+            for k in permission:
+                setattr(permission_ref, k, permission[k])
+        return permission_ref.to_dict()
+        
+    def delete_permission(self, permission_id):
+        session = sql.get_session()
+        with session.begin():
+            permission_ref = self._get_permission(session, permission_id)
+            session.delete(permission_ref)    
 
             
