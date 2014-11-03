@@ -62,36 +62,29 @@ class RolesBaseTests(test_v3.RestfulTestCase):
 
 class RoleCrudTests(RolesBaseTests):
 
+    def _assert_role(self, role, expected_name, expected_is_editable):
+        self.assertIsNotNone(role)
+        self.assertIsNotNone(role['id'])
+        self.assertEqual(expected_name, role['name'])
+        self.assertEqual(expected_is_editable, role['is_editable'])
+
     def test_role_create_default(self):
         name = uuid.uuid4().hex
         role = self._create_role(name)
 
-        self.assertIsNotNone(role)
-
-        self.assertEqual(name, role['name'])
-        self.assertEqual(True, role['is_editable'])
+        self._assert_role(role, name, True)
 
     def test_role_create_explicit(self):
         name = uuid.uuid4().hex
         role = self._create_role(name, is_editable=True)
 
-        self.assertIsNotNone(role)
-
-        self.assertEqual(name, role['name'])
-        self.assertEqual(True, role['is_editable'])
+        self._assert_role(role, name, True)
 
     def test_role_create_not_editable(self):
         name = uuid.uuid4().hex
         role = self._create_role(name, is_editable=False)
 
-        self.assertIsNotNone(role)
-
-        self.assertEqual(name, role['name'])
-        self.assertEqual(False, role['is_editable'])
-
-    def test_role_to_application(self):
-        # TODO(garcianavalon)
-        pass
+        self._assert_role(role, name, False)
 
     def test_roles_list(self):
         role1 = self._create_role(uuid.uuid4().hex)
@@ -106,6 +99,45 @@ class RoleCrudTests(RolesBaseTests):
         self.assertValidListLinks(response.result['links'])
 
         self.assertEqual(2, len(entities))
+
+    def test_get_role(self):
+        name = uuid.uuid4().hex
+        role = self._create_role(name)
+        role_id = role['id']
+        response = self.get(self.ROLES_URL + '/%s' %role_id)
+        get_role = response.result['role']
+
+        self._assert_role(role, name, True)
+        self_url = ['http://localhost/v3', self.ROLES_URL, '/', role_id]
+        self_url = ''.join(self_url)
+        self.assertEqual(self_url, get_role['links']['self'])
+        self.assertEqual(role_id, get_role['id'])
+
+    def test_update_role(self):
+        name = uuid.uuid4().hex
+        role = self._create_role(name)
+        original_id = role['id']
+        original_name = role['name']
+        update_name = original_name + '_new'
+       
+        body = {
+            'role': {
+                'name': update_name,
+            }
+        }
+        response = self.patch(self.ROLES_URL + '/%s' %original_id,
+                                 body=body)
+        update_role = response.result['role']
+
+        self._assert_role(update_role, update_name, True)
+        self.assertEqual(original_id, update_role['id'])
+
+    def test_delete_role(self):
+        name = uuid.uuid4().hex
+        role = self._create_role(name)
+        role_id = role['id']
+        response = self.delete(self.ROLES_URL + '/%s' %role_id,
+                                expected_status=204)
 
 class PermissionCrudTests(RolesBaseTests):
 

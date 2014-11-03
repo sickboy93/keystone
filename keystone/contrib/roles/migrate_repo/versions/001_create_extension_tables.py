@@ -20,6 +20,8 @@ def upgrade(migrate_engine):
     meta = sql.MetaData()
     meta.bind = migrate_engine
 
+    sql.Table('consumer_oauth2', meta, autoload=True)
+
     role_table = sql.Table(
         'role_fiware',
         meta,
@@ -40,13 +42,21 @@ def upgrade(migrate_engine):
                              nullable=True, index=True))
     permission_table.create(migrate_engine, checkfirst=True)
 
+    role_permission_table = sql.Table(
+        'role_permission_fiware',
+        meta,
+        sql.Column('role_id', sql.String(64), sql.ForeignKey('role_fiware.id')),
+        sql.Column('permission_id', sql.String(64), 
+            sql.ForeignKey('permission_fiware.id')))
+    role_permission_table.create(migrate_engine, checkfirst=True)
+
 
 def downgrade(migrate_engine):
     # Operations to reverse the above upgrade go here.
     meta = sql.MetaData()
     meta.bind = migrate_engine
 
-    tables = ['role_fiware', 'permission_fiware']
+    tables = ['role_fiware', 'permission_fiware', 'role_permission_fiware']
     for t in tables:
         table = sql.Table(t, meta, autoload=True)
         table.drop(migrate_engine, checkfirst=True)

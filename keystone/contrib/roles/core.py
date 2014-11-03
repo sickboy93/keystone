@@ -83,6 +83,42 @@ class RolesDriver(object):
         """
         raise exception.NotImplemented()
 
+    @abc.abstractmethod
+    def get_role(self, role_id):
+        """Get role details
+        
+        :param role_id: role id
+        :type role_id: string
+        :returns: role
+
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def update_role(self, role_id, role):
+        """Update role details
+        
+        :param role_id: id of role to update
+        :type role_id: string
+        :param role: new role data
+        :type role: dict
+        :returns: role
+
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def delete_role(self, role_id):
+        """Delete role.
+
+        :param role_id: id of role to delete
+        :type role_id: string
+        :returns: None.
+
+        """
+        raise exception.NotImplemented()
+
+
     # PERMISSIONS
     @abc.abstractmethod
     def list_permissions(self):

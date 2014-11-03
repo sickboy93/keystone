@@ -42,6 +42,22 @@ class RoleCrudV3(BaseCrudV3):
         role_ref = self.roles_api.create_role(ref)
         return RoleCrudV3.wrap_member(context, role_ref)
 
+    @controller.protected()
+    def get_role(self, context, role_id):
+        role_ref = self.roles_api.get_role(role_id)
+        return RoleCrudV3.wrap_member(context, role_ref)
+
+    @controller.protected() 
+    def update_role(self, context, role_id, role):
+        self._require_matching_id(role_id, role)
+        ref = self.roles_api.update_role(role_id, self._normalize_dict(role))
+        return RoleCrudV3.wrap_member(context, ref)
+
+
+    @controller.protected()
+    def delete_role(self, context, role_id):
+        self.roles_api.delete_role(role_id)
+
 
 class PermissionCrudV3(BaseCrudV3):
 

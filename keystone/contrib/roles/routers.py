@@ -23,6 +23,9 @@ build_resource_relation = functools.partial(
     json_home.build_v3_extension_resource_relation,
     extension_name='OS-ROLES', extension_version='1.0')
 
+build_parameter_relation = functools.partial(
+    json_home.build_v3_extension_parameter_relation,
+    extension_name='OS-ROLES', extension_version='1.0')
 
 class RolesExtension(wsgi.V3ExtensionRouter):
 
@@ -38,6 +41,18 @@ class RolesExtension(wsgi.V3ExtensionRouter):
             get_action='list_roles',
             post_action='create_role',
             rel=build_resource_relation(resource_name='roles'))
+
+        self._add_resource(
+            mapper, roles_controller,
+            path=self.PATH_PREFIX + '/roles/{role_id}',
+            get_action='get_role',
+            patch_action='update_role',
+            delete_action='delete_role',
+            rel=build_resource_relation(resource_name='role'),
+            path_vars={
+                'role_id':
+                build_parameter_relation(parameter_name='role_id'),
+            })
 
         # PERMISSIONS
         self._add_resource(
