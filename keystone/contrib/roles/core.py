@@ -62,6 +62,7 @@ class RolesManager(manager.Manager):
 class RolesDriver(object):
     """Interface description for Roles and Permissions driver."""
 
+    # ROLES
     @abc.abstractmethod
     def list_roles(self):
         """List all created roles
@@ -78,6 +79,27 @@ class RolesDriver(object):
         :param role: role data
         :type role: dict
         :returns: role as dict
+
+        """
+        raise exception.NotImplemented()
+
+    # PERMISSIONS
+    @abc.abstractmethod
+    def list_permissions(self):
+        """List all created permissions
+
+        :returns: permissions list as dict
+
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def create_permission(self, permission):
+        """Create a new permission
+
+        :param permission: permission data
+        :type permission: dict
+        :returns: permission as dict
 
         """
         raise exception.NotImplemented()

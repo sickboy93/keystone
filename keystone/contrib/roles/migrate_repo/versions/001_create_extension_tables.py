@@ -14,21 +14,31 @@
 
 import sqlalchemy as sql
 
-
 def upgrade(migrate_engine):
     # Upgrade operations go here. Don't create your own engine; bind
     # migrate_engine to your metadata
     meta = sql.MetaData()
     meta.bind = migrate_engine
 
-    # roles
     role_table = sql.Table(
         'role_fiware',
         meta,
         sql.Column('id', sql.String(64), primary_key=True),
         sql.Column('name', sql.String(64), nullable=False),
-        sql.Column('is_editable', sql.Boolean(), default=True, nullable=False))
+        sql.Column('is_editable', sql.Boolean(), default=True, nullable=False),
+        sql.Column('application', sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
+                             nullable=True, index=True))
     role_table.create(migrate_engine, checkfirst=True)
+
+    permission_table = sql.Table(
+        'permission_fiware',
+        meta,
+        sql.Column('id', sql.String(64), primary_key=True),
+        sql.Column('name', sql.String(64), nullable=False),
+        sql.Column('is_editable', sql.Boolean(), default=True, nullable=False),
+        sql.Column('application', sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
+                             nullable=True, index=True))
+    permission_table.create(migrate_engine, checkfirst=True)
 
 
 def downgrade(migrate_engine):
@@ -36,7 +46,7 @@ def downgrade(migrate_engine):
     meta = sql.MetaData()
     meta.bind = migrate_engine
 
-    tables = ['role_fiware']
+    tables = ['role_fiware', 'permission_fiware']
     for t in tables:
         table = sql.Table(t, meta, autoload=True)
         table.drop(migrate_engine, checkfirst=True)

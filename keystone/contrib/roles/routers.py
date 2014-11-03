@@ -30,10 +30,19 @@ class RolesExtension(wsgi.V3ExtensionRouter):
 
     def add_routes(self, mapper):
         roles_controller = controllers.RoleCrudV3()
-
+        permissions_controller = controllers.PermissionCrudV3()
+        # ROLES
         self._add_resource(
             mapper, roles_controller,
             path=self.PATH_PREFIX + '/roles',
             get_action='list_roles',
             post_action='create_role',
             rel=build_resource_relation(resource_name='roles'))
+
+        # PERMISSIONS
+        self._add_resource(
+            mapper, permissions_controller,
+            path=self.PATH_PREFIX + '/permissions',
+            get_action='list_permissions',
+            post_action='create_permission',
+            rel=build_resource_relation(resource_name='permissions'))
