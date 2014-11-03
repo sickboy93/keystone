@@ -1,4 +1,4 @@
-# Copyright 2013 OpenStack Foundation
+# Copyright (C) 2014 Universidad Politecnica de Madrid
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -12,15 +12,30 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-
 from keystone.common import controller
 from keystone.common import dependency
 
 
-@dependency.requires('example_api')
-class ExampleV3Controller(controller.V3Controller):
+@dependency.requires('roles_api')
+class RoleCrudV3(controller.V3Controller):
+
+    collection_name = 'roles'
+    member_name = 'role'
+
+    @classmethod
+    def base_url(cls, context, path=None):
+        """Construct a path and pass it to V3Controller.base_url method."""
+        path = '/OS-ROLES/' + cls.collection_name
+        return super(RoleCrudV3, cls).base_url(context, path=path)
 
     @controller.protected()
-    def example_get(self, context):
+    def list_roles(self, context):
         """Description of the controller logic."""
-        self.example_api.do_something(context)
+        ref = self.roles_api.list_roles()
+        return RoleCrudV3.wrap_collection(context, ref)
+
+    @controller.protected()
+    def create_role(self, context, role):
+        ref = self._assign_unique_id(self._normalize_dict(role))
+        role_ref = self.roles_api.create_role(ref)
+        return RoleCrudV3.wrap_member(context, role_ref)

@@ -16,23 +16,24 @@ import functools
 
 from keystone.common import json_home
 from keystone.common import wsgi
-from keystone.contrib.example import controllers
+from keystone.contrib.roles import controllers
 
 
 build_resource_relation = functools.partial(
     json_home.build_v3_extension_resource_relation,
-    extension_name='OS-EXAMPLE', extension_version='1.0')
+    extension_name='OS-ROLES', extension_version='1.0')
 
 
-class ExampleRouter(wsgi.V3ExtensionRouter):
+class RolesExtension(wsgi.V3ExtensionRouter):
 
-    PATH_PREFIX = '/OS-EXAMPLE'
+    PATH_PREFIX = '/OS-ROLES'
 
     def add_routes(self, mapper):
-        example_controller = controllers.ExampleV3Controller()
+        roles_controller = controllers.RoleCrudV3()
 
         self._add_resource(
-            mapper, example_controller,
-            path=self.PATH_PREFIX + '/example',
-            get_action='do_something',
-            rel=build_resource_relation(resource_name='example'))
+            mapper, roles_controller,
+            path=self.PATH_PREFIX + '/roles',
+            get_action='list_roles',
+            post_action='create_role',
+            rel=build_resource_relation(resource_name='roles'))

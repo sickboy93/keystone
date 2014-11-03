@@ -12,21 +12,41 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import abc
+import six
 
 from keystone.common import dependency
-from keystone.common import manager
 from keystone import exception
-from keystone.i18n import _
-from keystone import notifications
+from keystone.common import extension
+from keystone.common import manager
+
 from keystone.openstack.common import log
 
 
 LOG = log.getLogger(__name__)
 
+EXTENSION_DATA = {
+    'name': 'UPM-FIWARE Roles API',
+    'namespace': 'https://github.com/ging/keystone/'
+                 'OS-ROLES/v1.0',
+    'alias': 'OS-ROLES',
+    'updated': '2014-11-3T12:00:0-00:00',
+    'description': 'UPM\'s Roles provider for applications in the FIWARE GE \
+                    Identity Manager implementation',
+    'links': [
+        {
+            'rel': 'describedby',
+            # TODO(garcianavalon): needs a description
+            'type': 'text/html',
+            'href': 'https://github.com/ging/keystone/wiki',
+        }
+    ]}
+extension.register_admin_extension(EXTENSION_DATA['alias'], EXTENSION_DATA)
+extension.register_public_extension(EXTENSION_DATA['alias'], EXTENSION_DATA)
 
-@dependency.provider('example_api')
-class ExampleManager(manager.Manager):
-    """Example Manager.
+@dependency.provider('roles_api')
+class RolesManager(manager.Manager):
+    """Roles and Permissions Manager.
 
     See :mod:`keystone.common.manager.Manager` for more details on
     how this dynamically calls the backend.
@@ -34,59 +54,30 @@ class ExampleManager(manager.Manager):
     """
 
     def __init__(self):
-        # The following is an example of event callbacks. In this setup,
-        # ExampleManager's data model is depended on project's data model.
-        # It must create additional aggregates when a new project is created,
-        # and it must cleanup data related to the project whenever a project
-        # has been deleted.
-        #
-        # In this example, the project_deleted_callback will be invoked
-        # whenever a project has been deleted. Similarly, the
-        # project_created_callback will be invoked whenever a new project is
-        # created.
-
-        # This information is used when the @dependency.provider decorator acts
-        # on the class.
-        self.event_callbacks = {
-            notifications.ACTIONS.deleted: {
-                'project': [self.project_deleted_callback],
-            },
-            notifications.ACTIONS.created: {
-                'project': [self.project_created_callback],
-            },
-        }
-        super(ExampleManager, self).__init__(
-            'keystone.contrib.example.core.ExampleDriver')
-
-    def project_deleted_callback(self, service, resource_type, operation,
-                                 payload):
-        # The code below is merely an example.
-        msg = _('Received the following notification: service %(service)s, '
-                'resource_type: %(resource_type)s, operation %(operation)s '
-                'payload %(payload)s')
-        LOG.info(msg, {'service': service, 'resource_type': resource_type,
-                       'operation': operation, 'payload': payload})
-
-    def project_created_callback(self, service, resource_type, operation,
-                                 payload):
-        # The code below is merely an example.
-        msg = _('Received the following notification: service %(service)s, '
-                'resource_type: %(resource_type)s, operation %(operation)s '
-                'payload %(payload)s')
-        LOG.info(msg, {'service': service, 'resource_type': resource_type,
-                       'operation': operation, 'payload': payload})
+        super(RolesManager, self).__init__(
+            'keystone.contrib.roles.backends.sql.Roles')
 
 
-class ExampleDriver(object):
-    """Interface description for Example driver."""
+@six.add_metaclass(abc.ABCMeta)
+class RolesDriver(object):
+    """Interface description for Roles and Permissions driver."""
 
-    def do_something(self, data):
-        """Do something
+    @abc.abstractmethod
+    def list_roles(self):
+        """List all created roles
 
-        :param data: example data
-        :type data: string
-        :raises: keystone.exception,
-        :returns: None.
+        :returns: roles list as dict
+
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def create_role(self, role):
+        """Create a new role
+
+        :param role: role data
+        :type role: dict
+        :returns: role as dict
 
         """
         raise exception.NotImplemented()

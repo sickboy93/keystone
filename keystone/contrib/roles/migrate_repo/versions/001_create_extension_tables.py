@@ -1,4 +1,4 @@
-# Copyright 2012 OpenStack Foundation
+# Copyright (C) 2014 Universidad Politecnica de Madrid
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -21,15 +21,14 @@ def upgrade(migrate_engine):
     meta = sql.MetaData()
     meta.bind = migrate_engine
 
-    # catalog
-
-    service_table = sql.Table(
-        'example',
+    # roles
+    role_table = sql.Table(
+        'role_fiware',
         meta,
         sql.Column('id', sql.String(64), primary_key=True),
-        sql.Column('type', sql.String(255)),
-        sql.Column('extra', sql.Text()))
-    service_table.create(migrate_engine, checkfirst=True)
+        sql.Column('name', sql.String(64), nullable=False),
+        sql.Column('is_editable', sql.Boolean(), default=True, nullable=False))
+    role_table.create(migrate_engine, checkfirst=True)
 
 
 def downgrade(migrate_engine):
@@ -37,7 +36,7 @@ def downgrade(migrate_engine):
     meta = sql.MetaData()
     meta.bind = migrate_engine
 
-    tables = ['example']
+    tables = ['role_fiware']
     for t in tables:
         table = sql.Table(t, meta, autoload=True)
         table.drop(migrate_engine, checkfirst=True)
