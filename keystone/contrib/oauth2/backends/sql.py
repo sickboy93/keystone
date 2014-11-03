@@ -29,7 +29,7 @@ class Consumer(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'consumer_oauth2'
     attributes = ['id', 'description', 'secret', 'client_type', 'redirect_uris',
                     'grant_type', 'response_type', 'scopes']
-                    
+    __table_args__ = {'extend_existing': True}                
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
     description = sql.Column(sql.String(64), nullable=True)
     secret = sql.Column(sql.String(64), nullable=False)
@@ -121,7 +121,7 @@ class OAuth2(oauth2.Driver):
     def get_consumer(self, consumer_id):
         session = sql.get_session()
         with session.begin():
-            consumer_ref = self._get_consumer(session,consumer_id) 
+            consumer_ref = self._get_consumer(session, consumer_id) 
         return consumer_ref.to_dict()
 
     def update_consumer(self, consumer_id, consumer):
@@ -202,7 +202,7 @@ class OAuth2(oauth2.Driver):
                             client_id=client_id)
                     .order_by(sql.sql.desc(ConsumerCredentials.created_at))
             )
-            credentials_ref =  query.first()
+            credentials_ref = query.first()
         if credentials_ref is None:
             raise exception.NotFound(_('Credentials not found'))
         return credentials_ref.to_dict()
@@ -211,7 +211,7 @@ class OAuth2(oauth2.Driver):
     def get_access_token(self, access_token_id):
         session = sql.get_session()
         with session.begin():
-            access_token_ref =  session.query(AccessToken).get(access_token_id)
+            access_token_ref = session.query(AccessToken).get(access_token_id)
 
         if access_token_ref is None:
             msg = _('Access Token %s not found') %access_token_id
