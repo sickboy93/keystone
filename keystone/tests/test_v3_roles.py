@@ -139,26 +139,14 @@ class RoleCrudTests(RolesBaseTests):
         response = self.delete(self.ROLES_URL + '/%s' %role_id,
                                 expected_status=204)
 
-    def test_add_permissions_to_role(self):
+    def test_add_permission_to_role(self):
         role_name = uuid.uuid4().hex
         role = self._create_role(role_name)
-        role_id = role['id']
         permission_name = uuid.uuid4().hex
         permission = self._create_permission(permission_name)
-
-        body = {
-            'role': {
-                'permissions': [permission['id']],
-            }
-        }
-        response = self.patch(self.ROLES_URL + '/%s' %role_id,
-                                 body=body)
-        update_role = response.result['role']
-
-        self._assert_role(update_role, role_name, True)
-        self.assertIsNotNone(role['permissions'])
-        self.assertEqual(1, len(role['permissions']))
-        self.assertEqual(permission_name, role['permissions'][0]['name'])
+        
+        url = self.ROLES_URL + '/%s/permissions/%s' %role['id'], permission['id']
+        response = self.put(url, expected_status=204)
 
 class PermissionCrudTests(RolesBaseTests):
 

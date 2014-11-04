@@ -12,41 +12,22 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from sqlalchemy.ext.associationproxy import association_proxy
-from sqlalchemy.orm import relationship
-
 from keystone.common import sql
 from keystone.contrib import roles
 from keystone import exception
 from keystone.i18n import _
 
-# TODO(garcianavalon) In development we are using the implicit value of 
-# "sqlite:///keystone.db" so we just paste it here.
-# For deployment check in etc/keystone.conf [database], read the OpenStack
-# Identity Service Installation Manual and take a look at 
-# oslo.config (CONF["database"]["connection"]) and oslo.sql
-# to configure the database and use that option here
-engine = sql.sql.create_engine("sqlite:///keystone.db")
-
-role_permission_fiware_table = sql.sql.Table(
-     'role_permission_fiware', 
-     sql.ModelBase.metadata, 
-     autoload=True,
-     autoload_with=engine)
 
 class Role(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'role_fiware'
     __table_args__ = (sql.UniqueConstraint('name'), {'extend_existing': True})
-    attributes = ['id', 'name', 'is_editable', 'application', 'permissions']
+    attributes = ['id', 'name', 'is_editable', 'application']
                     
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
     name = sql.Column(sql.String(64), nullable=False)
     is_editable = sql.Column(sql.Boolean(), default=True, nullable=False)
     application = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
                              nullable=True)
-    permissions_relationship = relationship("Permission",
-                                            secondary=role_permission_fiware_table)
-    permissions = association_proxy('permissions_relationship', 'permissions')
 
 class Permission(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'permission_fiware'
@@ -59,13 +40,15 @@ class Permission(sql.ModelBase, sql.ModelDictMixin):
     application = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
                              nullable=True)
 
-    def __init__(self, *args, **kwargs):
-        id = kwargs.get('id', None)
-        if id:
-            self.id = id
-        name = kwargs.get('name', None)
-        if name:
-            self.name = name
+class RolePermission(sql.ModelBase, sql.DictBase):
+    """Role\'s permissions join table."""
+    __tablename__ = 'role_permission_fiware'
+    role_id = sql.Column(sql.String(64),
+                         sql.ForeignKey('role_fiware.id'),
+                         primary_key=True)
+    permission_id = sql.Column(sql.String(64),
+                          sql.ForeignKey('permission_fiware.id'),
+                          primary_key=True)
 
 class Roles(roles.RolesDriver):
     """ CRUD driver for the SQL backend """
@@ -109,6 +92,21 @@ class Roles(roles.RolesDriver):
         with session.begin():
             role_ref = self._get_role(session, role_id)
             session.delete(role_ref)
+
+    def add_permission_to_role(self, role_id, permission_id):
+        session = sql.get_session()
+        self.get_role(role_id)
+        self.get_permission(permission_id)
+        query = session.query(RolePermission)
+        query = query.filter_by(permission_id=permission_id)
+        query = query.filter_by(role_id=role_id)
+        rv = query.first()
+        if rv:
+            return
+
+        with session.begin():
+            session.add(RolePermission(permission_id=permission_id,
+                                            role_id=role_id))
 
     # PERMISSIONS
     def list_permissions(self):

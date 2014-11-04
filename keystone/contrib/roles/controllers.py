@@ -57,6 +57,9 @@ class RoleCrudV3(BaseCrudV3):
     def delete_role(self, context, role_id):
         self.roles_api.delete_role(role_id)
 
+    @controller.protected()
+    def add_permission_to_role(self, context, role_id, permission_id):
+        self.roles_api.add_permission_to_role(role_id, permission_id)
 
 class PermissionCrudV3(BaseCrudV3):
 

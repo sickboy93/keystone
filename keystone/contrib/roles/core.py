@@ -118,6 +118,19 @@ class RolesDriver(object):
         """
         raise exception.NotImplemented()
 
+    @abc.abstractmethod
+    def add_permission_to_role(self, role_id, permission_id):
+        """Delete role.
+
+        :param role_id: id of role to add permission to
+        :type role_id: string
+        :param permission_id: permission to add to role
+        :type permission_id: string
+        :returns: None.
+
+        """
+        raise exception.NotImplemented()
+    
     # PERMISSIONS
     @abc.abstractmethod
     def list_permissions(self):

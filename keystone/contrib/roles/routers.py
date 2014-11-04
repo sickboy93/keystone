@@ -54,6 +54,16 @@ class RolesExtension(wsgi.V3ExtensionRouter):
                 build_parameter_relation(parameter_name='role_id'),
             })
 
+        self._add_resource(
+            mapper, roles_controller,
+            path=self.PATH_PREFIX + '/roles/{role_id}/permissions/{permission_id}',
+            put_action='add_permission_to_role',
+            rel=build_resource_relation(resource_name='role_permission'),
+            path_vars={
+                'role_id':build_parameter_relation(parameter_name='role_id'),
+                'permission_id':build_parameter_relation(parameter_name='permission_id'),
+            })
+
         # PERMISSIONS
         self._add_resource(
             mapper, permissions_controller,
