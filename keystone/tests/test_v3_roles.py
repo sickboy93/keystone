@@ -145,7 +145,12 @@ class RoleCrudTests(RolesBaseTests):
         permission_name = uuid.uuid4().hex
         permission = self._create_permission(permission_name)
         
-        url = self.ROLES_URL + '/%s/permissions/%s' %role['id'], permission['id']
+        ulr_args = {
+            'role_id':role['id'],
+            'permission_id':permission['id']
+        }   
+        url = self.ROLES_URL + '/%(role_id)s/permissions/%(permission_id)s' \
+                                %ulr_args
         response = self.put(url, expected_status=204)
 
 class PermissionCrudTests(RolesBaseTests):
