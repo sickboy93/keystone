@@ -61,6 +61,10 @@ class RoleCrudV3(BaseCrudV3):
     def add_permission_to_role(self, context, role_id, permission_id):
         self.roles_api.add_permission_to_role(role_id, permission_id)
 
+    @controller.protected()
+    def add_user_to_role(self, context, role_id, user_id):
+        self.roles_api.add_user_to_role(role_id, user_id)
+
 class PermissionCrudV3(BaseCrudV3):
 
     collection_name = 'permissions'
@@ -93,3 +97,37 @@ class PermissionCrudV3(BaseCrudV3):
     @controller.protected()
     def delete_permission(self, context, permission_id):
         self.roles_api.delete_permission(permission_id)    
+
+
+class UserCrudV3(BaseCrudV3):
+
+    collection_name = 'users'
+    member_name = 'user'
+
+    @controller.protected()
+    def list_users(self, context):
+        """Description of the controller logic."""
+        ref = self.roles_api.list_users()
+        return UserCrudV3.wrap_collection(context, ref)
+
+    @controller.protected()
+    def create_user(self, context, user):
+        ref = self._assign_unique_id(self._normalize_dict(user))
+        user_ref = self.roles_api.create_user(ref)
+        return UserCrudV3.wrap_member(context, user_ref)
+
+    @controller.protected()
+    def get_user(self, context, user_id):
+        user_ref = self.roles_api.get_user(user_id)
+        return UserCrudV3.wrap_member(context, user_ref)
+
+    @controller.protected() 
+    def update_user(self, context, user_id, user):
+        self._require_matching_id(user_id, user)
+        ref = self.roles_api.update_user(user_id, 
+                                self._normalize_dict(user))
+        return UserCrudV3.wrap_member(context, ref)
+
+    @controller.protected()
+    def delete_user(self, context, user_id):
+        self.roles_api.delete_user(user_id)    

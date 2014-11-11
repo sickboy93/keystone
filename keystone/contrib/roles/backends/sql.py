@@ -50,6 +50,16 @@ class RolePermission(sql.ModelBase, sql.DictBase):
                           sql.ForeignKey('permission_fiware.id'),
                           primary_key=True)
 
+class RoleUser(sql.ModelBase, sql.DictBase):
+    """Role\'s users join table."""
+    __tablename__ = 'role_user_fiware'
+    role_id = sql.Column(sql.String(64),
+                         sql.ForeignKey('role_fiware.id'),
+                         primary_key=True)
+    user_id = sql.Column(sql.String(64),
+                         sql.ForeignKey('user.id'),
+                         primary_key=True)
+
 class Roles(roles.RolesDriver):
     """ CRUD driver for the SQL backend """
     # ROLES
@@ -100,13 +110,42 @@ class Roles(roles.RolesDriver):
         query = session.query(RolePermission)
         query = query.filter_by(permission_id=permission_id)
         query = query.filter_by(role_id=role_id)
-        rv = query.first()
-        if rv:
+        ref = query.first()
+        if ref:
             return
 
         with session.begin():
             session.add(RolePermission(permission_id=permission_id,
                                             role_id=role_id))
+            
+    def remove_permission_from_role(self, role_id, permission_id):
+        session = sql.get_session()
+        self.get_role(role_id)
+        self.get_permission(permission_id)
+        query = session.query(RolePermission)
+        query = query.filter_by(permission_id=permission_id)
+        query = query.filter_by(role_id=role_id)
+        ref = query.first()
+        if not ref:
+            return
+
+        with session.begin():
+            session.delete(ref)
+
+    def add_user_to_role(self, role_id, user_id):
+        session = sql.get_session()
+        self.get_role(role_id)
+        self.get_user(user_id)
+        query = session.query(RoleUser)
+        query = query.filter_by(user_id=user_id)
+        query = query.filter_by(role_id=role_id)
+        ref = query.first()
+        if ref:
+            return
+
+        with session.begin():
+            session.add(RoleUser(user_id=user_id,
+                                    role_id=role_id)) 
 
     # PERMISSIONS
     def list_permissions(self):
@@ -146,6 +185,45 @@ class Roles(roles.RolesDriver):
         session = sql.get_session()
         with session.begin():
             permission_ref = self._get_permission(session, permission_id)
-            session.delete(permission_ref)    
+            session.delete(permission_ref)  
 
+    #USERS  
+    def list_users(self):
+        session = sql.get_session()
+        users = session.query(User)
+        return [user.to_dict() for user in users]
+
+    def create_user(self, user):
+        session = sql.get_session()
+
+        with session.begin():
+            user_ref = User.from_dict(user)
+            session.add(user_ref)
+        return user_ref.to_dict()
+
+    def _get_user(self, session, user_id):
+        user_ref = session.query(User).get(user_id)
+        if user_ref is None:
+            raise exception.NotFound(_('No User found with id: %s' %user_id))
+        return user_ref
+
+    def get_user(self, user_id):
+        session = sql.get_session()
+        with session.begin():
+            user_ref = self._get_user(session, user_id) 
+        return user_ref.to_dict()
+
+    def update_user(self, user_id, user):
+        session = sql.get_session()
+        with session.begin():
+            user_ref = self._get_user(session, user_id)
+            for k in user:
+                setattr(user_ref, k, user[k])
+        return user_ref.to_dict()
+        
+    def delete_user(self, user_id):
+        session = sql.get_session()
+        with session.begin():
+            user_ref = self._get_user(session, user_id)
+            session.delete(user_ref)
             

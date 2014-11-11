@@ -50,13 +50,22 @@ def upgrade(migrate_engine):
             sql.ForeignKey('permission_fiware.id')))
     role_permission_table.create(migrate_engine, checkfirst=True)
 
+    role_user_table = sql.Table(
+        'role_user_fiware',
+        meta,
+        sql.Column('role_id', sql.String(64), sql.ForeignKey('role_fiware.id')),
+        sql.Column('user_id', sql.String(64), 
+            sql.ForeignKey('user_fiware.id')))
+    role_user_table.create(migrate_engine, checkfirst=True)
+
 
 def downgrade(migrate_engine):
     # Operations to reverse the above upgrade go here.
     meta = sql.MetaData()
     meta.bind = migrate_engine
 
-    tables = ['role_fiware', 'permission_fiware', 'role_permission_fiware']
+    tables = ['role_fiware', 'permission_fiware',
+              'role_permission_fiware', 'role_user_fiware']
     for t in tables:
         table = sql.Table(t, meta, autoload=True)
         table.drop(migrate_engine, checkfirst=True)
