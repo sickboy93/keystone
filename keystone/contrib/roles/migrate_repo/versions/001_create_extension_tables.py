@@ -55,7 +55,7 @@ def upgrade(migrate_engine):
         meta,
         sql.Column('role_id', sql.String(64), sql.ForeignKey('role_fiware.id')),
         sql.Column('user_id', sql.String(64), 
-            sql.ForeignKey('user_fiware.id')))
+            sql.ForeignKey('user.id')))
     role_user_table.create(migrate_engine, checkfirst=True)
 
 

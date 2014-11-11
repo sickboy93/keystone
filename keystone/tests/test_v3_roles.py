@@ -28,6 +28,7 @@ class RolesBaseTests(test_v3.RestfulTestCase):
     ROLES_URL = '/OS-ROLES/roles'
     PERMISSIONS_URL = '/OS-ROLES/permissions'
 
+
     def setUp(self):
         super(RolesBaseTests, self).setUp()
 
@@ -59,6 +60,11 @@ class RolesBaseTests(test_v3.RestfulTestCase):
 
         return response.result['permission']
 
+    def _create_user(self):
+        user_ref = self.new_user_ref(domain_id=test_v3.DEFAULT_DOMAIN_ID)
+        user = self.identity_api.create_user(user_ref)
+
+        return user
 
 class RoleCrudTests(RolesBaseTests):
 
@@ -139,19 +145,101 @@ class RoleCrudTests(RolesBaseTests):
         response = self.delete(self.ROLES_URL + '/%s' %role_id,
                                 expected_status=204)
 
+    def _add_permission_to_role(self, role_id, permission_id, expected_status=204):
+        
+        ulr_args = {
+            'role_id':role_id,
+            'permission_id':permission_id
+        }   
+        url = self.ROLES_URL + '/%(role_id)s/permissions/%(permission_id)s' \
+                                %ulr_args
+        return self.put(url, expected_status=expected_status)
+
     def test_add_permission_to_role(self):
         role_name = uuid.uuid4().hex
         role = self._create_role(role_name)
         permission_name = uuid.uuid4().hex
         permission = self._create_permission(permission_name)
-        
+        response = self._add_permission_to_role(role_id=role['id'], 
+                                                permission_id=permission['id'])
+
+    def test_add_permission_to_role_non_existent(self):
+        permission_name = uuid.uuid4().hex
+        permission = self._create_permission(permission_name)
+        response = self._add_permission_to_role(role_id=uuid.uuid4().hex, 
+                                                permission_id=permission['id'],
+                                                expected_status=404)
+
+    def test_add_non_existent_permission_to_role(self):
+        role_name = uuid.uuid4().hex
+        role = self._create_role(role_name)
+        response = self._add_permission_to_role(role_id=role['id'], 
+                                                permission_id=uuid.uuid4().hex,
+                                                expected_status=404)
+
+    def _remove_permission_from_role(self, role_id, permission_id, expected_status=204):
         ulr_args = {
-            'role_id':role['id'],
-            'permission_id':permission['id']
+            'role_id':role_id,
+            'permission_id':permission_id
         }   
         url = self.ROLES_URL + '/%(role_id)s/permissions/%(permission_id)s' \
                                 %ulr_args
-        response = self.put(url, expected_status=204)
+        self.put(url)
+        return self.delete(url, expected_status=expected_status)
+
+    def test_remove_permission_from_role(self):
+        role_name = uuid.uuid4().hex
+        role = self._create_role(role_name)
+        permission_name = uuid.uuid4().hex
+        permission = self._create_permission(permission_name)
+        response = self._remove_permission_from_role(role_id=role['id'], 
+                                                     permission_id=permission['id'])
+
+    def test_remove_permission_from_role_non_existent(self):
+        permission_name = uuid.uuid4().hex
+        permission = self._create_permission(permission_name)
+        response = self._remove_permission_from_role(role_id=uuid.uuid4().hex, 
+                                                     permission_id=permission['id'],
+                                                     expected_status=404)
+
+    def test_remove_non_existent_permission_from_role(self):
+        role_name = uuid.uuid4().hex
+        role = self._create_role(role_name)
+        response = self._remove_permission_from_role(role_id=role['id'], 
+                                                     permission_id=uuid.uuid4().hex,
+                                                     expected_status=404)
+
+    def _add_user_to_role(self, role_id, user_id, expected_status=204):
+        
+        ulr_args = {
+            'role_id':role_id,
+            'user_id':user_id
+        }   
+        url = self.ROLES_URL + '/%(role_id)s/users/%(user_id)s' \
+                                %ulr_args
+        return self.put(url, expected_status=expected_status)
+
+    def test_add_user_to_role(self):
+        role_name = uuid.uuid4().hex
+        role = self._create_role(role_name)
+        user = self._create_user()
+        response = self._add_user_to_role(role_id=role['id'],
+                                          user_id=user['id'],
+                                          expected_status=204)
+
+    def test_add_user_to_role_non_existent(self):
+        user = self._create_user()
+        response = self._add_user_to_role(role_id=uuid.uuid4().hex, 
+                                          user_id=user['id'],
+                                          expected_status=404)
+
+    def test_add_non_existent_user_to_role(self):
+        role_name = uuid.uuid4().hex
+        role = self._create_role(role_name)
+        response = self._add_user_to_role(role_id=role['id'], 
+                                          user_id=uuid.uuid4().hex,
+                                          expected_status=404)
+
 
 class PermissionCrudTests(RolesBaseTests):
 

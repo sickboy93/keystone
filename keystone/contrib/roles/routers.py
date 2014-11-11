@@ -34,7 +34,7 @@ class RolesExtension(wsgi.V3ExtensionRouter):
     def add_routes(self, mapper):
         roles_controller = controllers.RoleCrudV3()
         permissions_controller = controllers.PermissionCrudV3()
-        users_controller = controllers.UserCrudV3()
+        
         # ROLES
         self._add_resource(
             mapper, roles_controller,
@@ -59,6 +59,7 @@ class RolesExtension(wsgi.V3ExtensionRouter):
             mapper, roles_controller,
             path=self.PATH_PREFIX + '/roles/{role_id}/permissions/{permission_id}',
             put_action='add_permission_to_role',
+            delete_action='remove_permission_from_role',
             rel=build_resource_relation(resource_name='role_permission'),
             path_vars={
                 'role_id':build_parameter_relation(parameter_name='role_id'),
@@ -69,6 +70,7 @@ class RolesExtension(wsgi.V3ExtensionRouter):
             mapper, roles_controller,
             path=self.PATH_PREFIX + '/roles/{role_id}/users/{user_id}',
             put_action='add_user_to_role',
+            delete_action='remove_user_from_role',
             rel=build_resource_relation(resource_name='role_user'),
             path_vars={
                 'role_id':build_parameter_relation(parameter_name='role_id'),
@@ -95,22 +97,4 @@ class RolesExtension(wsgi.V3ExtensionRouter):
                 build_parameter_relation(parameter_name='permission_id'),
             })
 
-        #USERS
-        self._add_resource(
-            mapper, users_controller,
-            path=self.PATH_PREFIX + '/users',
-            get_action='list_users',
-            post_action='create_user',
-            rel=build_resource_relation(resource_name='users'))
-
-        self._add_resource(
-            mapper,users_controller,
-            path=self.PATH_PREFIX + '/users/{user_id}',
-            get_action='get_user',
-            patch_action='update_user',
-            delete_action='delete_user',
-            rel=build_resource_relation(resource_name='user'),
-            path_vars={
-                'user_id':
-                build_parameter_relation(parameter_name='user_id'),
-            })
+      

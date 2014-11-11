@@ -117,7 +117,7 @@ class Roles(roles.RolesDriver):
         with session.begin():
             session.add(RolePermission(permission_id=permission_id,
                                             role_id=role_id))
-            
+
     def remove_permission_from_role(self, role_id, permission_id):
         session = sql.get_session()
         self.get_role(role_id)
@@ -135,7 +135,7 @@ class Roles(roles.RolesDriver):
     def add_user_to_role(self, role_id, user_id):
         session = sql.get_session()
         self.get_role(role_id)
-        self.get_user(user_id)
+        self.identity_api.get_user(user_id)
         query = session.query(RoleUser)
         query = query.filter_by(user_id=user_id)
         query = query.filter_by(role_id=role_id)
@@ -146,6 +146,20 @@ class Roles(roles.RolesDriver):
         with session.begin():
             session.add(RoleUser(user_id=user_id,
                                     role_id=role_id)) 
+
+    def remove_user_from_role(self, role_id, user_id):
+        session = sql.get_session()
+        self.get_role(role_id)
+        self.get_user(user_id)
+        query = session.query(RoleUser)
+        query = query.filter_by(user_id=user_id)
+        query = query.filter_by(role_id=role_id)
+        ref = query.first()
+        if not ref:
+            return
+
+        with session.begin():
+            session.delete(ref)
 
     # PERMISSIONS
     def list_permissions(self):
@@ -187,43 +201,5 @@ class Roles(roles.RolesDriver):
             permission_ref = self._get_permission(session, permission_id)
             session.delete(permission_ref)  
 
-    #USERS  
-    def list_users(self):
-        session = sql.get_session()
-        users = session.query(User)
-        return [user.to_dict() for user in users]
-
-    def create_user(self, user):
-        session = sql.get_session()
-
-        with session.begin():
-            user_ref = User.from_dict(user)
-            session.add(user_ref)
-        return user_ref.to_dict()
-
-    def _get_user(self, session, user_id):
-        user_ref = session.query(User).get(user_id)
-        if user_ref is None:
-            raise exception.NotFound(_('No User found with id: %s' %user_id))
-        return user_ref
-
-    def get_user(self, user_id):
-        session = sql.get_session()
-        with session.begin():
-            user_ref = self._get_user(session, user_id) 
-        return user_ref.to_dict()
-
-    def update_user(self, user_id, user):
-        session = sql.get_session()
-        with session.begin():
-            user_ref = self._get_user(session, user_id)
-            for k in user:
-                setattr(user_ref, k, user[k])
-        return user_ref.to_dict()
-        
-    def delete_user(self, user_id):
-        session = sql.get_session()
-        with session.begin():
-            user_ref = self._get_user(session, user_id)
-            session.delete(user_ref)
+    
             
