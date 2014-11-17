@@ -16,6 +16,7 @@ from keystone.common import sql
 from keystone.contrib import roles
 from keystone import exception
 from keystone.i18n import _
+from keystone.identity.backends import sql as identity_backend
 
 
 class Role(sql.ModelBase, sql.ModelDictMixin):
@@ -101,6 +102,16 @@ class Roles(roles.RolesDriver):
         session = sql.get_session()
         with session.begin():
             role_ref = self._get_role(session, role_id)
+
+            q1 = session.query(RolePermission)
+            q1 = q1.filter_by(role_id=role_id)
+            q1.delete(False)
+
+            q2 = session.query(RoleUser)
+            q2 = q2.filter_by(role_id=role_id)
+            q2.delete(False)
+
+            
             session.delete(role_ref)
 
     def add_permission_to_role(self, role_id, permission_id):
@@ -150,7 +161,7 @@ class Roles(roles.RolesDriver):
     def remove_user_from_role(self, role_id, user_id):
         session = sql.get_session()
         self.get_role(role_id)
-        self.get_user(user_id)
+        self.identity_api.get_user(user_id)
         query = session.query(RoleUser)
         query = query.filter_by(user_id=user_id)
         query = query.filter_by(role_id=role_id)
@@ -160,6 +171,21 @@ class Roles(roles.RolesDriver):
 
         with session.begin():
             session.delete(ref)
+
+    def list_roles_for_permission(self, permission_id):
+        session = sql.get_session()
+        self.get_permission(permission_id)
+        query = session.query(Role).join(RolePermission)
+        query = query.filter(RolePermission.permission_id == permission_id)
+        return [g.to_dict() for g in query] 
+
+    def list_roles_for_user(self, user_id):
+        session = sql.get_session()
+        self.identity_api.get_user(user_id)
+        query = session.query(Role).join(RoleUser)
+        query = query.filter(RoleUser.user_id == user_id)
+        return [g.to_dict() for g in query]
+
 
     # PERMISSIONS
     def list_permissions(self):
@@ -197,9 +223,29 @@ class Roles(roles.RolesDriver):
         
     def delete_permission(self, permission_id):
         session = sql.get_session()
-        with session.begin():
+        with session.begin():            
             permission_ref = self._get_permission(session, permission_id)
-            session.delete(permission_ref)  
+
+            q = session.query(RolePermission)
+            q = q.filter_by(permission_id=permission_id)
+            q.delete(False)
+
+            session.delete(permission_ref) 
+
+    def list_permissions_for_role(self, role_id):
+        session = sql.get_session()
+        self.get_role(role_id)
+        query = session.query(Permission).join(RolePermission)
+        query = query.filter(RolePermission.role_id == role_id)
+        return [g.to_dict() for g in query] 
+
+    #USERS
+    def list_users_for_role(self, role_id):
+        session=sql.get_session()
+        self.get_role(role_id)
+        query = session.query(identity_backend.User).join(RoleUser)
+        query = query.filter(RoleUser.role_id == role_id)
+        return [g.to_dict() for g in query]
 
     
             

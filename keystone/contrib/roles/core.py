@@ -162,12 +162,33 @@ class RolesDriver(object):
     def remove_user_from_role(self, role_id, user_id):
         """Remove user from role.
 
-        :param role_id: id of role to remove permission from
+        :param role_id: id of role to remove user from
         :type role_id: string
-        :param user_id: permission to remove from role
+        :param user_id: user to remove from role
         :type user_id: string
         :returns: None.
 
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def list_roles_for_permission(self, permission_id):
+        """List roles for permission.
+
+        :param permission_id: permission with roles
+        :type permission_id: string
+        :returns: None.
+
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def list_roles_for_user(self, user_id):
+        """List roles for a user_id
+
+        :param user_id: user with roles
+        :type user_id: string
+        ;returns: None.
         """
         raise exception.NotImplemented()
     
@@ -222,6 +243,31 @@ class RolesDriver(object):
 
         :param permission_id: id of permission to delete
         :type permission_id: string
+        :returns: None.
+
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def list_permissions_for_role(self, role_id):
+        """List permissions for role.
+
+        :param role_id: id of role to remove permission from
+        :type role_id: string
+        :param permission_id: permission to remove from role
+        :type permission_id: string
+        :returns: None.
+
+        """
+        raise exception.NotImplemented()
+
+    #USERS
+    @abc.abstractmethod
+    def list_users_for_role(self, role_id):
+        """List users for role.
+
+        :param role_id: id of role to remove permission from
+        :type role_id: string
         :returns: None.
 
         """

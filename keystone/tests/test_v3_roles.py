@@ -27,6 +27,7 @@ class RolesBaseTests(test_v3.RestfulTestCase):
 
     ROLES_URL = '/OS-ROLES/roles'
     PERMISSIONS_URL = '/OS-ROLES/permissions'
+    USERS_URL = '/OS-ROLES/users'
 
 
     def setUp(self):
@@ -65,6 +66,44 @@ class RolesBaseTests(test_v3.RestfulTestCase):
         user = self.identity_api.create_user(user_ref)
 
         return user
+
+    def _add_permission_to_role(self, role_id, permission_id, expected_status=204):
+        
+        ulr_args = {
+            'role_id':role_id,
+            'permission_id':permission_id
+        }   
+        url = self.ROLES_URL + '/%(role_id)s/permissions/%(permission_id)s' \
+                                %ulr_args
+        return self.put(url, expected_status=expected_status)
+
+    def _add_user_to_role(self, role_id, user_id, expected_status=204):
+        
+        ulr_args = {
+            'role_id':role_id,
+            'user_id':user_id
+        }   
+        url = self.ROLES_URL + '/%(role_id)s/users/%(user_id)s' \
+                                %ulr_args
+        return self.put(url, expected_status=expected_status)
+
+    def _delete_role(self, role_id, expected_status=204):
+
+        ulr_args = {
+            'role_id': role_id,
+        }
+        url = self.ROLES_URL + '/%(role_id)s' \
+                %ulr_args
+        return self.delete(url, expected_status=expected_status)
+
+    def _delete_permission(self, permission_id, expected_status=204):
+
+        ulr_args={
+            'permission_id': permission_id,
+        }
+        url = self.PERMISSIONS_URL + '/%(permission_id)s' \
+                    %ulr_args
+        return self.delete(url, expected_status=expected_status)
 
 class RoleCrudTests(RolesBaseTests):
 
@@ -142,18 +181,7 @@ class RoleCrudTests(RolesBaseTests):
         name = uuid.uuid4().hex
         role = self._create_role(name)
         role_id = role['id']
-        response = self.delete(self.ROLES_URL + '/%s' %role_id,
-                                expected_status=204)
-
-    def _add_permission_to_role(self, role_id, permission_id, expected_status=204):
-        
-        ulr_args = {
-            'role_id':role_id,
-            'permission_id':permission_id
-        }   
-        url = self.ROLES_URL + '/%(role_id)s/permissions/%(permission_id)s' \
-                                %ulr_args
-        return self.put(url, expected_status=expected_status)
+        response = self._delete_role(role_id)
 
     def test_add_permission_to_role(self):
         role_name = uuid.uuid4().hex
@@ -177,6 +205,16 @@ class RoleCrudTests(RolesBaseTests):
                                                 permission_id=uuid.uuid4().hex,
                                                 expected_status=404)
 
+    def test_add_permission_to_role_repeated(self):
+        role_name = uuid.uuid4().hex
+        role = self._create_role(role_name)
+        permission_name = uuid.uuid4().hex
+        permission = self._create_permission(permission_name)
+        response = self._add_permission_to_role(role_id=role['id'], 
+                                                permission_id=permission['id'])
+        response = self._add_permission_to_role(role_id=role['id'], 
+                                                permission_id=permission['id'])
+
     def _remove_permission_from_role(self, role_id, permission_id, expected_status=204):
         ulr_args = {
             'role_id':role_id,
@@ -184,7 +222,6 @@ class RoleCrudTests(RolesBaseTests):
         }   
         url = self.ROLES_URL + '/%(role_id)s/permissions/%(permission_id)s' \
                                 %ulr_args
-        self.put(url)
         return self.delete(url, expected_status=expected_status)
 
     def test_remove_permission_from_role(self):
@@ -192,12 +229,26 @@ class RoleCrudTests(RolesBaseTests):
         role = self._create_role(role_name)
         permission_name = uuid.uuid4().hex
         permission = self._create_permission(permission_name)
+
+        response = self._add_permission_to_role(role_id=role['id'], 
+                                                permission_id=permission['id'])
+
         response = self._remove_permission_from_role(role_id=role['id'], 
                                                      permission_id=permission['id'])
 
-    def test_remove_permission_from_role_non_existent(self):
+    def test_remove_permission_from_role_non_associated(self):
+        role_name = uuid.uuid4().hex
+        role = self._create_role(role_name)
         permission_name = uuid.uuid4().hex
         permission = self._create_permission(permission_name)
+        
+        response = self._remove_permission_from_role(role_id=role['id'], 
+                                                     permission_id=permission['id'])
+
+    def test_remove_permission_from_non_existent_role(self):
+        permission_name = uuid.uuid4().hex
+        permission = self._create_permission(permission_name)
+
         response = self._remove_permission_from_role(role_id=uuid.uuid4().hex, 
                                                      permission_id=permission['id'],
                                                      expected_status=404)
@@ -205,27 +256,31 @@ class RoleCrudTests(RolesBaseTests):
     def test_remove_non_existent_permission_from_role(self):
         role_name = uuid.uuid4().hex
         role = self._create_role(role_name)
+
         response = self._remove_permission_from_role(role_id=role['id'], 
                                                      permission_id=uuid.uuid4().hex,
                                                      expected_status=404)
 
-    def _add_user_to_role(self, role_id, user_id, expected_status=204):
-        
-        ulr_args = {
-            'role_id':role_id,
-            'user_id':user_id
-        }   
-        url = self.ROLES_URL + '/%(role_id)s/users/%(user_id)s' \
-                                %ulr_args
-        return self.put(url, expected_status=expected_status)
+    def test_remove_permision_from_role_repeated(self):
+        role_name = uuid.uuid4().hex
+        role = self._create_role(role_name)
+        permission_name = uuid.uuid4().hex
+        permission = self._create_permission(permission_name)
+
+        response = self._add_permission_to_role(role_id=role['id'], 
+                                                permission_id=permission['id'])
+
+        response = self._remove_permission_from_role(role_id=role['id'], 
+                                                     permission_id=permission['id'])
+        response = self._remove_permission_from_role(role_id=role['id'], 
+                                                     permission_id=permission['id'])
 
     def test_add_user_to_role(self):
         role_name = uuid.uuid4().hex
         role = self._create_role(role_name)
         user = self._create_user()
         response = self._add_user_to_role(role_id=role['id'],
-                                          user_id=user['id'],
-                                          expected_status=204)
+                                          user_id=user['id'])
 
     def test_add_user_to_role_non_existent(self):
         user = self._create_user()
@@ -239,6 +294,163 @@ class RoleCrudTests(RolesBaseTests):
         response = self._add_user_to_role(role_id=role['id'], 
                                           user_id=uuid.uuid4().hex,
                                           expected_status=404)
+
+    def test_add_user_to_role_repeated(self):
+        role_name = uuid.uuid4().hex
+        role = self._create_role(role_name)
+        user = self._create_user()
+        response = self._add_user_to_role(role_id=role['id'],
+                                          user_id=user['id'])
+        response = self._add_user_to_role(role_id=role['id'],
+                                          user_id=user['id'])
+
+    def _remove_user_from_role(self, role_id, user_id, expected_status=204):
+        ulr_args = {
+            'role_id':role_id,
+            'user_id':user_id
+        }   
+        url = self.ROLES_URL + '/%(role_id)s/users/%(user_id)s' \
+                                %ulr_args
+        return self.delete(url, expected_status=expected_status)
+
+    def test_remove_user_from_role(self):
+        role_name = uuid.uuid4().hex
+        role = self._create_role(role_name)
+        user = self._create_user()
+        response = self._add_user_to_role(role_id=role['id'], 
+                                          user_id=user['id'])
+        response = self._remove_user_from_role(role_id=role['id'], 
+                                               user_id=user['id'])
+
+    def test_remove_user_from_non_existent_role(self):
+        user = self._create_user()
+        response = self._remove_user_from_role(role_id=uuid.uuid4().hex, 
+                                               user_id=user['id'],
+                                               expected_status=404)
+
+    def test_remove_non_existent_user_from_role(self):
+        role_name = uuid.uuid4().hex
+        role = self._create_role(role_name)
+        response = self._remove_user_from_role(role_id=role['id'], 
+                                               user_id=uuid.uuid4().hex,
+                                               expected_status=404)
+
+    def test_remove_user_from_role_repeated(self):
+        role_name = uuid.uuid4().hex
+        role = self._create_role(role_name)
+        user = self._create_user()
+        response = self._add_user_to_role(role_id=role['id'], 
+                                          user_id=user['id'])
+        response = self._remove_user_from_role(role_id=role['id'], 
+                                               user_id=user['id'])
+        response = self._remove_user_from_role(role_id=role['id'], 
+                                               user_id=user['id'])
+
+    def test_list_roles_for_permission(self):
+        role_name = uuid.uuid4().hex
+        role = self._create_role(role_name)
+        permission_name = uuid.uuid4().hex
+        permission = self._create_permission(permission_name)
+        role_name2 = uuid.uuid4().hex
+        role2 = self._create_role(role_name2)
+
+        self._add_permission_to_role(role_id=role['id'], 
+                                     permission_id=permission['id'])
+        self._add_permission_to_role(role_id=role2['id'], 
+                                     permission_id=permission['id'])
+
+        ulr_args = {
+            'permission_id':permission['id']
+        }   
+        url = self.PERMISSIONS_URL + '/%(permission_id)s/roles/' \
+                                %ulr_args
+
+        response = self.get(url)
+        entities = response.result['roles']
+
+        self.assertIsNotNone(entities)
+
+        self.assertEqual(2, len(entities))
+
+    def test_dont_list_deleted_roles_for_permission(self):
+        role_name = uuid.uuid4().hex
+        role = self._create_role(role_name)
+        permission_name = uuid.uuid4().hex
+        permission = self._create_permission(permission_name)
+        role_name2 = uuid.uuid4().hex
+        role2 = self._create_role(role_name2)
+
+        self._add_permission_to_role(role_id=role['id'], 
+                                     permission_id=permission['id'])
+        self._add_permission_to_role(role_id=role2['id'], 
+                                     permission_id=permission['id'])
+        role_id = role2['id']
+
+        response = self._delete_role(role_id)
+
+        ulr_args = {
+            'permission_id':permission['id']
+        }   
+        url = self.PERMISSIONS_URL + '/%(permission_id)s/roles/' \
+                                %ulr_args
+
+        response = self.get(url)
+        entities = response.result['roles']
+
+        self.assertIsNotNone(entities)
+
+        self.assertEqual(1, len(entities))
+        
+    def test_list_roles_for_user(self):
+        role_name = uuid.uuid4().hex
+        role = self._create_role(role_name)
+        user = self._create_user()
+
+        self._add_user_to_role(role_id=role['id'], 
+                                user_id=user['id'])
+
+        ulr_args = {
+            'user_id':user['id']
+        }   
+        url = self.USERS_URL + '/%(user_id)s/roles/' \
+                                %ulr_args
+
+        response = self.get(url)
+        entities = response.result['roles']
+
+        self.assertIsNotNone(entities)
+
+        self.assertEqual(1, len(entities))
+
+    def test_dont_list_deleted_roles_for_user(self):
+        role_name = uuid.uuid4().hex
+        role = self._create_role(role_name)
+        user = self._create_user()
+        role_name2 = uuid.uuid4().hex
+        role2 = self._create_role(role_name2)
+
+        self._add_user_to_role(role_id=role['id'], 
+                                user_id=user['id'])
+        self._add_user_to_role(role_id=role2['id'], 
+                                user_id=user['id'])
+        role_id = role2['id']
+
+        response = self._delete_role(role_id)
+
+        ulr_args = {
+            'user_id':user['id']
+        }   
+        url = self.USERS_URL + '/%(user_id)s/roles/' \
+                                %ulr_args
+
+        response = self.get(url)
+        entities = response.result['roles']
+
+        self.assertIsNotNone(entities)
+
+        self.assertEqual(1, len(entities))
+
+
 
 
 class PermissionCrudTests(RolesBaseTests):
@@ -319,5 +531,108 @@ class PermissionCrudTests(RolesBaseTests):
         name = uuid.uuid4().hex
         permission = self._create_permission(name)
         permission_id = permission['id']
-        response = self.delete(self.PERMISSIONS_URL + '/%s' %permission_id,
-                                expected_status=204)
+        response = self._delete_permission(permission_id)
+
+    def test_list_permissions_for_role(self):
+        role_name = uuid.uuid4().hex
+        role = self._create_role(role_name)
+        permission_name = uuid.uuid4().hex
+        permission = self._create_permission(permission_name)
+
+        self._add_permission_to_role(role_id=role['id'], 
+                                     permission_id=permission['id'])
+
+        ulr_args = {
+            'role_id':role['id']
+        }   
+        url = self.ROLES_URL + '/%(role_id)s/permissions/' \
+                                %ulr_args
+
+        response = self.get(url)
+        entities = response.result['permissions']
+
+        self.assertIsNotNone(entities)
+
+        self.assertEqual(1, len(entities))
+
+    def test_dont_list_deleted_permissions_for_role(self):
+        role_name = uuid.uuid4().hex
+        role = self._create_role(role_name)
+        permission_name = uuid.uuid4().hex
+        permission = self._create_permission(permission_name)
+        permission_name2 = uuid.uuid4().hex
+        permission2 = self._create_permission(permission_name2)
+
+
+        self._add_permission_to_role(role_id=role['id'], 
+                                     permission_id=permission['id'])
+        self._add_permission_to_role(role_id=role['id'], 
+                                     permission_id=permission2['id'])
+
+        permission_id = permission2['id']
+
+        response = self._delete_permission(permission_id)
+
+        ulr_args = {
+            'role_id':role['id']
+        }   
+        url = self.ROLES_URL + '/%(role_id)s/permissions/' \
+                                %ulr_args
+
+        response = self.get(url)
+        entities = response.result['permissions']
+
+        self.assertIsNotNone(entities)
+
+        self.assertEqual(1, len(entities))
+
+class UserControllerTests(RolesBaseTests):
+
+    def test_list_users_for_role(self):
+        role_name = uuid.uuid4().hex
+        role = self._create_role(role_name)
+        user = self._create_user() 
+
+        self._add_user_to_role(role_id=role['id'], 
+                                user_id=user['id'])
+
+        ulr_args = {
+            'role_id':role['id']
+        }   
+        url = self.ROLES_URL + '/%(role_id)s/users/' \
+                                %ulr_args
+
+        response = self.get(url)
+        entities = response.result['users']
+
+        self.assertIsNotNone(entities)
+
+        self.assertEqual(1, len(entities))
+
+    def test_dont_list_deleted_users_for_role(self):
+        role_name = uuid.uuid4().hex
+        role = self._create_role(role_name)
+        user1 = self._create_user() 
+        user2 = self._create_user() 
+
+
+        self._add_user_to_role(role_id=role['id'], 
+                                     user_id=user1['id'])
+        self._add_user_to_role(role_id=role['id'], 
+                                     user_id=user2['id'])
+
+        response = self.delete('/users/%(user_id)s' % {
+            'user_id': user2['id']})
+
+        ulr_args = {
+            'role_id':role['id']
+        }   
+        url = self.ROLES_URL + '/%(role_id)s/users/' \
+                                %ulr_args
+
+        response = self.get(url)
+        entities = response.result['users']
+
+        self.assertIsNotNone(entities)
+
+        self.assertEqual(1, len(entities))

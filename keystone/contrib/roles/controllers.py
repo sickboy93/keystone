@@ -16,16 +16,16 @@ from keystone.common import controller
 from keystone.common import dependency
 
 @dependency.requires('roles_api')
-class BaseCrudV3(controller.V3Controller):
+class BaseControllerV3(controller.V3Controller):
 
     @classmethod
     def base_url(cls, context, path=None):
         """Construct a path and pass it to V3Controller.base_url method."""
         path = '/OS-ROLES/' + cls.collection_name
-        return super(BaseCrudV3, cls).base_url(context, path=path)
+        return super(BaseControllerV3, cls).base_url(context, path=path)
 
 
-class RoleCrudV3(BaseCrudV3):
+class RoleCrudV3(BaseControllerV3):
 
     collection_name = 'roles'
     member_name = 'role'
@@ -73,8 +73,19 @@ class RoleCrudV3(BaseCrudV3):
     def remove_user_from_role(self, context, role_id, user_id):
         self.roles_api.remove_user_from_role(role_id, user_id)
 
+    @controller.protected()
+    def list_roles_for_permission(self, context, permission_id):
+        ref = self.roles_api.list_roles_for_permission(permission_id)
+        return RoleCrudV3.wrap_collection(context, ref)
 
-class PermissionCrudV3(BaseCrudV3):
+    @controller.protected()
+    def list_roles_for_user(self, context, user_id):
+        ref = self.roles_api.list_roles_for_user(user_id)
+        return RoleCrudV3.wrap_collection(context, ref)
+
+
+
+class PermissionCrudV3(BaseControllerV3):
 
     collection_name = 'permissions'
     member_name = 'permission'
@@ -105,6 +116,21 @@ class PermissionCrudV3(BaseCrudV3):
 
     @controller.protected()
     def delete_permission(self, context, permission_id):
-        self.roles_api.delete_permission(permission_id)    
+        self.roles_api.delete_permission(permission_id)  
+
+    @controller.protected()
+    def list_permissions_for_role(self, context, role_id):
+        ref = self.roles_api.list_permissions_for_role(role_id)
+        return PermissionCrudV3.wrap_collection(context, ref)  
+
+
+class UserV3(BaseControllerV3):
+    collection_name = 'users'
+    member_name = 'user'
+
+    @controller.protected()
+    def list_users_for_role(self, context, role_id):
+        ref = self.roles_api.list_users_for_role(role_id)
+        return UserV3.wrap_collection(context, ref)  
 
 
