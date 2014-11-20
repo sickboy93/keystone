@@ -14,6 +14,8 @@
 
 from keystone.common import controller
 from keystone.common import dependency
+from keystone.models import token_model
+
 
 @dependency.requires('roles_api')
 class BaseControllerV3(controller.V3Controller):
@@ -24,7 +26,7 @@ class BaseControllerV3(controller.V3Controller):
         path = '/OS-ROLES/' + cls.collection_name
         return super(BaseControllerV3, cls).base_url(context, path=path)
 
-
+@dependency.requires('token_provider_api')
 class RoleCrudV3(BaseControllerV3):
 
     collection_name = 'roles'
@@ -83,7 +85,23 @@ class RoleCrudV3(BaseControllerV3):
         ref = self.roles_api.list_roles_for_user(user_id)
         return RoleCrudV3.wrap_collection(context, ref)
 
+    @controller.protected()
+    def validate_token(self, context, token_id):
+        """ Return a list of the roles and permissions of the user associated 
+        with this token.
 
+            See https://github.com/ging/fi-ware-idm/wiki/Using-the-FI-LAB-instance\
+            #get-user-information-and-roles
+        """
+        token = token_model.KeystoneToken(
+                            token_id=token_id,
+                            token_data=self.token_provider_api.validate_token(
+                                token_id))
+
+        user_id = token.user_id
+        # return the roles associated with this user
+        ref = self.roles_api.list_roles_for_user(user_id)
+        return RoleCrudV3.wrap_collection(context, ref)
 
 class PermissionCrudV3(BaseControllerV3):
 

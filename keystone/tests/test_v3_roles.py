@@ -64,7 +64,7 @@ class RolesBaseTests(test_v3.RestfulTestCase):
     def _create_user(self):
         user_ref = self.new_user_ref(domain_id=test_v3.DEFAULT_DOMAIN_ID)
         user = self.identity_api.create_user(user_ref)
-
+        user['password'] = user_ref['password']
         return user
 
     def _add_permission_to_role(self, role_id, permission_id, expected_status=204):
@@ -98,20 +98,44 @@ class RolesBaseTests(test_v3.RestfulTestCase):
 
     def _delete_permission(self, permission_id, expected_status=204):
 
-        ulr_args={
+        ulr_args = {
             'permission_id': permission_id,
         }
         url = self.PERMISSIONS_URL + '/%(permission_id)s' \
                     %ulr_args
         return self.delete(url, expected_status=expected_status)
 
-class RoleCrudTests(RolesBaseTests):
+    def _remove_permission_from_role(self, role_id, permission_id, expected_status=204):
+        ulr_args = {
+            'role_id':role_id,
+            'permission_id':permission_id
+        }   
+        url = self.ROLES_URL + '/%(role_id)s/permissions/%(permission_id)s' \
+                                %ulr_args
+        return self.delete(url, expected_status=expected_status)
+
+    def _remove_user_from_role(self, role_id, user_id, expected_status=204):
+        ulr_args = {
+            'role_id':role_id,
+            'user_id':user_id
+        }   
+        url = self.ROLES_URL + '/%(role_id)s/users/%(user_id)s' \
+                                %ulr_args
+        return self.delete(url, expected_status=expected_status)
 
     def _assert_role(self, role, expected_name, expected_is_editable):
         self.assertIsNotNone(role)
         self.assertIsNotNone(role['id'])
         self.assertEqual(expected_name, role['name'])
         self.assertEqual(expected_is_editable, role['is_editable'])
+
+    def _assert_permission(self, permission, expected_name, expected_is_editable):
+        self.assertIsNotNone(permission)
+        self.assertIsNotNone(permission['id'])
+        self.assertEqual(expected_name, permission['name'])
+        self.assertEqual(expected_is_editable, permission['is_editable'])
+
+class RoleCrudTests(RolesBaseTests):
 
     def test_role_create_default(self):
         name = uuid.uuid4().hex
@@ -215,15 +239,6 @@ class RoleCrudTests(RolesBaseTests):
         response = self._add_permission_to_role(role_id=role['id'], 
                                                 permission_id=permission['id'])
 
-    def _remove_permission_from_role(self, role_id, permission_id, expected_status=204):
-        ulr_args = {
-            'role_id':role_id,
-            'permission_id':permission_id
-        }   
-        url = self.ROLES_URL + '/%(role_id)s/permissions/%(permission_id)s' \
-                                %ulr_args
-        return self.delete(url, expected_status=expected_status)
-
     def test_remove_permission_from_role(self):
         role_name = uuid.uuid4().hex
         role = self._create_role(role_name)
@@ -303,15 +318,6 @@ class RoleCrudTests(RolesBaseTests):
                                           user_id=user['id'])
         response = self._add_user_to_role(role_id=role['id'],
                                           user_id=user['id'])
-
-    def _remove_user_from_role(self, role_id, user_id, expected_status=204):
-        ulr_args = {
-            'role_id':role_id,
-            'user_id':user_id
-        }   
-        url = self.ROLES_URL + '/%(role_id)s/users/%(user_id)s' \
-                                %ulr_args
-        return self.delete(url, expected_status=expected_status)
 
     def test_remove_user_from_role(self):
         role_name = uuid.uuid4().hex
@@ -451,15 +457,7 @@ class RoleCrudTests(RolesBaseTests):
         self.assertEqual(1, len(entities))
 
 
-
-
 class PermissionCrudTests(RolesBaseTests):
-
-    def _assert_permission(self, permission, expected_name, expected_is_editable):
-        self.assertIsNotNone(permission)
-        self.assertIsNotNone(permission['id'])
-        self.assertEqual(expected_name, permission['name'])
-        self.assertEqual(expected_is_editable, permission['is_editable'])
 
     def test_permission_create_default(self):
         name = uuid.uuid4().hex
@@ -636,3 +634,37 @@ class UserControllerTests(RolesBaseTests):
         self.assertIsNotNone(entities)
 
         self.assertEqual(1, len(entities))
+
+class FiwareApiTests(RolesBaseTests):
+
+    # FIWARE API tests
+    def test_validate_token_unscoped(self):
+        # create user
+        user = self._create_user()
+
+        # assign some roles
+        number_of_roles = 2
+        roles = []
+        for i in range(number_of_roles):
+            roles.append(self._create_role(uuid.uuid4().hex))
+            self._add_user_to_role(role_id=roles[i]['id'], 
+                                    user_id=user['id'])
+
+        # get a token for the user
+        auth_data = self.build_authentication_request(
+            username=user['name'],
+            user_domain_id=test_v3.DEFAULT_DOMAIN_ID,
+            password=user['password'])
+        auth_response = self.post('/auth/tokens', body=auth_data)
+        token_id = auth_response.headers.get('X-Subject-Token')
+
+        # acces the resource
+        url = '/access-tokens/%s' %token_id
+        #import pdb; pdb.set_trace()
+        response = self.get(url)
+
+        # check stuff
+        entities = response.result['roles']
+        self.assertIsNotNone(entities)
+
+        self.assertEqual(number_of_roles, len(entities))

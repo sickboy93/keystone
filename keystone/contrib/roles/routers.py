@@ -135,3 +135,13 @@ class RolesExtension(wsgi.V3ExtensionRouter):
             path_vars={
                 'role_id':build_parameter_relation(parameter_name='role_id'),
             })
+
+        # FIWARE specific endpoints
+        self._add_resource(
+            mapper, roles_controller,
+            path='/access-tokens/{token_id}',
+            get_action='validate_token',
+            rel=build_resource_relation(resource_name='roles'),
+            path_vars={
+                'token_id':build_parameter_relation(parameter_name='token_id'),
+            })

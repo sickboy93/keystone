@@ -13,30 +13,23 @@
 # under the License.
 
 from keystone.common import controller
-from keystone.common import dependency
-from keystone.models import token_model
+from keystone.openstack.common import log
+from keystone.common import wsgi
 
-@dependency.requires('roles_api', 'token_provider_api')
+LOG = log.getLogger(__name__)
+
 class FiwareControllerV3(controller.V3Controller):
 
-    collection_name = 'roles'
-    member_name = 'role'
-
-    @controller.protected()
     def validate_token(self, context, token_id):
-        """ Return a list of the roles and permissions of the user associated 
-        with this token.
-
-            See https://github.com/ging/fi-ware-idm/wiki
-        """
-        print "DEBUG!!! Insde validate_token"
-        import pdb; pdb.set_trace()
-        token = token_model.KeystoneToken(
-                            token_id=token_id,
-                            token_data=self.token_provider_api.validate_token(
-                                token_id))
-
-        user_id = token.user_id
-        # return the roles associated with this user
-        ref = self.roles_api.list_roles_for_user(user_id)
-        return FiwareControllerV3.wrap_collection(context, ref)
+        """ Redirect to the roles extension."""
+        message = ("Recieved request to the legacy endpoint access-token/{token_id}\
+            for token_id=%(token_id)s. Redirecting to the new endpoint.")
+        LOG.info(message, {'token_id': token_id})
+        body = ''
+        headers = [
+            ('Location', '/v3/access-tokens/%s' %token_id)
+        ]
+        response = wsgi.render_response(body,
+                                        status=(301, 'Moved Permanently'),
+                                        headers=headers)
+        return response
