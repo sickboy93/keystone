@@ -67,6 +67,21 @@ class RolesBaseTests(test_v3.RestfulTestCase):
         user['password'] = user_ref['password']
         return user
 
+    def _create_organization(self):
+        # create a keystone project/fiware organization
+        project_ref = self.new_project_ref(domain_id=test_v3.DEFAULT_DOMAIN_ID)
+        project_ref['id'] = uuid.uuid4().hex
+        project = self.assignment_api.create_project(project_ref['id'], project_ref)
+        return project
+
+    def _create_keystone_role(self):
+        keystone_role_ref = self.new_role_ref()
+        keystone_role_ref['id'] = uuid.uuid4().hex
+        keystone_role_ref['name'] = 'keystone_role_%s' % keystone_role_ref['id']
+        keystone_role = self.assignment_api.create_role(keystone_role_ref['id'], 
+                                                        keystone_role_ref)
+        return keystone_role
+
     def _add_permission_to_role(self, role_id, permission_id, expected_status=204):
         
         ulr_args = {
@@ -86,6 +101,12 @@ class RolesBaseTests(test_v3.RestfulTestCase):
         url = self.ROLES_URL + '/%(role_id)s/users/%(user_id)s' \
                                 %ulr_args
         return self.put(url, expected_status=expected_status)
+
+    def _add_user_to_organization(self, project_id, user_id, keystone_role_id, 
+                                expected_status=204):
+        
+        self.assignment_api.add_role_to_user_and_project(
+            user_id, project_id, keystone_role_id)
 
     def _delete_role(self, role_id, expected_status=204):
 
@@ -641,6 +662,18 @@ class FiwareApiTests(RolesBaseTests):
     def test_validate_token_unscoped(self):
         # create user
         user = self._create_user()
+        # create a keysrtone role
+        keystone_role = self._create_keystone_role()
+
+        # create some projects/organizations
+        number_of_organizations = 2
+        organizations = []
+        for i in range(number_of_organizations):
+            organizations.append(self._create_organization())
+            self._add_user_to_organization(
+                        project_id=organizations[i]['id'], 
+                        user_id=user['id'],
+                        keystone_role_id=keystone_role['id'])
 
         # assign some roles
         number_of_roles = 2
@@ -664,7 +697,55 @@ class FiwareApiTests(RolesBaseTests):
         response = self.get(url)
 
         # check stuff
-        entities = response.result['roles']
-        self.assertIsNotNone(entities)
+        # from https://github.com/ging/fi-ware-idm/wiki/\
+        # Using-the-FI-LAB-instance#get-user-information-and-roles
+        # {
+        #   schemas: ["urn:scim:schemas:core:2.0:User"],
+        #   id: 1,
+        #   actorId: 1,
+        #   nickName: "demo",
+        #   displayName: "Demo user",
+        #   email: "demo@fi-ware.org",
+        #   roles: [
+        #     {
+        #       id: 1,
+        #       name: "Manager"
+        #     },
+        #     {
+        #       id: 7
+        #       name: "Ticket manager"
+        #     }
+        #   ],
+        #   organizations: [
+        #     {
+        #        id: 1,
+        #        actorId: 2,
+        #        displayName: "Universidad Politecnica de Madrid",
+        #        roles: [
+        #          {
+        #            id: 14,
+        #            name: "Admin"
+        #          }
+        #       ]
+        #     }
+        #   ]
+        # }
+        self.assertIsNotNone(response.result['id'])
+        self.assertIsNotNone(response.result['email'])
+        self.assertIsNotNone(response.result['nickName'])
 
-        self.assertEqual(number_of_roles, len(entities))
+        response_roles = response.result['roles']
+        self.assertIsNotNone(response_roles)
+        self.assertEqual(number_of_roles, len(response_roles))
+        for role in response_roles:
+            i = response_roles.index(role)
+            self.assertIsNotNone(role['id'])
+            self.assertIsNotNone(role['name'])
+
+        response_organizations = response.result['organizations']
+        self.assertIsNotNone(response_organizations)
+        self.assertEqual(number_of_organizations, len(response_organizations))
+        for organization in response_organizations:
+            i = response_organizations.index(organization)
+            self.assertIsNotNone(organization['id'])
+            self.assertIsNotNone(organization['name'])

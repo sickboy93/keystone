@@ -26,7 +26,7 @@ class BaseControllerV3(controller.V3Controller):
         path = '/OS-ROLES/' + cls.collection_name
         return super(BaseControllerV3, cls).base_url(context, path=path)
 
-@dependency.requires('token_provider_api')
+@dependency.requires('token_provider_api', 'assignment_api', 'identity_api')
 class RoleCrudV3(BaseControllerV3):
 
     collection_name = 'roles'
@@ -97,11 +97,21 @@ class RoleCrudV3(BaseControllerV3):
                             token_id=token_id,
                             token_data=self.token_provider_api.validate_token(
                                 token_id))
-
         user_id = token.user_id
-        # return the roles associated with this user
-        ref = self.roles_api.list_roles_for_user(user_id)
-        return RoleCrudV3.wrap_collection(context, ref)
+        # get the user
+        user = self.identity_api.get_user(user_id)
+        # roles associated with this user
+        roles = self.roles_api.list_roles_for_user(user_id)
+        # organizations the user is in
+        organizations = self.assignment_api.list_projects_for_user(user_id)
+        response_body = {
+            'id':user_id,
+            'email': user['email'],
+            'nickName': user['name'],
+            'roles': roles,
+            'organizations': organizations
+        }
+        return response_body
 
 class PermissionCrudV3(BaseControllerV3):
 
