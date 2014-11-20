@@ -123,6 +123,13 @@ class PermissionCrudV3(BaseControllerV3):
         ref = self.roles_api.list_permissions_for_role(role_id)
         return PermissionCrudV3.wrap_collection(context, ref)  
 
+    @controller.protected()
+    def add_role_to_permission(self, context, role_id, permission_id):
+        self.roles_api.add_role_to_permission(role_id, permission_id)
+
+    @controller.protected()
+    def remove_role_from_permission(self, context, role_id, permission_id):
+        self.roles_api.remove_role_from_permission(role_id, permission_id)
 
 class UserV3(BaseControllerV3):
     collection_name = 'users'
@@ -131,6 +138,14 @@ class UserV3(BaseControllerV3):
     @controller.protected()
     def list_users_for_role(self, context, role_id):
         ref = self.roles_api.list_users_for_role(role_id)
-        return UserV3.wrap_collection(context, ref)  
+        return UserV3.wrap_collection(context, ref)
+
+    @controller.protected()
+    def add_role_to_user(self, context, role_id, user_id):
+        self.roles_api.add_role_to_user(role_id, user_id)
+
+    @controller.protected()
+    def remove_role_from_user(self, context, role_id, user_id):
+        self.roles_api.remove_role_from_user(role_id, user_id)  
 
 
