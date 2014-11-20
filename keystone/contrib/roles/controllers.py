@@ -68,12 +68,14 @@ class RoleCrudV3(BaseControllerV3):
         self.roles_api.remove_permission_from_role(role_id, permission_id)
 
     @controller.protected()
-    def add_user_to_role(self, context, role_id, user_id):
-        self.roles_api.add_user_to_role(role_id, user_id)
+    def add_user_to_role(self, context, role_id, user_id, organization):
+        organization_id = organization['id']
+        self.roles_api.add_user_to_role(role_id, user_id, organization_id)
 
     @controller.protected()
-    def remove_user_from_role(self, context, role_id, user_id):
-        self.roles_api.remove_user_from_role(role_id, user_id)
+    def remove_user_from_role(self, context, role_id, user_id, organization):
+        organization_id = organization['id']
+        self.roles_api.remove_user_from_role(role_id, user_id, organization_id)
 
     @controller.protected()
     def list_roles_for_permission(self, context, permission_id):

@@ -20,7 +20,10 @@ def upgrade(migrate_engine):
     meta = sql.MetaData()
     meta.bind = migrate_engine
 
+    # Load existing tables
     sql.Table('consumer_oauth2', meta, autoload=True)
+    sql.Table('user', meta, autoload=True)
+    sql.Table('project', meta, autoload=True)
 
     role_table = sql.Table(
         'role_fiware',
@@ -49,6 +52,14 @@ def upgrade(migrate_engine):
         sql.Column('permission_id', sql.String(64), 
             sql.ForeignKey('permission_fiware.id')))
     role_permission_table.create(migrate_engine, checkfirst=True)
+
+    role_user_table = sql.Table(
+        'role_user_fiware',
+        meta,
+        sql.Column('role_id', sql.String(64), sql.ForeignKey('role_fiware.id')),
+        sql.Column('user_id', sql.String(64), sql.ForeignKey('user.id')),
+        sql.Column('organization_id', sql.String(64), sql.ForeignKey('project.id')))
+    role_user_table.create(migrate_engine, checkfirst=True)
 
 
 def downgrade(migrate_engine):

@@ -58,7 +58,7 @@ class RolesManager(manager.Manager):
             'keystone.contrib.roles.backends.sql.Roles')
 
 
-@dependency.requires('identity_api')
+@dependency.requires('assignment_api', 'identity_api')
 @six.add_metaclass(abc.ABCMeta)
 class RolesDriver(object):
     """Interface description for Roles and Permissions driver."""
@@ -146,26 +146,35 @@ class RolesDriver(object):
         raise exception.NotImplemented()
 
     @abc.abstractmethod
-    def add_user_to_role(self, role_id, user_id):
+    def add_user_to_role(self, role_id, user_id, organization_id):
         """Add user to role.
 
         :param role_id: id of role to add user to
         :type role_id: string
         :param user_id: user to add to role
         :type user_id: string
+        :param organization_id: organization-scope in which we are giving the
+            role to the user. If is a user-scoped role it should be the id of
+            the user default organization (the project created with same name as user
+            when user registration)
+        :type organization_id: string
         :returns: None.
 
         """
         raise exception.NotImplemented()
 
     @abc.abstractmethod
-    def remove_user_from_role(self, role_id, user_id):
+    def remove_user_from_role(self, role_id, user_id, organization_id):
         """Remove user from role.
 
         :param role_id: id of role to remove user from
         :type role_id: string
         :param user_id: user to remove from role
         :type user_id: string
+        :param organization_id: organization-scope in which the role was given to the user. 
+            If is a user-scoped role it should be the id of the user default organization 
+            (the project created with same name as user when user registration)
+        :type organization_id: string
         :returns: None.
 
         """

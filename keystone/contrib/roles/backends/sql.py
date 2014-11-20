@@ -60,6 +60,9 @@ class RoleUser(sql.ModelBase, sql.DictBase):
     user_id = sql.Column(sql.String(64),
                          sql.ForeignKey('user.id'),
                          primary_key=True)
+    organization_id = sql.Column(sql.String(64),
+                         sql.ForeignKey('project.id'),
+                         primary_key=True)
 
 class Roles(roles.RolesDriver):
     """ CRUD driver for the SQL backend """
@@ -143,28 +146,33 @@ class Roles(roles.RolesDriver):
         with session.begin():
             session.delete(ref)
 
-    def add_user_to_role(self, role_id, user_id):
+    def add_user_to_role(self, role_id, user_id, organization_id):
         session = sql.get_session()
         self.get_role(role_id)
         self.identity_api.get_user(user_id)
+        self.assignment_api.get_project(organization_id)
         query = session.query(RoleUser)
         query = query.filter_by(user_id=user_id)
         query = query.filter_by(role_id=role_id)
+        query = query.filter_by(organization_id=organization_id)
         ref = query.first()
         if ref:
             return
 
         with session.begin():
             session.add(RoleUser(user_id=user_id,
-                                    role_id=role_id)) 
+                                role_id=role_id,
+                                organization_id=organization_id)) 
 
-    def remove_user_from_role(self, role_id, user_id):
+    def remove_user_from_role(self, role_id, user_id, organization_id):
         session = sql.get_session()
         self.get_role(role_id)
         self.identity_api.get_user(user_id)
+        self.assignment_api.get_project(organization_id)
         query = session.query(RoleUser)
         query = query.filter_by(user_id=user_id)
         query = query.filter_by(role_id=role_id)
+        query = query.filter_by(organization_id=organization_id)
         ref = query.first()
         if not ref:
             return
