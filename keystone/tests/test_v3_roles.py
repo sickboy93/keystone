@@ -157,6 +157,22 @@ class RolesBaseTests(test_v3.RestfulTestCase):
                                 %ulr_args
         return self.delete(url, expected_status=expected_status, body=body)
 
+    def _list_roles_for_permission(self, permission_id, expected_status=200):
+        ulr_args = {
+            'permission_id': permission_id
+        }   
+        url = self.PERMISSIONS_URL + '/%(permission_id)s/roles/' \
+                                %ulr_args
+        return self.get(url, expected_status=expected_status)
+
+    def _list_roles_for_user(self, user_id, expected_status=200):
+        ulr_args = {
+            'user_id': user_id
+        }   
+        url = self.USERS_URL + '/%(user_id)s/roles/' \
+                                %ulr_args
+        return self.get(url, expected_status=expected_status)
+
     def _assert_role(self, role, expected_name, expected_is_editable):
         self.assertIsNotNone(role)
         self.assertIsNotNone(role['id'])
@@ -419,13 +435,8 @@ class RoleCrudTests(RolesBaseTests):
         self._add_permission_to_role(role_id=role2['id'], 
                                      permission_id=permission['id'])
 
-        ulr_args = {
-            'permission_id':permission['id']
-        }   
-        url = self.PERMISSIONS_URL + '/%(permission_id)s/roles/' \
-                                %ulr_args
+        response = self._list_roles_for_permission(permission_id=permission['id'])
 
-        response = self.get(url)
         entities = response.result['roles']
 
         self.assertIsNotNone(entities)
@@ -443,18 +454,11 @@ class RoleCrudTests(RolesBaseTests):
         self._add_permission_to_role(role_id=role['id'], 
                                      permission_id=permission['id'])
         self._add_permission_to_role(role_id=role2['id'], 
-                                     permission_id=permission['id'])
-        role_id = role2['id']
+                                     permission_id=permission['id']) 
+        self._delete_role(role2['id'])
 
-        response = self._delete_role(role_id)
+        response = self._list_roles_for_permission(permission_id=permission['id'])
 
-        ulr_args = {
-            'permission_id':permission['id']
-        }   
-        url = self.PERMISSIONS_URL + '/%(permission_id)s/roles/' \
-                                %ulr_args
-
-        response = self.get(url)
         entities = response.result['roles']
 
         self.assertIsNotNone(entities)
@@ -470,13 +474,7 @@ class RoleCrudTests(RolesBaseTests):
                                 user_id=user['id'],
                                 organization_id=organization['id'])
 
-        ulr_args = {
-            'user_id':user['id']
-        }   
-        url = self.USERS_URL + '/%(user_id)s/roles/' \
-                                %ulr_args
-
-        response = self.get(url)
+        response = self._list_roles_for_user(user_id=user['id'])
         entities = response.result['roles']
 
         self.assertIsNotNone(entities)
@@ -496,17 +494,10 @@ class RoleCrudTests(RolesBaseTests):
         self._add_user_to_role(role_id=role2['id'], 
                                 user_id=user['id'],
                                 organization_id=organization['id'])
-        role_id = role2['id']
+        self._delete_role(role2['id'])
 
-        response = self._delete_role(role_id)
+        response = self._list_roles_for_user(user_id=user['id'])
 
-        ulr_args = {
-            'user_id':user['id']
-        }   
-        url = self.USERS_URL + '/%(user_id)s/roles/' \
-                                %ulr_args
-
-        response = self.get(url)
         entities = response.result['roles']
 
         self.assertIsNotNone(entities)
