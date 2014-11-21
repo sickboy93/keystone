@@ -39,14 +39,18 @@ class RolesBaseTests(test_v3.RestfulTestCase):
         # but I don't know if its the right way to do it...
         self.manager = core.RolesManager()
 
-    def _create_role(self, name, is_editable=True):
-        data = {
+    def new_fiware_role_ref(self, name, is_editable=True):
+        role_ref = {
             'name': name,   
         }
         if not is_editable:
-            data['is_editable'] = False
+            role_ref['is_editable'] = False
+        return role_ref
 
-        response = self.post(self.ROLES_URL, body={'role': data})
+    def _create_role(self, role_ref=None):
+        if not role_ref:
+            role_ref = self.new_fiware_role_ref(uuid.uuid4().hex)
+        response = self.post(self.ROLES_URL, body={'role': role_ref})
 
         return response.result['role']
 
@@ -118,6 +122,17 @@ class RolesBaseTests(test_v3.RestfulTestCase):
                                 %ulr_args
         return self.put(url, expected_status=expected_status)
 
+    def _add_multiple_roles_to_user(self, number_of_roles, user_id, 
+                        organization_id):
+        user_roles = []
+        for i in range(number_of_roles):
+            user_roles.append(self._create_role())
+            self._add_role_to_user(role_id=user_roles[i]['id'], 
+                                    user_id=user_id,
+                                    organization_id=organization_id)
+
+        return user_roles
+
     def _delete_role(self, role_id, expected_status=204):
 
         ulr_args = {
@@ -163,41 +178,54 @@ class RolesBaseTests(test_v3.RestfulTestCase):
         url = self.USERS_URL + '/%(user_id)s/roles/' %ulr_args
         return self.get(url, expected_status=expected_status)
 
-    def _assert_role(self, role, expected_name, expected_is_editable):
-        self.assertIsNotNone(role)
-        self.assertIsNotNone(role['id'])
-        self.assertEqual(expected_name, role['name'])
-        self.assertEqual(expected_is_editable, role['is_editable'])
 
-    def _assert_permission(self, permission, expected_name, expected_is_editable):
-        self.assertIsNotNone(permission)
-        self.assertIsNotNone(permission['id'])
-        self.assertEqual(expected_name, permission['name'])
-        self.assertEqual(expected_is_editable, permission['is_editable'])
+    def _assert_role(self, test_role, reference_role):
+        self.assertIsNotNone(test_role)
+        self.assertIsNotNone(test_role['id'])
+        self.assertEqual(reference_role['name'], test_role['name'])
+        if hasattr(reference_role, 'is_editable'):
+            self.assertEqual(reference_role['is_editable'], test_role['is_editable'])
+
+    def _assert_permission(self, test_permission, reference_permission):
+        self.assertIsNotNone(test_permission)
+        self.assertIsNotNone(test_permission['id'])
+        self.assertEqual(reference_permission['name'], test_permission['name'])
+        self.assertEqual(reference_permission['is_editable'], test_permission['is_editable'])
+
+    def _assert_list(self, entities, entity_type, reference_list):
+        """ Utility method to check lists."""
+        self.assertIsNotNone(entities)
+        self.assertEqual(len(reference_list), len(entities))
+        for entity in entities:
+            reference_entity = [item for item in reference_list if item['id'] == entity['id']]
+            self.assertEqual(len(reference_entity), 1)
+            # FIXME(garcianavalon) not ready yet! dont use this method!
+            entity_assert_method = getattr(RolesBaseTests, 'assert_%s' %entity_type)
+            entity_assert_method(entity, reference_entity)
 
 class RoleCrudTests(RolesBaseTests):
 
     def test_role_create_default(self):
-        name = uuid.uuid4().hex
-        role = self._create_role(name)
+        role_ref = self.new_fiware_role_ref(uuid.uuid4().hex)
+        role = self._create_role(role_ref)
 
-        self._assert_role(role, name, True)
+        self._assert_role(role, role_ref)
 
     def test_role_create_explicit(self):
-        name = uuid.uuid4().hex
-        role = self._create_role(name, is_editable=True)
+        role_ref = self.new_fiware_role_ref(uuid.uuid4().hex, is_editable=True)
+        role = self._create_role(role_ref)
 
-        self._assert_role(role, name, True)
+        self._assert_role(role, role_ref)
 
     def test_role_create_not_editable(self):
-        name = uuid.uuid4().hex
-        role = self._create_role(name, is_editable=False)
+        role_ref = self.new_fiware_role_ref(uuid.uuid4().hex, is_editable=False)
+        role = self._create_role(role_ref)
 
-        self._assert_role(role, name, False)
+        self._assert_role(role, role_ref)
 
     def test_roles_list(self):
-        role1 = self._create_role(uuid.uuid4().hex)
-        role2 = self._create_role(uuid.uuid4().hex)
+        role1 = self._create_role()
+        role2 = self._create_role()
         response = self.get(self.ROLES_URL)
         entities = response.result['roles']
         self.assertIsNotNone(entities)
@@ -210,25 +238,24 @@ class RoleCrudTests(RolesBaseTests):
         self.assertEqual(2, len(entities))
 
     def test_get_role(self):
-        name = uuid.uuid4().hex
-        role = self._create_role(name)
+        role_ref = self.new_fiware_role_ref(uuid.uuid4().hex)
+        role = self._create_role(role_ref)
         role_id = role['id']
         response = self.get(self.ROLES_URL + '/%s' %role_id)
         get_role = response.result['role']
 
-        self._assert_role(role, name, True)
+        self._assert_role(role, role_ref)
         self_url = ['http://localhost/v3', self.ROLES_URL, '/', role_id]
         self_url = ''.join(self_url)
         self.assertEqual(self_url, get_role['links']['self'])
         self.assertEqual(role_id, get_role['id'])
 
     def test_update_role(self):
-        name = uuid.uuid4().hex
-        role = self._create_role(name)
+        role_ref = self.new_fiware_role_ref(uuid.uuid4().hex)
+        role = self._create_role(role_ref)
         original_id = role['id']
-        original_name = role['name']
-        update_name = original_name + '_new'
-       
+        update_name = role['name'] + '_new'
+        role_ref['name'] = update_name
         body = {
             'role': {
                 'name': update_name,
@@ -238,54 +265,58 @@ class RoleCrudTests(RolesBaseTests):
                                  body=body)
         update_role = response.result['role']
 
-        self._assert_role(update_role, update_name, True)
+        self._assert_role(update_role, role_ref)
         self.assertEqual(original_id, update_role['id'])
 
     def test_delete_role(self):
-        name = uuid.uuid4().hex
-        role = self._create_role(name)
+        role_ref = self.new_fiware_role_ref(uuid.uuid4().hex)
+        role = self._create_role(role_ref)
         role_id = role['id']
         response = self._delete_role(role_id)
 
         
     def test_list_roles_for_user(self):
-        role_name = uuid.uuid4().hex
-        role = self._create_role(role_name)
         user, organization = self._create_user()
-        self._add_role_to_user(role_id=role['id'], 
-                                user_id=user['id'],
-                                organization_id=organization['id'])
+        number_of_roles = 2
+        user_roles = self._add_multiple_roles_to_user(number_of_roles, 
+                                                user['id'], organization['id'])
 
         response = self._list_roles_for_user(user_id=user['id'])
         entities = response.result['roles']
 
+        #self._assert_list(entities, 'role', user_roles)
         self.assertIsNotNone(entities)
-
-        self.assertEqual(1, len(entities))
+        self.assertEqual(len(user_roles), len(entities))
+        for role in entities:
+            reference_role = [r for r in user_roles if r['id'] == role['id']]
+            self.assertEqual(len(reference_role), 1)
+            self._assert_role(role, reference_role[0])
+            import pdb; pdb.set_trace()
+            self.assertIsNotNone(role['organization_id'])
+            self.assertEqual(organization['id'], role['organization_id'])
 
     def test_add_role_to_user(self):
-        role_name = uuid.uuid4().hex
-        role = self._create_role(role_name)
+        role = self._create_role()
         user, organization = self._create_user()
         response = self._add_role_to_user(role_id=role['id'],
                                         user_id=user['id'],
                                         organization_id=organization['id'])
+
     def test_add_non_existent_role_to_user(self):
         user, organization = self._create_user()
         response = self._add_role_to_user(role_id=uuid.uuid4().hex,
                                         user_id=user['id'],
                                         organization_id=organization['id'],
                                         expected_status=404)
+
     def test_add_role_to_non_existent_user(self):
-        role_name = uuid.uuid4().hex
-        role = self._create_role(role_name)
+        role = self._create_role()
         response = self._add_role_to_user(role_id=role['id'],
                                         user_id=uuid.uuid4().hex,
                                         organization_id=uuid.uuid4().hex,
                                         expected_status=404)
     def test_add_role_to_user_repeated(self):
-        role_name = uuid.uuid4().hex
-        role = self._create_role(role_name)
+        role = self._create_role()
         user, organization = self._create_user()
         response = self._add_role_to_user(role_id=role['id'],
                                         user_id=user['id'],
@@ -294,8 +325,7 @@ class RoleCrudTests(RolesBaseTests):
                                         user_id=user['id'],
                                         organization_id=organization['id'])
     def test_remove_role_from_user(self):
-        role_name = uuid.uuid4().hex
-        role = self._create_role(role_name)
+        role = self._create_role()
         user, organization = self._create_user()
         response = self._add_role_to_user(role_id=role['id'],
                                         user_id=user['id'],
@@ -310,15 +340,13 @@ class RoleCrudTests(RolesBaseTests):
                                             organization_id=organization['id'],
                                             expected_status=404)
     def test_remove_role_from_non_existent_user(self):
-        role_name = uuid.uuid4().hex
-        role = self._create_role(role_name)
+        role = self._create_role()
         response = self._remove_role_from_user(role_id=role['id'],
                                             user_id=uuid.uuid4().hex,
                                             organization_id=uuid.uuid4().hex,
                                             expected_status=404)
     def test_remove_user_from_role_repeated(self):
-        role_name = uuid.uuid4().hex
-        role = self._create_role(role_name)
+        role = self._create_role()
         user, organization = self._create_user()
         response = self._add_role_to_user(role_id=role['id'],
                                         user_id=user['id'],
@@ -405,8 +433,7 @@ class PermissionCrudTests(RolesBaseTests):
         response = self._delete_permission(permission_id)
 
     def test_list_permissions_for_role(self):
-        role_name = uuid.uuid4().hex
-        role = self._create_role(role_name)
+        role = self._create_role()
         permission_name = uuid.uuid4().hex
         permission = self._create_permission(permission_name)
 
@@ -427,8 +454,7 @@ class PermissionCrudTests(RolesBaseTests):
         self.assertEqual(1, len(entities))
 
     def test_add_permission_to_role(self):
-        role_name = uuid.uuid4().hex
-        role = self._create_role(role_name)
+        role = self._create_role()
         permission_name = uuid.uuid4().hex
         permission = self._create_permission(permission_name)
         response = self._add_permission_to_role(role_id=role['id'], 
@@ -442,15 +468,13 @@ class PermissionCrudTests(RolesBaseTests):
                                                 expected_status=404)
 
     def test_add_non_existent_permission_to_role(self):
-        role_name = uuid.uuid4().hex
-        role = self._create_role(role_name)
+        role = self._create_role()
         response = self._add_permission_to_role(role_id=role['id'], 
                                                 permission_id=uuid.uuid4().hex,
                                                 expected_status=404)
 
     def test_add_permission_to_role_repeated(self):
-        role_name = uuid.uuid4().hex
-        role = self._create_role(role_name)
+        role = self._create_role()
         permission_name = uuid.uuid4().hex
         permission = self._create_permission(permission_name)
         response = self._add_permission_to_role(role_id=role['id'], 
@@ -459,8 +483,7 @@ class PermissionCrudTests(RolesBaseTests):
                                                 permission_id=permission['id'])
 
     def test_remove_permission_from_role(self):
-        role_name = uuid.uuid4().hex
-        role = self._create_role(role_name)
+        role = self._create_role()
         permission_name = uuid.uuid4().hex
         permission = self._create_permission(permission_name)
 
@@ -471,8 +494,7 @@ class PermissionCrudTests(RolesBaseTests):
                                                      permission_id=permission['id'])
 
     def test_remove_permission_from_role_non_associated(self):
-        role_name = uuid.uuid4().hex
-        role = self._create_role(role_name)
+        role = self._create_role()
         permission_name = uuid.uuid4().hex
         permission = self._create_permission(permission_name)
         
@@ -488,16 +510,14 @@ class PermissionCrudTests(RolesBaseTests):
                                                      expected_status=404)
 
     def test_remove_non_existent_permission_from_role(self):
-        role_name = uuid.uuid4().hex
-        role = self._create_role(role_name)
+        role = self._create_role()
 
         response = self._remove_permission_from_role(role_id=role['id'], 
                                                      permission_id=uuid.uuid4().hex,
                                                      expected_status=404)
 
     def test_remove_permision_from_role_repeated(self):
-        role_name = uuid.uuid4().hex
-        role = self._create_role(role_name)
+        role = self._create_role()
         permission_name = uuid.uuid4().hex
         permission = self._create_permission(permission_name)
 
@@ -533,7 +553,7 @@ class FiwareApiTests(RolesBaseTests):
         number_of_user_roles = 2
         user_roles = []
         for i in range(number_of_user_roles):
-            user_roles.append(self._create_role(uuid.uuid4().hex))
+            user_roles.append(self._create_role())
             self._add_role_to_user(role_id=user_roles[i]['id'], 
                                     user_id=user['id'],
                                     organization_id=user_organization['id'])
@@ -544,7 +564,7 @@ class FiwareApiTests(RolesBaseTests):
         for organization in organizations:
             for i in range(number_of_organization_roles):
                 organization_roles[organization['name']] = (
-                    self._create_role(uuid.uuid4().hex))
+                    self._create_role())
             self._add_role_to_user(role_id=user_roles[i]['id'], 
                                     user_id=user['id'],
                                     organization_id=organization['id'])

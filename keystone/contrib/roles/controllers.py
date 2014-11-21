@@ -70,6 +70,7 @@ class RoleCrudV3(BaseControllerV3):
     @controller.protected()
     def list_roles_for_user(self, context, user_id):
         ref = self.roles_api.list_roles_for_user(user_id)
+        import pdb; pdb.set_trace()
         return RoleCrudV3.wrap_collection(context, ref)
 
 
@@ -143,8 +144,20 @@ class FiwareApiControllerV3(BaseControllerV3):
         # organizations the user is in
         organizations = self.assignment_api.list_projects_for_user(user_id)
 
-        # find the user-scoped roles and extract them
+        # filter to only organizations with roles
+        organizations = [org for org in organizations 
+                    if org['id'] in [role['organization_id'] for role in roles]]
+        for organization in organizations:
+            organization['roles'] = [role for role in roles 
+                                if role['organization_id'] == organization['id']]
+        # remove the user-default organization from the organizations list
+        user_organization = [org for org in organizations 
+                            if org['name'] == user['name']][0] #there is only one!
+        organizations.remove(user_organization)
+
+        # extract the user-scoped roles
         user_roles = []
+        user_roles = user_organization['roles']
 
         response_body = {
             'id':user_id,

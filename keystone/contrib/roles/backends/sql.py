@@ -114,39 +114,19 @@ class Roles(roles.RolesDriver):
             q2 = q2.filter_by(role_id=role_id)
             q2.delete(False)
 
-            
             session.delete(role_ref)
 
-    def add_permission_to_role(self, role_id, permission_id):
+    def list_roles_for_user(self, user_id):
         session = sql.get_session()
-        self.get_role(role_id)
-        self.get_permission(permission_id)
-        query = session.query(RolePermission)
-        query = query.filter_by(permission_id=permission_id)
-        query = query.filter_by(role_id=role_id)
-        ref = query.first()
-        if ref:
-            return
+        self.identity_api.get_user(user_id)
+        query = session.query(Role, RoleUser.organization_id).join(RoleUser)
+        query = query.filter(RoleUser.user_id == user_id)
+        # FIXME(garcianavalon) g now is a tuple (Role, organization_id), we need
+        # to create a method to pack it into a single dict
+        return [g.to_dict() for g in query]
+        
 
-        with session.begin():
-            session.add(RolePermission(permission_id=permission_id,
-                                            role_id=role_id))
-
-    def remove_permission_from_role(self, role_id, permission_id):
-        session = sql.get_session()
-        self.get_role(role_id)
-        self.get_permission(permission_id)
-        query = session.query(RolePermission)
-        query = query.filter_by(permission_id=permission_id)
-        query = query.filter_by(role_id=role_id)
-        ref = query.first()
-        if not ref:
-            return
-
-        with session.begin():
-            session.delete(ref)
-
-    def add_user_to_role(self, role_id, user_id, organization_id):
+    def add_role_to_user(self, role_id, user_id, organization_id):
         session = sql.get_session()
         self.get_role(role_id)
         self.identity_api.get_user(user_id)
@@ -164,7 +144,7 @@ class Roles(roles.RolesDriver):
                                 role_id=role_id,
                                 organization_id=organization_id)) 
 
-    def remove_user_from_role(self, role_id, user_id, organization_id):
+    def remove_role_from_user(self, role_id, user_id, organization_id):
         session = sql.get_session()
         self.get_role(role_id)
         self.identity_api.get_user(user_id)
@@ -179,21 +159,6 @@ class Roles(roles.RolesDriver):
 
         with session.begin():
             session.delete(ref)
-
-    def list_roles_for_permission(self, permission_id):
-        session = sql.get_session()
-        self.get_permission(permission_id)
-        query = session.query(Role).join(RolePermission)
-        query = query.filter(RolePermission.permission_id == permission_id)
-        return [g.to_dict() for g in query] 
-
-    def list_roles_for_user(self, user_id):
-        session = sql.get_session()
-        self.identity_api.get_user(user_id)
-        query = session.query(Role).join(RoleUser)
-        query = query.filter(RoleUser.user_id == user_id)
-        return [g.to_dict() for g in query]
-
 
     # PERMISSIONS
     def list_permissions(self):
@@ -245,9 +210,9 @@ class Roles(roles.RolesDriver):
         self.get_role(role_id)
         query = session.query(Permission).join(RolePermission)
         query = query.filter(RolePermission.role_id == role_id)
-        return [g.to_dict() for g in query] 
+        return [g.to_dict() for g in query]
 
-    def add_role_to_permission(self, role_id, permission_id):
+    def add_permission_to_role(self, role_id, permission_id):
         session = sql.get_session()
         self.get_role(role_id)
         self.get_permission(permission_id)
@@ -262,57 +227,13 @@ class Roles(roles.RolesDriver):
             session.add(RolePermission(permission_id=permission_id,
                                             role_id=role_id))
 
-    def remove_role_from_permission(self, role_id, permission_id):
+    def remove_permission_from_role(self, role_id, permission_id):
         session = sql.get_session()
         self.get_role(role_id)
         self.get_permission(permission_id)
         query = session.query(RolePermission)
         query = query.filter_by(permission_id=permission_id)
         query = query.filter_by(role_id=role_id)
-        ref = query.first()
-        if not ref:
-            return
-
-        with session.begin():
-            session.delete(ref)
-
-
-    #USERS
-    def list_users_for_role(self, role_id):
-        session = sql.get_session()
-        self.get_role(role_id)
-        query = session.query(identity_backend.User).join(RoleUser)
-        query = query.filter(RoleUser.role_id == role_id)
-        return [g.to_dict() for g in query]
-
-
-    def add_role_to_user(self, role_id, user_id, organization_id):
-        session = sql.get_session()
-        self.get_role(role_id)
-        self.identity_api.get_user(user_id)
-        self.assignment_api.get_project(organization_id)
-        query = session.query(RoleUser)
-        query = query.filter_by(user_id=user_id)
-        query = query.filter_by(role_id=role_id)
-        query = query.filter_by(organization_id=organization_id)
-        ref = query.first()
-        if ref:
-            return
-
-        with session.begin():
-            session.add(RoleUser(user_id=user_id,
-                                role_id=role_id,
-                                organization_id=organization_id)) 
-
-    def remove_role_from_user(self, role_id, user_id, organization_id):
-        session = sql.get_session()
-        self.get_role(role_id)
-        self.identity_api.get_user(user_id)
-        self.assignment_api.get_project(organization_id)
-        query = session.query(RoleUser)
-        query = query.filter_by(user_id=user_id)
-        query = query.filter_by(role_id=role_id)
-        query = query.filter_by(organization_id=organization_id)
         ref = query.first()
         if not ref:
             return
