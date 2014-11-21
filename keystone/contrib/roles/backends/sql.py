@@ -21,7 +21,7 @@ from keystone.identity.backends import sql as identity_backend
 
 class Role(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'role_fiware'
-    __table_args__ = (sql.UniqueConstraint('name'), {'extend_existing': True})
+    __table_args__ = (sql.UniqueConstraint('name', 'application'), {'extend_existing': True})
     attributes = ['id', 'name', 'is_editable', 'application']
                     
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)

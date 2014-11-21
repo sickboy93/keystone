@@ -65,6 +65,13 @@ class RolesBaseTests(test_v3.RestfulTestCase):
         user_ref = self.new_user_ref(domain_id=test_v3.DEFAULT_DOMAIN_ID)
         user = self.identity_api.create_user(user_ref)
         user['password'] = user_ref['password']
+        # # To simulate the IdM's registration we also create a project with 
+        # # the same name as the user and give it membership status
+        # project_ref = self.new_project_ref(domain_id=test_v3.DEFAULT_DOMAIN_ID)
+        # project_ref['id'] = uuid.uuid4().hex
+        # project_ref['name'] = user['name']
+        # project = self.assignment_api.create_project(project_ref['id'], project_ref)
+        # self._add_user_to_organization(user['id'], project_ref['id'])
         return user
 
     def _create_organization(self):
@@ -109,9 +116,11 @@ class RolesBaseTests(test_v3.RestfulTestCase):
                                 %ulr_args
         return self.put(url, expected_status=expected_status, body=body)
 
-    def _add_user_to_organization(self, project_id, user_id, keystone_role_id, 
-                                expected_status=204):
+    def _add_user_to_organization(self, project_id, user_id, keystone_role_id=None):
         
+        if not keystone_role_id:
+            # use default sample role
+            keystone_role_id = self.role_id
         self.assignment_api.add_role_to_user_and_project(
             user_id, project_id, keystone_role_id)
 
