@@ -126,7 +126,19 @@ class RolesExtension(wsgi.V3ExtensionRouter):
             path_vars={
                 'role_id':build_parameter_relation(parameter_name='role_id'),
             })
-      
+          
+        self._add_resource(
+            mapper, permissions_controller,
+            path=self.PATH_PREFIX + '/permissions/{permission_id}/roles/{role_id}',
+            put_action='add_role_to_permission',
+            delete_action='remove_role_from_permission',
+            rel=build_resource_relation(resource_name='role_permission'),
+            path_vars={
+                'role_id':build_parameter_relation(parameter_name='role_id'),
+                'permission_id':build_parameter_relation(parameter_name='permission_id'),
+            })
+
+      #Users
         self._add_resource(
             mapper, user_controller,
             path=self.PATH_PREFIX + '/roles/{role_id}/users',
@@ -136,6 +148,17 @@ class RolesExtension(wsgi.V3ExtensionRouter):
                 'role_id':build_parameter_relation(parameter_name='role_id'),
             })
 
+        self._add_resource(
+            mapper, user_controller,
+            path=self.PATH_PREFIX + '/users/{user_id}/roles/{role_id}',
+            put_action='add_role_to_user',
+            delete_action='remove_role_from_user',
+            rel=build_resource_relation(resource_name='role_user'),
+            path_vars={
+                'role_id':build_parameter_relation(parameter_name='role_id'),
+                'user_id':build_parameter_relation(parameter_name='user_id'),
+            })
+        
         # FIWARE specific endpoints
         self._add_resource(
             mapper, roles_controller,
@@ -145,3 +168,4 @@ class RolesExtension(wsgi.V3ExtensionRouter):
             path_vars={
                 'token_id':build_parameter_relation(parameter_name='token_id'),
             })
+        
