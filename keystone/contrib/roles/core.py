@@ -120,34 +120,18 @@ class RolesDriver(object):
         raise exception.NotImplemented()
 
     @abc.abstractmethod
-    def add_permission_to_role(self, role_id, permission_id):
+    def list_roles_for_user(self, user_id):
+        """List roles for a user_id
+
+        :param user_id: user with roles
+        :type user_id: string
+        ;returns: None.
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def add_role_to_user(self, role_id, user_id, organization_id):
         """Delete role.
-
-        :param role_id: id of role to add permission to
-        :type role_id: string
-        :param permission_id: permission to add to role
-        :type permission_id: string
-        :returns: None.
-
-        """
-        raise exception.NotImplemented()
-
-    @abc.abstractmethod
-    def remove_permission_from_role(self, role_id, permission_id):
-        """Remove Permission from role.
-
-        :param role_id: id of role to remove permission from
-        :type role_id: string
-        :param permission_id: permission to remove from role
-        :type permission_id: string
-        :returns: None.
-
-        """
-        raise exception.NotImplemented()
-
-    @abc.abstractmethod
-    def add_user_to_role(self, role_id, user_id, organization_id):
-        """Add user to role.
 
         :param role_id: id of role to add user to
         :type role_id: string
@@ -164,7 +148,7 @@ class RolesDriver(object):
         raise exception.NotImplemented()
 
     @abc.abstractmethod
-    def remove_user_from_role(self, role_id, user_id, organization_id):
+    def remove_role_from_user(self, role_id, user_id, organization_id):
         """Remove user from role.
 
         :param role_id: id of role to remove user from
@@ -178,28 +162,7 @@ class RolesDriver(object):
         :returns: None.
 
         """
-        raise exception.NotImplemented()
-
-    @abc.abstractmethod
-    def list_roles_for_permission(self, permission_id):
-        """List roles for permission.
-
-        :param permission_id: permission with roles
-        :type permission_id: string
-        :returns: None.
-
-        """
-        raise exception.NotImplemented()
-
-    @abc.abstractmethod
-    def list_roles_for_user(self, user_id):
-        """List roles for a user_id
-
-        :param user_id: user with roles
-        :type user_id: string
-        ;returns: None.
-        """
-        raise exception.NotImplemented()
+        raise exception.NotImplemented()   
     
     # PERMISSIONS
     @abc.abstractmethod
@@ -271,7 +234,7 @@ class RolesDriver(object):
         raise exception.NotImplemented()
 
     @abc.abstractmethod
-    def add_role_to_permission(self, role_id, permission_id):
+    def add_permission_to_role(self, role_id, permission_id):
         """Delete role.
 
         :param role_id: id of role to add permission to
@@ -284,53 +247,13 @@ class RolesDriver(object):
         raise exception.NotImplemented()
 
     @abc.abstractmethod
-    def remove_role_from_permission(self, role_id, permission_id):
+    def remove_permission_from_role(self, role_id, permission_id):
         """Remove Permission from role.
 
         :param role_id: id of role to remove permission from
         :type role_id: string
         :param permission_id: permission to remove from role
         :type permission_id: string
-        :returns: None.
-
-        """
-        raise exception.NotImplemented()
-
-
-
-    #USERS
-    @abc.abstractmethod
-    def list_users_for_role(self, role_id):
-        """List users for role.
-
-        :param role_id: id of role to remove permission from
-        :type role_id: string
-        :returns: None.
-
-        """
-        raise exception.NotImplemented()
-
-    @abc.abstractmethod
-    def add_role_to_user(self, role_id, user_id, organization_id):
-        """Delete role.
-
-        :param role_id: id of role to add user to
-        :type role_id: string
-        :param user_id: user to add to role
-        :type user_id: string
-        :returns: None.
-
-        """
-        raise exception.NotImplemented()
-
-    @abc.abstractmethod
-    def remove_role_from_user(self, role_id, user_id, organization_id):
-        """Remove user from role.
-
-        :param role_id: id of role to remove user from
-        :type role_id: string
-        :param user_id: user to remove from role
-        :type user_id: string
         :returns: None.
 
         """

@@ -34,7 +34,7 @@ class RolesExtension(wsgi.V3ExtensionRouter):
     def add_routes(self, mapper):
         roles_controller = controllers.RoleCrudV3()
         permissions_controller = controllers.PermissionCrudV3()
-        user_controller = controllers.UserV3()
+        fiware_api_controller = controllers.FiwareApiControllerV3()
         
         # ROLES
         self._add_resource(
@@ -58,44 +58,23 @@ class RolesExtension(wsgi.V3ExtensionRouter):
 
         self._add_resource(
             mapper, roles_controller,
-            path=self.PATH_PREFIX + '/roles/{role_id}/permissions/{permission_id}',
-            put_action='add_permission_to_role',
-            delete_action='remove_permission_from_role',
-            rel=build_resource_relation(resource_name='role_permission'),
-            path_vars={
-                'role_id':build_parameter_relation(parameter_name='role_id'),
-                'permission_id':build_parameter_relation(parameter_name='permission_id'),
-            })
-
-        
-
-        self._add_resource(
-            mapper, roles_controller,
-            path=self.PATH_PREFIX + '/roles/{role_id}/users/{user_id}',
-            put_action='add_user_to_role',
-            delete_action='remove_user_from_role',
-            rel=build_resource_relation(resource_name='role_user'),
-            path_vars={
-                'role_id':build_parameter_relation(parameter_name='role_id'),
-                'user_id':build_parameter_relation(parameter_name='user_id'),
-            })
-
-        self._add_resource(
-            mapper, roles_controller,
-            path=self.PATH_PREFIX + '/permissions/{permission_id}/roles',
-            get_action='list_roles_for_permission',
-            rel=build_resource_relation(resource_name='roles'),
-            path_vars={
-                'permission_id':build_parameter_relation(parameter_name='permission_id'),
-            })
-
-        self._add_resource(
-            mapper, roles_controller,
             path=self.PATH_PREFIX + '/users/{user_id}/roles',
             get_action='list_roles_for_user',
             rel=build_resource_relation(resource_name='roles'),
             path_vars={
                 'user_id':build_parameter_relation(parameter_name='user_id'),
+            })
+
+        self._add_resource(
+            mapper, roles_controller,
+            path=self.PATH_PREFIX + '/users/{user_id}/organizations/{organization_id}/roles/{role_id}',
+            put_action='add_role_to_user',
+            delete_action='remove_role_from_user',
+            rel=build_resource_relation(resource_name='role_user'),
+            path_vars={
+                'role_id':build_parameter_relation(parameter_name='role_id'),
+                'user_id':build_parameter_relation(parameter_name='user_id'),
+                'organization_id':build_parameter_relation(parameter_name='organization_id'),
             })
 
         # PERMISSIONS
@@ -126,42 +105,21 @@ class RolesExtension(wsgi.V3ExtensionRouter):
             path_vars={
                 'role_id':build_parameter_relation(parameter_name='role_id'),
             })
-          
+
         self._add_resource(
             mapper, permissions_controller,
-            path=self.PATH_PREFIX + '/permissions/{permission_id}/roles/{role_id}',
-            put_action='add_role_to_permission',
-            delete_action='remove_role_from_permission',
+            path=self.PATH_PREFIX + '/roles/{role_id}/permissions/{permission_id}',
+            put_action='add_permission_to_role',
+            delete_action='remove_permission_from_role',
             rel=build_resource_relation(resource_name='role_permission'),
             path_vars={
                 'role_id':build_parameter_relation(parameter_name='role_id'),
                 'permission_id':build_parameter_relation(parameter_name='permission_id'),
             })
 
-      #Users
-        self._add_resource(
-            mapper, user_controller,
-            path=self.PATH_PREFIX + '/roles/{role_id}/users',
-            get_action='list_users_for_role',
-            rel=build_resource_relation(resource_name='users'),
-            path_vars={
-                'role_id':build_parameter_relation(parameter_name='role_id'),
-            })
-
-        self._add_resource(
-            mapper, user_controller,
-            path=self.PATH_PREFIX + '/users/{user_id}/roles/{role_id}',
-            put_action='add_role_to_user',
-            delete_action='remove_role_from_user',
-            rel=build_resource_relation(resource_name='role_user'),
-            path_vars={
-                'role_id':build_parameter_relation(parameter_name='role_id'),
-                'user_id':build_parameter_relation(parameter_name='user_id'),
-            })
-        
         # FIWARE specific endpoints
         self._add_resource(
-            mapper, roles_controller,
+            mapper, fiware_api_controller,
             path='/access-tokens/{token_id}',
             get_action='validate_token',
             rel=build_resource_relation(resource_name='roles'),

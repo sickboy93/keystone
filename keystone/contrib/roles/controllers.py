@@ -26,7 +26,7 @@ class BaseControllerV3(controller.V3Controller):
         path = '/OS-ROLES/' + cls.collection_name
         return super(BaseControllerV3, cls).base_url(context, path=path)
 
-@dependency.requires('token_provider_api', 'assignment_api', 'identity_api')
+
 class RoleCrudV3(BaseControllerV3):
 
     collection_name = 'roles'
@@ -60,60 +60,18 @@ class RoleCrudV3(BaseControllerV3):
         self.roles_api.delete_role(role_id)
 
     @controller.protected()
-    def add_permission_to_role(self, context, role_id, permission_id):
-        self.roles_api.add_permission_to_role(role_id, permission_id)
+    def add_role_to_user(self, context, role_id, user_id, organization_id):
+        self.roles_api.add_role_to_user(role_id, user_id, organization_id)
 
     @controller.protected()
-    def remove_permission_from_role(self, context, role_id, permission_id):
-        self.roles_api.remove_permission_from_role(role_id, permission_id)
-
-    @controller.protected()
-    def add_user_to_role(self, context, role_id, user_id, organization):
-        organization_id = organization['id']
-        self.roles_api.add_user_to_role(role_id, user_id, organization_id)
-
-    @controller.protected()
-    def remove_user_from_role(self, context, role_id, user_id, organization):
-        organization_id = organization['id']
-        self.roles_api.remove_user_from_role(role_id, user_id, organization_id)
-
-    @controller.protected()
-    def list_roles_for_permission(self, context, permission_id):
-        ref = self.roles_api.list_roles_for_permission(permission_id)
-        return RoleCrudV3.wrap_collection(context, ref)
+    def remove_role_from_user(self, context, role_id, user_id, organization_id):
+        self.roles_api.remove_role_from_user(role_id, user_id, organization_id)  
 
     @controller.protected()
     def list_roles_for_user(self, context, user_id):
         ref = self.roles_api.list_roles_for_user(user_id)
         return RoleCrudV3.wrap_collection(context, ref)
 
-    @controller.protected()
-    def validate_token(self, context, token_id):
-        """ Return a list of the roles and permissions of the user associated 
-        with this token.
-
-            See https://github.com/ging/fi-ware-idm/wiki/Using-the-FI-LAB-instance\
-            #get-user-information-and-roles
-        """
-        token = token_model.KeystoneToken(
-                            token_id=token_id,
-                            token_data=self.token_provider_api.validate_token(
-                                token_id))
-        user_id = token.user_id
-        # get the user
-        user = self.identity_api.get_user(user_id)
-        # roles associated with this user
-        roles = self.roles_api.list_roles_for_user(user_id)
-        # organizations the user is in
-        organizations = self.assignment_api.list_projects_for_user(user_id)
-        response_body = {
-            'id':user_id,
-            'email': user['email'],
-            'nickName': user['name'],
-            'roles': roles,
-            'organizations': organizations
-        }
-        return response_body
 
 class PermissionCrudV3(BaseControllerV3):
 
@@ -154,30 +112,45 @@ class PermissionCrudV3(BaseControllerV3):
         return PermissionCrudV3.wrap_collection(context, ref)  
 
     @controller.protected()
-    def add_role_to_permission(self, context, role_id, permission_id):
-        self.roles_api.add_role_to_permission(role_id, permission_id)
+    def add_permission_to_role(self, context, role_id, permission_id):
+        self.roles_api.add_permission_to_role(role_id, permission_id)
 
     @controller.protected()
-    def remove_role_from_permission(self, context, role_id, permission_id):
-        self.roles_api.remove_role_from_permission(role_id, permission_id)
-
-class UserV3(BaseControllerV3):
-    collection_name = 'users'
-    member_name = 'user'
-
-    @controller.protected()
-    def list_users_for_role(self, context, role_id):
-        ref = self.roles_api.list_users_for_role(role_id)
-        return UserV3.wrap_collection(context, ref)
-
-    @controller.protected()
-    def add_role_to_user(self, context, role_id, user_id, organization):
-        organization_id = organization['id']
-        self.roles_api.add_role_to_user(role_id, user_id, organization_id)
-
-    @controller.protected()
-    def remove_role_from_user(self, context, role_id, user_id, organization):
-        organization_id = organization['id']
-        self.roles_api.remove_role_from_user(role_id, user_id, organization_id)  
+    def remove_permission_from_role(self, context, role_id, permission_id):
+        self.roles_api.remove_permission_from_role(role_id, permission_id)
 
 
+@dependency.requires('token_provider_api', 'assignment_api', 'identity_api')
+class FiwareApiControllerV3(BaseControllerV3):
+
+    #@controller.protected()
+    def validate_token(self, context, token_id):
+        """ Return a list of the roles and permissions of the user associated 
+        with this token.
+
+            See https://github.com/ging/fi-ware-idm/wiki/Using-the-FI-LAB-instance\
+            #get-user-information-and-roles
+        """
+        token = token_model.KeystoneToken(
+                            token_id=token_id,
+                            token_data=self.token_provider_api.validate_token(
+                                token_id))
+        user_id = token.user_id
+        # get the user
+        user = self.identity_api.get_user(user_id)
+        # roles associated with this user
+        roles = self.roles_api.list_roles_for_user(user_id)
+        # organizations the user is in
+        organizations = self.assignment_api.list_projects_for_user(user_id)
+
+        # find the user-scoped roles and extract them
+        user_roles = []
+
+        response_body = {
+            'id':user_id,
+            'email': user['email'],
+            'nickName': user['name'],
+            'roles': user_roles,
+            'organizations': organizations
+        }
+        return response_body
