@@ -43,6 +43,7 @@ class OAuth2Extension(wsgi.V3ExtensionRouter):
             get_action='list_consumers',
             post_action='create_consumer',
             rel=build_resource_relation(resource_name='consumers'))
+
         self._add_resource(
             mapper, consumer_controller,
             path=self.PATH_PREFIX + '/consumers/{consumer_id}',
@@ -54,6 +55,16 @@ class OAuth2Extension(wsgi.V3ExtensionRouter):
                 'consumer_id':
                 build_parameter_relation(parameter_name='consumer_id'),
             })
+
+        self._add_resource(
+            mapper, consumer_controller,
+            path=self.PATH_PREFIX + '/users/{user_id}/consumers',
+            get_action='list_consumers_for_user',
+            rel=build_resource_relation(resource_name='consumers'),
+            path_vars={
+                'user_id':build_parameter_relation(parameter_name='user_id'),
+            })
+
         # Resource Owner endpoint for Authorization Codes
         self._add_resource(
             mapper, authorization_code_controller,
@@ -64,6 +75,7 @@ class OAuth2Extension(wsgi.V3ExtensionRouter):
                 'user_id':
                 build_parameter_relation(parameter_name='user_id'),
             })
+        
         # OAuth2 flow calls
         self._add_resource(
             mapper, oauth2_controller,

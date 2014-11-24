@@ -57,7 +57,7 @@ class Manager(manager.Manager):
         super(Manager, self).__init__(
             'keystone.contrib.oauth2.backends.sql.OAuth2')# TODO(garcianavalon) set as configuration option in keystone.conf
 
-
+@dependency.requires('identity_api')
 @six.add_metaclass(abc.ABCMeta)
 class Driver(object):
     """Interface description for OAuth2 drivers"""
@@ -68,6 +68,17 @@ class Driver(object):
         """List all registered consumers
 
         :returns: List of registered consumers
+
+        """
+        raise exception.NotImplemented()  
+
+    @abc.abstractmethod
+    def list_consumers_for_user(self, user_id):
+        """List all registered consumers owned by the user
+        
+        :param user_id: user id
+        :type user_id: string
+        :returns: List of consumers
 
         """
         raise exception.NotImplemented()  

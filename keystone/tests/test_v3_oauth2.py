@@ -31,6 +31,7 @@ class OAuth2BaseTests(test_v3.RestfulTestCase):
     EXTENSION_TO_ADD = 'oauth2_extension'
 
     CONSUMER_URL = '/OS-OAUTH2/consumers'
+    USERS_URL = '/OS-OAUTH2/users'
 
     DEFAULT_REDIRECT_URIS = [
         'https://%s.com' %uuid.uuid4().hex,
@@ -81,6 +82,7 @@ class ConsumerCRUDTests(OAuth2BaseTests):
         self.assertIsNotNone(consumer['id'])
         self.assertIsNotNone(consumer['name'])
         self.assertIsNotNone(consumer['secret'])
+        self.assertEqual(self.user['id'], consumer['owner'])
 
     def test_consumer_delete(self):
         consumer, data = self._create_consumer()
@@ -119,6 +121,20 @@ class ConsumerCRUDTests(OAuth2BaseTests):
         self_url = ''.join(self_url)
         self.assertEqual(response.result['links']['self'], self_url)
         self.assertValidListLinks(response.result['links'])
+
+    def test_consumer_list(self):
+        self._create_consumer()
+        url = self.USERS_URL + '/%s/consumers' %self.user['id']
+        response = self.get(url)
+        
+        entities = response.result['consumers']
+        self.assertIsNotNone(entities)
+
+        for consumer in entities:
+            self.assertIsNotNone(consumer['id'])
+            self.assertIsNotNone(consumer['name'])
+            self.assertEqual(self.user['id'], consumer['owner'])
+       
 
     def test_consumer_update(self):
         consumer, data = self._create_consumer()

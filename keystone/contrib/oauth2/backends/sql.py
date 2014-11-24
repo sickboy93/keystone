@@ -28,7 +28,7 @@ VALID_GRANT_TYPES = sql.Enum('authorization_code')
 class Consumer(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'consumer_oauth2'
     attributes = ['id', 'name', 'description', 'secret', 'client_type', 'redirect_uris',
-                    'grant_type', 'response_type', 'scopes',]
+                    'grant_type', 'response_type', 'scopes', 'owner']
     __table_args__ = {'extend_existing': True}                
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
     name = sql.Column(sql.String(64), nullable=False)
@@ -40,6 +40,8 @@ class Consumer(sql.ModelBase, sql.ModelDictMixin):
     response_type = sql.Column(VALID_RESPONSE_TYPES, nullable=False)
     # TODO(garcianavalon) better naming to reflect they are the allowed scopes for the client
     scopes = sql.Column(sql.JsonBlob(), nullable=True)
+    # TODO(garcianavalon) shouldnt it be a Foreign Key??
+    owner = sql.Column(sql.String(64), nullable=False)
 
 class AuthorizationCode(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'authorization_code_oauth2'
@@ -104,6 +106,12 @@ class OAuth2(oauth2.Driver):
     def list_consumers(self):
         session = sql.get_session()
         cons = session.query(Consumer)
+        return [consumer.to_dict() for consumer in cons]
+
+    def list_consumers_for_user(self, user_id):
+        session = sql.get_session()
+        self.identity_api.get_user(user_id)
+        cons = session.query(Consumer).filter_by(owner=user_id)
         return [consumer.to_dict() for consumer in cons]
 
     def create_consumer(self, consumer):

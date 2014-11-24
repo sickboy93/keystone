@@ -35,7 +35,8 @@ def upgrade(migrate_engine):
             sql.Enum('authorization_code', name='grant_type'), nullable=False),
         sql.Column('response_type', 
             sql.Enum('code', name='response_type'), nullable=False),
-        sql.Column('scopes', sql.Text(), nullable=True))
+        sql.Column('scopes', sql.Text(), nullable=True),
+        sql.Column('owner', sql.String(64), nullable=False))
     consumer_table.create(migrate_engine, checkfirst=True)
 
     authorization_code_table = sql.Table(
