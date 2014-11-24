@@ -54,14 +54,18 @@ class RolesBaseTests(test_v3.RestfulTestCase):
 
         return response.result['role']
 
-    def _create_permission(self, name, is_editable=True):
-        data = {
+    def new_fiware_permission_ref(self, name, is_editable=True):
+        permission_ref = {
             'name': name,   
         }
         if not is_editable:
-            data['is_editable'] = False
+            permission_ref['is_editable'] = False
+        return permission_ref
 
-        response = self.post(self.PERMISSIONS_URL, body={'permission': data})
+    def _create_permission(self, permission_ref=None):
+        if not permission_ref:
+            permission_ref = self.new_fiware_permission_ref(uuid.uuid4().hex)        
+        response = self.post(self.PERMISSIONS_URL, body={'permission': permission_ref})
 
         return response.result['permission']
 
@@ -72,7 +76,7 @@ class RolesBaseTests(test_v3.RestfulTestCase):
         # To simulate the IdM's registration we also create a project with 
         # the same name as the user and give it membership status
         keystone_role = self._create_keystone_role()
-        project = self._create_organization()
+        project = self._create_organization(name=user['name'])
         self._add_user_to_organization(
                         project_id=project['id'], 
                         user_id=user['id'],
@@ -190,7 +194,8 @@ class RolesBaseTests(test_v3.RestfulTestCase):
         self.assertIsNotNone(test_permission)
         self.assertIsNotNone(test_permission['id'])
         self.assertEqual(reference_permission['name'], test_permission['name'])
-        self.assertEqual(reference_permission['is_editable'], test_permission['is_editable'])
+        if hasattr(reference_permission, 'is_editable'):
+            self.assertEqual(reference_permission['is_editable'], test_permission['is_editable'])
 
     def _assert_list(self, entities, entity_type, reference_list):
         """ Utility method to check lists."""
@@ -291,7 +296,6 @@ class RoleCrudTests(RolesBaseTests):
             reference_role = [r for r in user_roles if r['id'] == role['id']]
             self.assertEqual(len(reference_role), 1)
             self._assert_role(role, reference_role[0])
-            import pdb; pdb.set_trace()
             self.assertIsNotNone(role['organization_id'])
             self.assertEqual(organization['id'], role['organization_id'])
 
@@ -361,26 +365,26 @@ class RoleCrudTests(RolesBaseTests):
 class PermissionCrudTests(RolesBaseTests):
 
     def test_create_permission_default(self):
-        name = uuid.uuid4().hex
-        permission = self._create_permission(name)
+        permission_ref = self.new_fiware_permission_ref(uuid.uuid4().hex)
+        permission = self._create_permission(permission_ref)
 
-        self._assert_permission(permission, name, True)
+        self._assert_permission(permission, permission_ref)
 
     def test_create_permission_explicit(self):
-        name = uuid.uuid4().hex
-        permission = self._create_permission(name, is_editable=True)
+        permission_ref = self.new_fiware_permission_ref(uuid.uuid4().hex, is_editable=True)
+        permission = self._create_permission(permission_ref)
 
-        self._assert_permission(permission, name, True)
+        self._assert_permission(permission, permission_ref)
 
     def test_create_permission_not_editable(self):
-        name = uuid.uuid4().hex
-        permission = self._create_permission(name, is_editable=False)
+        permission_ref = self.new_fiware_permission_ref(uuid.uuid4().hex, is_editable=False)
+        permission = self._create_permission(permission_ref)
 
-        self._assert_permission(permission, name, False)
+        self._assert_permission(permission, permission_ref)
 
     def test_list_permissions(self):
-        permission1 = self._create_permission(uuid.uuid4().hex)
-        permission2 = self._create_permission(uuid.uuid4().hex)
+        permission1 = self._create_permission()
+        permission2 = self._create_permission()
 
         response = self.get(self.PERMISSIONS_URL)
         entities = response.result['permissions']
@@ -395,25 +399,25 @@ class PermissionCrudTests(RolesBaseTests):
         self.assertEqual(2, len(entities))
 
     def test_get_permission(self):
-        name = uuid.uuid4().hex
-        permission = self._create_permission(name)
+        permission_ref = self.new_fiware_permission_ref(uuid.uuid4().hex)
+        permission = self._create_permission(permission_ref)
         permission_id = permission['id']
         response = self.get(self.PERMISSIONS_URL + '/%s' %permission_id)
         get_permission = response.result['permission']
 
-        self._assert_permission(permission, name, True)
+        self._assert_permission(permission, permission_ref)
         self_url = ['http://localhost/v3', self.PERMISSIONS_URL, '/', permission_id]
         self_url = ''.join(self_url)
         self.assertEqual(self_url, get_permission['links']['self'])
         self.assertEqual(permission_id, get_permission['id'])
 
     def test_update_permission(self):
-        name = uuid.uuid4().hex
-        permission = self._create_permission(name)
+        permission_ref = self.new_fiware_permission_ref(uuid.uuid4().hex)
+        permission = self._create_permission(permission_ref)
         original_id = permission['id']
         original_name = permission['name']
         update_name = original_name + '_new'
-       
+        permission_ref['name'] = update_name
         body = {
             'permission': {
                 'name': update_name,
@@ -423,19 +427,17 @@ class PermissionCrudTests(RolesBaseTests):
                                  body=body)
         update_permission = response.result['permission']
 
-        self._assert_permission(update_permission, update_name, True)
+        self._assert_permission(update_permission, permission_ref)
         self.assertEqual(original_id, update_permission['id'])
 
     def test_delete_permission(self):
-        name = uuid.uuid4().hex
-        permission = self._create_permission(name)
+        permission = self._create_permission()
         permission_id = permission['id']
         response = self._delete_permission(permission_id)
 
     def test_list_permissions_for_role(self):
         role = self._create_role()
-        permission_name = uuid.uuid4().hex
-        permission = self._create_permission(permission_name)
+        permission = self._create_permission()
 
         self._add_permission_to_role(role_id=role['id'], 
                                      permission_id=permission['id'])
@@ -455,14 +457,12 @@ class PermissionCrudTests(RolesBaseTests):
 
     def test_add_permission_to_role(self):
         role = self._create_role()
-        permission_name = uuid.uuid4().hex
-        permission = self._create_permission(permission_name)
+        permission = self._create_permission()
         response = self._add_permission_to_role(role_id=role['id'], 
                                                 permission_id=permission['id'])
 
     def test_add_permission_to_role_non_existent(self):
-        permission_name = uuid.uuid4().hex
-        permission = self._create_permission(permission_name)
+        permission = self._create_permission()
         response = self._add_permission_to_role(role_id=uuid.uuid4().hex, 
                                                 permission_id=permission['id'],
                                                 expected_status=404)
@@ -475,8 +475,7 @@ class PermissionCrudTests(RolesBaseTests):
 
     def test_add_permission_to_role_repeated(self):
         role = self._create_role()
-        permission_name = uuid.uuid4().hex
-        permission = self._create_permission(permission_name)
+        permission = self._create_permission()
         response = self._add_permission_to_role(role_id=role['id'], 
                                                 permission_id=permission['id'])
         response = self._add_permission_to_role(role_id=role['id'], 
@@ -484,8 +483,7 @@ class PermissionCrudTests(RolesBaseTests):
 
     def test_remove_permission_from_role(self):
         role = self._create_role()
-        permission_name = uuid.uuid4().hex
-        permission = self._create_permission(permission_name)
+        permission = self._create_permission()
 
         response = self._add_permission_to_role(role_id=role['id'], 
                                                 permission_id=permission['id'])
@@ -495,15 +493,13 @@ class PermissionCrudTests(RolesBaseTests):
 
     def test_remove_permission_from_role_non_associated(self):
         role = self._create_role()
-        permission_name = uuid.uuid4().hex
-        permission = self._create_permission(permission_name)
+        permission = self._create_permission()
         
         response = self._remove_permission_from_role(role_id=role['id'], 
                                                      permission_id=permission['id'])
 
     def test_remove_permission_from_non_existent_role(self):
-        permission_name = uuid.uuid4().hex
-        permission = self._create_permission(permission_name)
+        permission = self._create_permission()
 
         response = self._remove_permission_from_role(role_id=uuid.uuid4().hex, 
                                                      permission_id=permission['id'],
@@ -518,8 +514,7 @@ class PermissionCrudTests(RolesBaseTests):
 
     def test_remove_permision_from_role_repeated(self):
         role = self._create_role()
-        permission_name = uuid.uuid4().hex
-        permission = self._create_permission(permission_name)
+        permission = self._create_permission()
 
         response = self._add_permission_to_role(role_id=role['id'], 
                                                 permission_id=permission['id'])
@@ -562,70 +557,38 @@ class FiwareApiTests(RolesBaseTests):
         number_of_organization_roles = 1
         organization_roles = {}
         for organization in organizations:
+            organization_roles[organization['name']] = []
             for i in range(number_of_organization_roles):
-                organization_roles[organization['name']] = (
+                organization_roles[organization['name']].append(
                     self._create_role())
-            self._add_role_to_user(role_id=user_roles[i]['id'], 
+                role = organization_roles[organization['name']][i]
+                self._add_role_to_user(role_id=role['id'], 
                                     user_id=user['id'],
                                     organization_id=organization['id'])
         # get a token for the user
-        auth_data = self.build_authentication_request(
-            username=user['name'],
-            user_domain_id=test_v3.DEFAULT_DOMAIN_ID,
-            password=user['password'])
+        auth_data = self.build_authentication_request(username=user['name'],
+                                                    user_domain_id=test_v3.DEFAULT_DOMAIN_ID,
+                                                    password=user['password'])
         auth_response = self.post('/auth/tokens', body=auth_data)
         token_id = auth_response.headers.get('X-Subject-Token')
-
         # acces the resource
         url = '/access-tokens/%s' %token_id
-        #import pdb; pdb.set_trace()
         response = self.get(url)
 
-        # check stuff
-        # from https://github.com/ging/fi-ware-idm/wiki/\
-        # Using-the-FI-LAB-instance#get-user-information-and-roles
-        # {
-        #   schemas: ["urn:scim:schemas:core:2.0:User"],
-        #   id: 1,
-        #   actorId: 1,
-        #   nickName: "demo",
-        #   displayName: "Demo user",
-        #   email: "demo@fi-ware.org",
-        #   roles: [
-        #     {
-        #       id: 1,
-        #       name: "Manager"
-        #     },
-        #     {
-        #       id: 7
-        #       name: "Ticket manager"
-        #     }
-        #   ],
-        #   organizations: [
-        #     {
-        #        id: 1,
-        #        actorId: 2,
-        #        displayName: "Universidad Politecnica de Madrid",
-        #        roles: [
-        #          {
-        #            id: 14,
-        #            name: "Admin"
-        #          }
-        #       ]
-        #     }
-        #   ]
-        # }
+        # test the user info
         self.assertIsNotNone(response.result['id'])
         self.assertIsNotNone(response.result['email'])
         self.assertIsNotNone(response.result['nickName'])
 
-        response_roles = response.result['roles']
-        self.assertIsNotNone(response_roles)
-        self.assertEqual(number_of_user_roles, len(response_roles))
-        for role in response_roles:
-            i = response_roles.index(role)
+        # test the user-scoped roles
+        response_user_roles = response.result['roles']
+        self.assertIsNotNone(response_user_roles)
+        for role in response_user_roles:
             self.assertIsNotNone(role['id'])
             self.assertIsNotNone(role['name'])
+        actual_user_roles = set([role['id'] for role in response_user_roles])
+        expected_user_roles = set([role['id'] for role in user_roles])
+        self.assertEqual(actual_user_roles, expected_user_roles)
 
         response_organizations = response.result['organizations']
         self.assertIsNotNone(response_organizations)
@@ -634,5 +597,11 @@ class FiwareApiTests(RolesBaseTests):
             i = response_organizations.index(organization)
             self.assertIsNotNone(organization['id'])
             self.assertIsNotNone(organization['name'])
-
-    
+            self.assertIsNotNone(organization['roles'])
+            for role in organization['roles']:
+                self.assertIsNotNone(role['id'])
+                self.assertIsNotNone(role['name'])
+            actual_org_roles = set([role['id'] for role in organization['roles']])
+            expected_org_roles = set([role['id'] for role 
+                                    in organization_roles[organization['name']]])
+            self.assertEqual(expected_org_roles, actual_org_roles)

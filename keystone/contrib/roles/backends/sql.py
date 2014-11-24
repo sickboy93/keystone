@@ -121,9 +121,15 @@ class Roles(roles.RolesDriver):
         self.identity_api.get_user(user_id)
         query = session.query(Role, RoleUser.organization_id).join(RoleUser)
         query = query.filter(RoleUser.user_id == user_id)
-        # FIXME(garcianavalon) g now is a tuple (Role, organization_id), we need
-        # to create a method to pack it into a single dict
-        return [g.to_dict() for g in query]
+        # query objects are now a tuple (Role, organization_id
+        roles_as_dict = []
+        for tuple in query:
+            role = tuple[0]
+            role_dict = role.to_dict()
+            role_dict['organization_id'] = tuple[1]
+            roles_as_dict.append(role_dict)
+
+        return roles_as_dict
         
 
     def add_role_to_user(self, role_id, user_id, organization_id):
