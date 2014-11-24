@@ -27,10 +27,11 @@ VALID_GRANT_TYPES = sql.Enum('authorization_code')
 
 class Consumer(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'consumer_oauth2'
-    attributes = ['id', 'description', 'secret', 'client_type', 'redirect_uris',
-                    'grant_type', 'response_type', 'scopes']
+    attributes = ['id', 'name', 'description', 'secret', 'client_type', 'redirect_uris',
+                    'grant_type', 'response_type', 'scopes',]
     __table_args__ = {'extend_existing': True}                
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
+    name = sql.Column(sql.String(64), nullable=False)
     description = sql.Column(sql.String(64), nullable=True)
     secret = sql.Column(sql.String(64), nullable=False)
     client_type = sql.Column(VALID_CLIENT_TYPES, nullable=False) 

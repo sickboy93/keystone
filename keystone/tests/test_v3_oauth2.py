@@ -50,12 +50,15 @@ class OAuth2BaseTests(test_v3.RestfulTestCase):
         # TODO(garcianavalon) I've put this line for dependency injection to work, but I don't know if its the right way to do it...
         self.manager = core.Manager()
 
-    def _create_consumer(self, description=None,
+    def _create_consumer(self, name=None, description=None,
                          client_type='confidential',
                          redirect_uris=DEFAULT_REDIRECT_URIS,
                          grant_type='authorization_code',
                          scopes=DEFAULT_SCOPES):
+        if not name:
+            name = uuid.uuid4().hex
         data = {
+            'name': name,
             'description': description,
             'client_type': client_type,
             'redirect_uris': redirect_uris,
@@ -76,6 +79,7 @@ class ConsumerCRUDTests(OAuth2BaseTests):
         consumer, data = self._create_consumer()
         self.assertEqual(consumer['description'], data['description'])
         self.assertIsNotNone(consumer['id'])
+        self.assertIsNotNone(consumer['name'])
         self.assertIsNotNone(consumer['secret'])
 
     def test_consumer_delete(self):
