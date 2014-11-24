@@ -47,6 +47,8 @@ NOVA_PASSWORD=${NOVA_PASSWORD:-${SERVICE_PASSWORD:-nova}}
 GLANCE_PASSWORD=${GLANCE_PASSWORD:-${SERVICE_PASSWORD:-glance}}
 EC2_PASSWORD=${EC2_PASSWORD:-${SERVICE_PASSWORD:-ec2}}
 SWIFT_PASSWORD=${SWIFT_PASSWORD:-${SERVICE_PASSWORD:-swiftpass}}
+# Override it for deployments!
+IDM_PASSWORD=${IDM_PASSWORD:-idm}
 
 CONTROLLER_PUBLIC_ADDRESS=${CONTROLLER_PUBLIC_ADDRESS:-localhost}
 CONTROLLER_ADMIN_ADDRESS=${CONTROLLER_ADMIN_ADDRESS:-localhost}
@@ -98,7 +100,18 @@ ADMIN_ROLE=$(get_id keystone role-create --name=admin)
 keystone user-role-add --user-id $ADMIN_USER \
                        --role-id $ADMIN_ROLE \
                        --tenant-id $DEMO_TENANT
+#
+# IdM tenant
+#
+IDM_TENANT=$(get_id keystone tenant-create --name=idm \
+                                            --description "Tenant for the IdM user")
 
+IDM_USER=$(get_id keystone user-create --name=idm \
+                                         --pass="${IDM_PASSWORD}")
+
+keystone user-role-add --user-id $IDM_USER \
+                       --role-id $ADMIN_ROLE \
+                       --tenant-id $IDM_TENANT
 #
 # Service tenant
 #
