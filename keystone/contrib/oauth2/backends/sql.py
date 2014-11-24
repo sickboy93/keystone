@@ -20,7 +20,7 @@ from keystone import exception
 from keystone.i18n import _
 from oslo.utils import timeutils
 
-
+# TODO(garcianavalon) configuration options
 VALID_RESPONSE_TYPES = sql.Enum('code')
 VALID_CLIENT_TYPES = sql.Enum('confidential')
 VALID_GRANT_TYPES = sql.Enum('authorization_code')
@@ -28,7 +28,7 @@ VALID_GRANT_TYPES = sql.Enum('authorization_code')
 class Consumer(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'consumer_oauth2'
     attributes = ['id', 'name', 'description', 'secret', 'client_type', 'redirect_uris',
-                    'grant_type', 'response_type', 'scopes', 'owner']
+                    'grant_type', 'response_type', 'scopes', 'owner', 'extra']
     __table_args__ = {'extend_existing': True}                
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
     name = sql.Column(sql.String(64), nullable=False)
@@ -42,6 +42,7 @@ class Consumer(sql.ModelBase, sql.ModelDictMixin):
     scopes = sql.Column(sql.JsonBlob(), nullable=True)
     # TODO(garcianavalon) shouldnt it be a Foreign Key??
     owner = sql.Column(sql.String(64), nullable=False)
+    extra = sql.Column(sql.JsonBlob(), nullable=True)
 
 class AuthorizationCode(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'authorization_code_oauth2'
@@ -122,6 +123,7 @@ class OAuth2(oauth2.Driver):
         # set the response_type based on the grant_type
         if consumer['grant_type'] == 'authorization_code':
             consumer['response_type'] = 'code'
+
         with session.begin():
             consumer_ref = Consumer.from_dict(consumer)
             session.add(consumer_ref)

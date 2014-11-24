@@ -84,7 +84,7 @@ class ConsumerCrudV3(controller.V3Controller):
         # TODO(garcianavalon) revoke and delete consumer tokens
         self.oauth2_api.delete_consumer(consumer_id)
 
-@dependency.requires('oauth2_api')  
+@dependency.requires('oauth2_api')
 class AuthorizationCodeEndpointV3(controller.V3Controller):
 
     collection_name = 'authorization_codes'

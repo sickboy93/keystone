@@ -55,7 +55,8 @@ class OAuth2BaseTests(test_v3.RestfulTestCase):
                          client_type='confidential',
                          redirect_uris=DEFAULT_REDIRECT_URIS,
                          grant_type='authorization_code',
-                         scopes=DEFAULT_SCOPES):
+                         scopes=DEFAULT_SCOPES,
+                         extra=None):
         if not name:
             name = uuid.uuid4().hex
         data = {
@@ -66,6 +67,8 @@ class OAuth2BaseTests(test_v3.RestfulTestCase):
             'grant_type': grant_type,
             'scopes': scopes
         }
+        if extra:
+            data['extra'] = extra
         response = self.post(self.CONSUMER_URL, body={'consumer': data})
 
         return response.result['consumer'], data
@@ -83,6 +86,20 @@ class ConsumerCRUDTests(OAuth2BaseTests):
         self.assertIsNotNone(consumer['name'])
         self.assertIsNotNone(consumer['secret'])
         self.assertEqual(self.user['id'], consumer['owner'])
+
+    def test_create_consumer_with_extra(self):
+        extra = {
+            'url': uuid.uuid4().hex,
+            'image': uuid.uuid4().hex
+        }
+        consumer, data = self._create_consumer(extra=extra)
+        self.assertEqual(consumer['description'], data['description'])
+        self.assertIsNotNone(consumer['id'])
+        self.assertIsNotNone(consumer['name'])
+        self.assertIsNotNone(consumer['secret'])
+        self.assertEqual(self.user['id'], consumer['owner'])
+
+        self.assertEqual(extra, consumer['extra'])
 
     def test_consumer_delete(self):
         consumer, data = self._create_consumer()
