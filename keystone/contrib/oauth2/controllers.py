@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import log
 import json
 import urllib
 
@@ -26,6 +27,7 @@ from keystone.models import token_model
 
 from oauthlib.oauth2 import WebApplicationServer, FatalClientError, OAuth2Error
 
+LOG = log.getLogger(__name__)
 
 @dependency.requires('oauth2_api', 'token_provider_api') 
 class ConsumerCrudV3(controller.V3Controller):
@@ -163,7 +165,13 @@ class OAuth2ControllerV3(controller.V3Controller):
                 'redirect_uri':credentials['redirect_uri'],
                 'requested_scopes':request.scopes
             }
-            
+            LOG.info('OAUTH2: Requested Authorization Code by consumer %(consumer)s \
+                to user %(user)s, with scope %(scope)s and redirect uri %(uri)s', {
+                    'consumer': credentials['client_id'],
+                    'user': credentials['user_id'],
+                    'scope': request.scopes,
+                    'uri': credentials['redirect_uri']})
+
         except FatalClientError as e:
             # NOTE(garcianavalon) form the OAuthLib documentation and comments:
             # Errors during authorization where user should not be redirected back.
@@ -178,6 +186,7 @@ class OAuth2ControllerV3(controller.V3Controller):
             # is done is outside of the scope of OAuthLib but showing an error
             # page describing the issue is a good idea.
             msg = e.json
+            LOG.warning('OAUTH2: FatalClientError %s' %msg)
             raise exception.ValidationError(message=msg)
 
         except OAuth2Error as e:
@@ -189,6 +198,7 @@ class OAuth2ControllerV3(controller.V3Controller):
 
             # We send back the errors in the response body
             response['error'] = json.loads(e.json)
+            LOG.warning('OAUTH2: OAuth2Error %s' %response['error'])            
 
         return response
             
@@ -228,8 +238,15 @@ class OAuth2ControllerV3(controller.V3Controller):
             response = wsgi.render_response(body,
                                             status=(302, 'Found'),
                                             headers=headers.items())
-            return response
+            
+            LOG.info('OAUTH2: Created Authorization Code to consumer %(consumer)s \
+                for user %(user)s with scope %(scope)s. Redirecting to %(uri)s', {
+                    'consumer': client_id,
+                    'user': user_id,
+                    'scope': scopes,
+                    'uri': headers['Location']})
 
+            return response
         except FatalClientError as e:
             # NOTE(garcianavalon) form the OAuthLib documentation and comments:
             # Errors during authorization where user should not be redirected back.
@@ -244,6 +261,7 @@ class OAuth2ControllerV3(controller.V3Controller):
             # is done is outside of the scope of OAuthLib but showing an error
             # page describing the issue is a good ideaself.
             msg = e.json
+            LOG.warning('OAUTH2: FatalClientError %s' %msg)
             raise exception.ValidationError(message=msg)
 
     def create_access_token(self, context, token_request):
@@ -314,15 +332,17 @@ class OAuth2ControllerV3(controller.V3Controller):
         # and the Keystone base controlers expect a dictionary  
         body = json.loads(body)
         # TODO(garcianavalon) body contains scope instead of scopes and is only a
-        # space separated string instead of a list. We can wait for a fix from
+        # space separated string instead of a list. We can wait for a change in
         # Oauthlib or implement our own TokenProvider
         if status == 200:
             response = wsgi.render_response(body,
                                         status=(status, 'OK'),
                                         headers=headers.items())
+            LOG.info('OAUTH2: Created Access Token %s' %body['access_token'])
             return response
         # Build the error message and raise the corresponding error
         msg = _(body['error'])
+        LOG.warning('OAUTH2: Error creating Access Token %s' %msg)
         if hasattr(body, 'description'):
             msg = msg + ': ' + _(body['description'])
         if status == 400:
