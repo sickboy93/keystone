@@ -12,9 +12,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import log
 import json
 import urllib
+
+from oauthlib.oauth2 import WebApplicationServer, FatalClientError, OAuth2Error
 
 from keystone import exception
 from keystone.common import controller
@@ -24,8 +25,7 @@ from keystone.contrib.oauth2 import core as oauth2
 from keystone.contrib.oauth2 import validator
 from keystone.i18n import _
 from keystone.models import token_model
-
-from oauthlib.oauth2 import WebApplicationServer, FatalClientError, OAuth2Error
+from keystone.openstack.common import log
 
 LOG = log.getLogger(__name__)
 
