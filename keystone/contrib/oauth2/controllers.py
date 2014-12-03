@@ -264,12 +264,13 @@ class OAuth2ControllerV3(controller.V3Controller):
             LOG.warning('OAUTH2: FatalClientError %s' %msg)
             raise exception.ValidationError(message=msg)
 
-    def create_access_token(self, context, token_request):
+    def create_access_token(self, context):
+        import pdb; pdb.set_trace()
         request_validator = validator.OAuth2Validator()
         server = WebApplicationServer(request_validator)
+        token_request = "DEBUG"
 
         # Validate request
-
         headers = context['headers']
         # NOTE(garcianavalon) Work around the keystone limitation with content types
         # Keystone only accepts JSON bodies while OAuth2.0 (RFC 6749) requires 
@@ -279,7 +280,6 @@ class OAuth2ControllerV3(controller.V3Controller):
         if headers['Content-Type'] == 'application/x-www-form-urlencoded':
             body = context['query_string']
         elif headers['Content-Type'] == 'application/json':
-            
             if not 'code' in token_request:
                 msg = _('code missing in request body: %s') %token_request
                 raise exception.ValidationError(message=msg)
@@ -342,9 +342,9 @@ class OAuth2ControllerV3(controller.V3Controller):
             return response
         # Build the error message and raise the corresponding error
         msg = _(body['error'])
-        LOG.warning('OAUTH2: Error creating Access Token %s' %msg)
         if hasattr(body, 'description'):
             msg = msg + ': ' + _(body['description'])
+        LOG.warning('OAUTH2: Error creating Access Token %s' %msg)
         if status == 400:
             raise exception.ValidationError(message=msg)
         elif status == 401:

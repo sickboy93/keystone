@@ -101,7 +101,7 @@ class OAuth2Validator(RequestValidator):
             'state': request.state,
             'redirect_uri': request.redirect_uri
         }
-        token_duration=28800 # TODO(garcianavalon) extract as configuration option
+        token_duration = 28800 # TODO(garcianavalon) extract as configuration option
         # TODO(garcianavalon) find a better place to do this
         now = timeutils.utcnow()
         future = now + datetime.timedelta(seconds=token_duration)
@@ -113,6 +113,7 @@ class OAuth2Validator(RequestValidator):
     def authenticate_client(self, request, *args, **kwargs):
         # Whichever authentication method suits you, HTTP Basic might work 
         # TODO(garcianavalon) write it cleaner
+        LOG.debug('OAUTH2: authenticating client')
         authmethod, auth = request.headers['Authorization'].split(' ', 1)
         auth = auth.decode('unicode_escape')
         if authmethod.lower() == 'basic':
@@ -122,6 +123,8 @@ class OAuth2Validator(RequestValidator):
             if client_dict['secret'] == secret:
                 # TODO(garcianavalon) this can be done in a cleaner way if we change the consumer model attribute to client_id
                 request.client = type('obj', (object,), {'client_id' : client_id})
+                LOG.info('OAUTH2: succesfully authenticated client {0}'.format(
+                                                                    client_dict['name']))
                 return True
         return False
 
