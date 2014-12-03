@@ -167,7 +167,6 @@ class OAuth2(oauth2.Driver):
 
     def _get_authorization_code(self, session, code):
         authorization_code_ref = session.query(AuthorizationCode).get(code)
-
         if authorization_code_ref is None:
             msg = _('Authorization Code %s not found') %code
             raise exception.NotFound(message=msg)

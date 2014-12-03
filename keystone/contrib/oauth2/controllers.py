@@ -230,7 +230,7 @@ class OAuth2ControllerV3(controller.V3Controller):
         try:
             headers, body, status = server.create_authorization_response(
                 uri, http_method, body, headers, scopes, credentials)
-            # headers = {'Location': 'https://foo.com/welcome_back?code=somerandomstring&state=xyz'}, this might change to include suggested headers related
+            # headers = {'Location': 'https://foo.com/welcome_back?code=somerandomstring&state=xyz  '}, this might change to include suggested headers related
             # to cache best practices etc.
             # body = '', this might be set in future custom grant types
             # status = 302, suggested HTTP status code
@@ -264,11 +264,9 @@ class OAuth2ControllerV3(controller.V3Controller):
             LOG.warning('OAUTH2: FatalClientError %s' %msg)
             raise exception.ValidationError(message=msg)
 
-    def create_access_token(self, context):
-        import pdb; pdb.set_trace()
+    def create_access_token(self, context, token_request):
         request_validator = validator.OAuth2Validator()
         server = WebApplicationServer(request_validator)
-        token_request = "DEBUG"
 
         # Validate request
         headers = context['headers']

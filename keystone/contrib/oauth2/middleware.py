@@ -37,7 +37,7 @@ class UrlencodedBodyMiddleware(wsgi.Middleware):
             request.content_type = 'application/json'
             try:
                 request.body = jsonutils.dumps(
-                    {'token_request':urlparse.parse_qs(request.body)})
+                    {'token_request':dict(urlparse.parse_qsl(request.body))})
                 LOG.debug('URLENCODED_MIDDLEWARE: decoded body to {0}'.format(request.body))
             except Exception:
                 LOG.exception('URLENCODED_MIDDLEWARE: Serializer failed')
