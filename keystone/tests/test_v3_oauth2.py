@@ -20,6 +20,7 @@ import urlparse
 import uuid
 
 from keystone import config
+from keystone.common import dependency
 from keystone.contrib.oauth2 import core
 from keystone.tests import test_v3
 
@@ -31,7 +32,8 @@ class OAuth2BaseTests(test_v3.RestfulTestCase):
     EXTENSION_TO_ADD = 'oauth2_extension'
 
     CONSUMER_URL = '/OS-OAUTH2/consumers'
-    USERS_URL = '/OS-OAUTH2/users'
+    USERS_URL = '/users/{user_id}'
+    ACCESS_TOKENS_URL = '/OS-OAUTH2/access_tokens'
 
     DEFAULT_REDIRECT_URIS = [
         'https://%s.com' %uuid.uuid4().hex,
@@ -141,7 +143,7 @@ class ConsumerCRUDTests(OAuth2BaseTests):
 
     def test_consumer_list(self):
         self._create_consumer()
-        url = self.USERS_URL + '/%s/consumers' %self.user['id']
+        url = self.USERS_URL.format(user_id=self.user['id']) + self.CONSUMER_URL
         response = self.get(url)
         
         entities = response.result['consumers']
@@ -198,6 +200,71 @@ class ConsumerCRUDTests(OAuth2BaseTests):
         self.patch(self.CONSUMER_URL + '/%s' % original_id,
                    body={'consumer': update_ref},
                    expected_status=400) 
+
+@dependency.requires('oauth2_api')
+class AccessTokenEndpointTests(OAuth2BaseTests):
+
+    def new_access_token_ref(self, user_id, consumer_id):
+        token_ref = {
+            'id':uuid.uuid4().hex,
+            'consumer_id':consumer_id,
+            'authorizing_user_id':user_id,
+            'scopes': [uuid.uuid4().hex],
+            'expires_at':uuid.uuid4().hex,
+        }
+        return token_ref
+
+    def _create_access_token(self, user_id, consumer_id):
+        token_ref = self.new_access_token_ref(user_id, consumer_id)
+        access_token = self.oauth2_api.store_access_token(token_ref)
+        return access_token
+
+    def _list_access_tokens(self, user_id, expected_status=200):
+        url = self.USERS_URL.format(user_id=user_id) + self.ACCESS_TOKENS_URL
+        response = self.get(url, expected_status=expected_status)
+        return response.result['access_tokens']
+
+    def _get_access_token(self, user_id, token_id, expected_status=200):
+        url = (self.USERS_URL.format(user_id=user_id) + self.ACCESS_TOKENS_URL 
+                    + '/{0}'.format(token_id))
+        response = self.get(url, expected_status=expected_status)
+        return response.result['access_token']
+
+    def _revoke_access_token(self, user_id, token_id, expected_status=204):
+        url = (self.USERS_URL.format(user_id=user_id) + self.ACCESS_TOKENS_URL 
+                    + '/{0}'.format(token_id))
+        self.delete(url, expected_status=expected_status)
+
+    def test_list_access_tokens(self):
+        consumer_id = uuid.uuid4().hex
+        number_of_tokens = 2
+        access_tokens_reference = []
+        for i in range(number_of_tokens):
+            token = self._create_access_token(self.user['id'], consumer_id)
+            access_tokens_reference.append(token)
+
+        access_tokens = self._list_access_tokens(self.user['id'])
+
+        actual_tokens = set([t['id'] for t in access_tokens])
+        reference_tokens = set([t['id'] for t in access_tokens_reference])
+        self.assertEqual(actual_tokens, reference_tokens)
+
+    def test_get_access_token(self):
+        consumer_id = uuid.uuid4().hex
+        token = self._create_access_token(self.user['id'], consumer_id)
+        token = self._get_access_token(self.user['id'], token['id'])
+        # TODO(garcianavalon) access_token assertions
+
+    def test_revoke_access_token(self):
+        consumer_id = uuid.uuid4().hex
+        token = self._create_access_token(self.user['id'], consumer_id)
+
+        self._revoke_access_token(self.user['id'], token['id'])
+        actual_token = self._get_access_token(self.user['id'], token['id'])
+        self.assertEqual(actual_token['valid'], False)
+        # TODO(garcianavalon) test revoke identity api tokens
+        # TODO(garcianavalon) test can't get more identity api tokens
+
 
 class OAuth2FlowBaseTests(OAuth2BaseTests):
 

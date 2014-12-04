@@ -1,4 +1,4 @@
-# Copyright 2013 OpenStack Foundation
+# Copyright (C) 2014 Universidad Politecnica de Madrid
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -83,7 +83,6 @@ class ConsumerCrudV3(controller.V3Controller):
 
     @controller.protected()
     def delete_consumer(self, context, consumer_id):
-        # TODO(garcianavalon) revoke and delete consumer tokens
         self.oauth2_api.delete_consumer(consumer_id)
 
 @dependency.requires('oauth2_api')
@@ -97,6 +96,42 @@ class AuthorizationCodeEndpointV3(controller.V3Controller):
         """Description of the controller logic."""
         ref = self.oauth2_api.list_authorization_codes()
         return AuthorizationCodeEndpointV3.wrap_collection(context, ref)
+
+@dependency.requires('oauth2_api')
+class AccessTokenEndpointV3(controller.V3Controller):
+
+    collection_name = 'access_tokens'
+    member_name = 'access_token'
+
+    @classmethod
+    def _add_self_referential_link(cls, context, ref):
+        # NOTE(garcianavalon): overriding method to add proper path to self link
+        ref.setdefault('links', {})
+        path = '/users/%(user_id)s/OS-OAUTH2/access_tokens' % {
+            'user_id': cls._get_user_id(ref)
+        }
+        ref['links']['self'] = cls.base_url(context, path) + '/' + ref['id']
+
+    @staticmethod
+    def _get_user_id(entity):
+        return entity.get('authorizing_user_id', '')
+
+    @controller.protected()
+    def list_access_tokens(self, context, user_id):
+        """List authorized access tokens. """
+        ref = self.oauth2_api.list_access_tokens(user_id=user_id)
+        return AccessTokenEndpointV3.wrap_collection(context, ref)
+
+    @controller.protected()
+    def get_access_token(self, context, user_id, access_token_id):
+        """Get access token. """
+        ref = self.oauth2_api.get_access_token(access_token_id, user_id=user_id)
+        return AccessTokenEndpointV3.wrap_member(context, ref)
+
+    @controller.protected()
+    def revoke_access_token(self, context, user_id, access_token_id):
+        """Revokes an access token"""
+        self.oauth2_api.revoke_access_token(access_token_id, user_id=user_id)
 
 @dependency.requires('oauth2_api', 'token_provider_api')  
 class OAuth2ControllerV3(controller.V3Controller):

@@ -1,4 +1,4 @@
-# Copyright 2013 OpenStack Foundation
+# Copyright (C) 2014 Universidad Politecnica de Madrid
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -27,12 +27,39 @@ build_parameter_relation = functools.partial(
     extension_name='OS-OAUTH2', extension_version='1.0')
 
 class OAuth2Extension(wsgi.V3ExtensionRouter):
+    """API Endpoints for the OAuth2 extension.
+
+    The goal of this extension is to allow third-party service providers
+    to acquire tokens with a limited subset of a user's roles for acting
+    on behalf of that user. This is done using an oauth-similar flow and
+    api.
+
+    The API looks like::
+
+      # Basic admin-only consumer crud
+      POST /OS-OAUTH2/consumers
+      GET /OS-OAUTH2/consumers
+      PATCH /OS-OAUTH2/consumers/$consumer_id
+      GET /OS-OAUTH2/consumers/$consumer_id
+      DELETE /OS-OAUTH2/consumers/$consumer_id
+      GET /users/$user_id/OS-OAUTH2/consumers # list all consumers owned by the user
+
+      # User access token endpoint
+      GET /users/$user_id/OS-OAUTH2/access_tokens
+      GET /users/$user_id/OS-OAUTH2/access_tokens/{access_token_id}
+      DELETE /users/$user_id/OS-OAUTH2/access_tokens/{access_token_id} # revoke an access token
+
+      # OAuth interfaces
+      GET /OS-OAUTH2/authorize # request authorization
+      POST /OS-OAUTH2/authorize  # authorize a consumer
+      POST /OS-OAUTH2/access_token  # create an access token
+    """
 
     PATH_PREFIX = '/OS-OAUTH2'
 
     def add_routes(self, mapper):
         consumer_controller = controllers.ConsumerCrudV3()
-        #access_token_controller = controllers.AccessTokenCrudV3()
+        access_token_controller = controllers.AccessTokenEndpointV3()
         authorization_code_controller = controllers.AuthorizationCodeEndpointV3()
         oauth2_controller = controllers.OAuth2ControllerV3() 
 
@@ -58,11 +85,32 @@ class OAuth2Extension(wsgi.V3ExtensionRouter):
 
         self._add_resource(
             mapper, consumer_controller,
-            path=self.PATH_PREFIX + '/users/{user_id}/consumers',
+            path='/users/{user_id}' + self.PATH_PREFIX + '/consumers',
             get_action='list_consumers_for_user',
             rel=build_resource_relation(resource_name='consumers'),
             path_vars={
                 'user_id':build_parameter_relation(parameter_name='user_id'),
+            })
+
+        # Resource Owner CRUD for Access Tokens
+        self._add_resource(
+            mapper, access_token_controller,
+            path='/users/{user_id}' + self.PATH_PREFIX + '/access_tokens',
+            get_action='list_access_tokens',
+            rel=build_resource_relation(resource_name='access_tokens'),
+            path_vars={
+                'user_id':
+                build_parameter_relation(parameter_name='user_id'),
+            })
+        self._add_resource(
+            mapper, access_token_controller,
+            path='/users/{user_id}' + self.PATH_PREFIX + '/access_tokens/{access_token_id}',
+            get_action='get_access_token',
+            delete_action='revoke_access_token',
+            rel=build_resource_relation(resource_name='access_token'),
+            path_vars={
+                'user_id': build_parameter_relation(parameter_name='user_id'),
+                'access_token_id': build_parameter_relation(parameter_name='access_token_id'),
             })
 
         # Resource Owner endpoint for Authorization Codes
@@ -90,14 +138,4 @@ class OAuth2Extension(wsgi.V3ExtensionRouter):
             post_action='create_access_token',
             rel=build_resource_relation(resource_name='access_tokens'))
 
-        # Resource Owner CRUD for Access Tokens
-        # self._add_resource(
-        #     mapper, access_token_controller,
-        #     path=self.PATH_PREFIX + '/users/{user_id}/access_tokens',
-        #     get_action='list_access_tokens',
-        #     delete_action='revoke_access_token',
-        #     rel=build_resource_relation(resource_name='access_token'),
-        #     path_vars={
-        #         'user_id':
-        #         build_parameter_relation(parameter_name='user_id'),
-        #     })
+        

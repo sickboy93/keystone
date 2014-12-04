@@ -1,4 +1,4 @@
-# Copyright 2013 OpenStack Foundation
+# Copyright (C) 2014 Universidad Politecnica de Madrid
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -57,6 +57,9 @@ class Manager(manager.Manager):
         super(Manager, self).__init__(
             'keystone.contrib.oauth2.backends.sql.OAuth2')# TODO(garcianavalon) set as configuration option in keystone.conf
 
+    # TODO(garcianavalon) revoke tokens on consumer delete
+    # TODO(garcianavalon) revoke Identity tokens issued by an access token on token revokation
+    
 @dependency.requires('identity_api')
 @six.add_metaclass(abc.ABCMeta)
 class Driver(object):
@@ -205,11 +208,39 @@ class Driver(object):
 
     # ACCESS TOKEN
     @abc.abstractmethod
-    def get_access_token(self, access_token_id):
-        """Get an access_token. Should never be exposed by the Identity API.
+    def list_access_tokens(self, user_id=None):
+        """Lists all the access tokens granted by a user.
+
+        :param user_id: optional filter to check the token belongs to a user
+        :type user_id: string
+        :returns: access_token as dict
+
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def get_access_token(self, access_token_id, user_id=None):
+        """Get an already existent access_token. If exposed by the Identity API, use
+        the user_id check.
 
         :param access_token_id: the access_token_id (the string itself)
         :type access_token_id: string
+        :param user_id: optional filter to check the token belongs to a user
+        :type user_id: string
+        :returns: access_token as dict
+
+        """
+        raise exception.NotImplemented()
+
+    
+    @abc.abstractmethod
+    def revoke_access_token(self, access_token_id, user_id=None):
+        """Invalidate an access token.
+
+        :param access_token_id: the access_token_id (the string itself)
+        :type access_token_id: string
+        :param user_id: optional filter to check the token belongs to a user
+        :type user_id: string
         :returns: access_token as dict
 
         """
@@ -217,7 +248,8 @@ class Driver(object):
 
     @abc.abstractmethod
     def store_access_token(self, access_token):
-        """Stores an access_token. Should never be exposed by the Identity API.
+        """Stores an access_token created by the validator. Should never be exposed 
+        by the Identity API.
 
         :param access_token: All the requiered info
         :type access_token: dict

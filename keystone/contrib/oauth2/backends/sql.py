@@ -1,4 +1,4 @@
-# Copyright 2013 OpenStack Foundation
+# Copyright (C) 2014 Universidad Politecnica de Madrid
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -218,16 +218,37 @@ class OAuth2(oauth2.Driver):
         return credentials_ref.to_dict()
 
     # ACCESS TOKENS
-    def get_access_token(self, access_token_id):
+    def list_access_tokens(self, user_id=None):
         session = sql.get_session()
         with session.begin():
-            access_token_ref = session.query(AccessToken).get(access_token_id)
+            refs = session.query(AccessToken)
+            if user_id:
+                refs = refs.filter_by(authorizing_user_id=user_id)
+        return [token.to_dict() for token in refs]
 
+    def _check_access_token_ref(self, access_token_ref, access_token_id, user_id):
         if access_token_ref is None:
             msg = _('Access Token %s not found') %access_token_id
             raise exception.NotFound(message=msg)
+        if user_id and access_token_ref.authorizing_user_id != user_id:
+            msg = _('Access Token {0} for user {1} not found').format(access_token_id, 
+                                                                    user_id)
+            raise exception.NotFound(message=msg)
 
+    def get_access_token(self, access_token_id, user_id=None):
+        session = sql.get_session()
+        with session.begin():
+            access_token_ref = session.query(AccessToken).get(access_token_id)
+            self._check_access_token_ref(access_token_ref, access_token_id, user_id)
         return access_token_ref.to_dict()
+
+    def revoke_access_token(self, access_token_id, user_id=None):
+        session = sql.get_session()
+        with session.begin():
+            access_token_ref = session.query(AccessToken).get(access_token_id)
+            self._check_access_token_ref(access_token_ref, access_token_id, user_id)
+            # invalidate the token
+            access_token_ref.valid = False
 
     def store_access_token(self, access_token):
         session = sql.get_session()
