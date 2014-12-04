@@ -133,7 +133,7 @@ class FiwareApiControllerV3(BaseControllerV3):
         """
         token = self.oauth2_api.get_access_token(token_id)
         user_id = token['authorizing_user_id']
-        # get the user
+        # get the user_id
         user = self.identity_api.get_user(user_id)
         # roles associated with this user
         roles = self.roles_api.list_roles_for_user(user_id)
@@ -147,12 +147,13 @@ class FiwareApiControllerV3(BaseControllerV3):
                                 if role['organization_id'] == organization['id']]
         # remove the user-default organization from the organizations list
         user_organization = [org for org in organizations 
-                            if org['name'] == user['name']][0] #there is only one!
-        organizations.remove(user_organization)
-
-        # extract the user-scoped roles
+                            if org['name'] == user['name']]
         user_roles = []
-        user_roles = user_organization['roles']
+        if user_organization:
+            user_organization = user_organization[0]
+            organizations.remove(user_organization) #there is only one!
+            # extract the user-scoped roles
+            user_roles = user_organization['roles'] 
 
         response_body = {
             'id':user_id,

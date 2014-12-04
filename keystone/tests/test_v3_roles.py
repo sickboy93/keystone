@@ -528,45 +528,40 @@ class PermissionCrudTests(RolesBaseTests):
 @dependency.requires('oauth2_api')
 class FiwareApiTests(RolesBaseTests):
 
-    # FIWARE API tests
-    def test_validate_token_unscoped(self):
-        # create user
-        user, user_organization = self._create_user()
-        # create a keysrtone role
-        keystone_role = self._create_keystone_role()
-
-        # create some projects/organizations
-        number_of_organizations = 2
+    def _create_organizations_with_user_and_keystone_role(self, 
+                    user, keystone_role, number):
         organizations = []
-        for i in range(number_of_organizations):
+        for i in range(number):
             organizations.append(self._create_organization())
             self._add_user_to_organization(
                         project_id=organizations[i]['id'], 
                         user_id=user['id'],
                         keystone_role_id=keystone_role['id'])
+        return organizations
 
-        # assign some user-scoped roles
-        number_of_user_roles = 2
+    def _assign_user_scoped_roles(self, user, user_organization, number):
         user_roles = []
-        for i in range(number_of_user_roles):
+        for i in range(number):
             user_roles.append(self._create_role())
             self._add_role_to_user(role_id=user_roles[i]['id'], 
                                     user_id=user['id'],
                                     organization_id=user_organization['id'])
+        return user_roles
 
-        # assign some organization-scoped roles
-        number_of_organization_roles = 1
+    def _assign_organization_scoped_roles(self, user, organizations, number):
         organization_roles = {}
         for organization in organizations:
             organization_roles[organization['name']] = []
-            for i in range(number_of_organization_roles):
+            for i in range(number):
                 organization_roles[organization['name']].append(
                     self._create_role())
                 role = organization_roles[organization['name']][i]
                 self._add_role_to_user(role_id=role['id'], 
                                     user_id=user['id'],
                                     organization_id=organization['id'])
-        # get a token for the user
+        return organization_roles
+
+    def _create_oauth2_token(self, user):
         token_dict = {
             'id':uuid.uuid4().hex,
             'consumer_id':uuid.uuid4().hex,
@@ -577,31 +572,32 @@ class FiwareApiTests(RolesBaseTests):
         # TODO(garcianavalon) the correct thing to do here is mock up the
         # get_access_token call inside our method
         oauth2_access_token = self.oauth2_api.store_access_token(token_dict)
-        token_id = oauth2_access_token['id']
-        # acces the resource
-        url = '/access-tokens/%s' %token_id
-        response = self.get(url)
+        return oauth2_access_token['id']
 
-        # test the user info
+    def _validate_token(self, token_id):
+        url = '/access-tokens/%s' %token_id
+        return self.get(url)
+
+    def _assert_user_info(self, response):
         self.assertIsNotNone(response.result['id'])
         self.assertIsNotNone(response.result['email'])
         self.assertIsNotNone(response.result['nickName'])
 
-        # test the user-scoped roles
+    def _assert_user_scoped_roles(self, response, reference):
         response_user_roles = response.result['roles']
         self.assertIsNotNone(response_user_roles)
         for role in response_user_roles:
             self.assertIsNotNone(role['id'])
             self.assertIsNotNone(role['name'])
         actual_user_roles = set([role['id'] for role in response_user_roles])
-        expected_user_roles = set([role['id'] for role in user_roles])
+        expected_user_roles = set([role['id'] for role in reference])
         self.assertEqual(actual_user_roles, expected_user_roles)
-
+    
+    def _assert_organization_scoped_roles(self, response, reference, number_of_organizations):
         response_organizations = response.result['organizations']
         self.assertIsNotNone(response_organizations)
         self.assertEqual(number_of_organizations, len(response_organizations))
         for organization in response_organizations:
-            i = response_organizations.index(organization)
             self.assertIsNotNone(organization['id'])
             self.assertIsNotNone(organization['name'])
             self.assertIsNotNone(organization['roles'])
@@ -610,5 +606,70 @@ class FiwareApiTests(RolesBaseTests):
                 self.assertIsNotNone(role['name'])
             actual_org_roles = set([role['id'] for role in organization['roles']])
             expected_org_roles = set([role['id'] for role 
-                                    in organization_roles[organization['name']]])
+                                    in reference[organization['name']]])
             self.assertEqual(expected_org_roles, actual_org_roles)
+
+    # FIWARE API tests
+    def _test_validate_token(self, number_of_organizations=0, number_of_user_roles=0,
+                            number_of_organization_roles=0):
+        # create user
+        user, user_organization = self._create_user()
+        # create a keysrtone role
+        keystone_role = self._create_keystone_role()
+
+        # create some projects/organizations
+        if number_of_organizations:
+            organizations = self._create_organizations_with_user_and_keystone_role(
+                                            user=user,
+                                            keystone_role=keystone_role,
+                                            number=number_of_organizations)
+        # assign some user-scoped roles
+        if number_of_user_roles:
+            user_roles = self._assign_user_scoped_roles(user=user,
+                                                    user_organization=user_organization,
+                                                    number=number_of_user_roles)
+
+        # assign some organization-scoped roles
+        if number_of_organization_roles and number_of_organizations:
+            organization_roles = self._assign_organization_scoped_roles(user=user,
+                                                            organizations=organizations,
+                                                            number=number_of_organization_roles)
+        # get a token for the user
+        token_id = self._create_oauth2_token(user)
+        # acces the resource
+        response = self._validate_token(token_id)
+
+        # assertions
+        self._assert_user_info(response)
+        if number_of_user_roles:
+            self._assert_user_scoped_roles(response, reference=user_roles)
+        else:
+            self.assertEquals([], response.result['roles'])
+        if number_of_organization_roles and number_of_organizations:
+            self._assert_organization_scoped_roles(response, 
+                                            reference=organization_roles, 
+                                            number_of_organizations=number_of_organizations)
+        else:
+            self.assertEquals([], response.result['organizations'])
+
+    def test_validate_token(self):
+        self._test_validate_token(number_of_organizations=2, 
+                                number_of_user_roles=2,
+                                number_of_organization_roles=1)
+
+    def test_validate_token_no_organizations(self):
+        self._test_validate_token(number_of_user_roles=2)
+        
+    def test_validate_token_no_user_scoped_roles(self):
+        self._test_validate_token(number_of_organizations=2, 
+                                number_of_organization_roles=1)
+
+    def test_validate_token_no_organization_scoped_roles(self):
+        self._test_validate_token(number_of_organizations=2, 
+                                number_of_user_roles=2)
+
+    def test_validate_token_no_roles(self):
+        self._test_validate_token(number_of_organizations=2)
+
+    def test_validate_token_empty_user(self):
+        self._test_validate_token()
