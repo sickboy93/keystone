@@ -131,6 +131,7 @@ class FiwareApiControllerV3(BaseControllerV3):
             See https://github.com/ging/fi-ware-idm/wiki/Using-the-FI-LAB-instance\
             #get-user-information-and-roles
         """
+        # TODO(garcianavalon) check if token is valid, use user_id to filter in get
         token = self.oauth2_api.get_access_token(token_id)
         user_id = token['authorizing_user_id']
         # get the user_id
