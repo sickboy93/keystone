@@ -120,7 +120,7 @@ class PermissionCrudV3(BaseControllerV3):
         self.roles_api.remove_permission_from_role(role_id, permission_id)
 
 
-@dependency.requires('token_provider_api', 'assignment_api', 'identity_api')
+@dependency.requires('assignment_api', 'identity_api', 'oauth2_api')
 class FiwareApiControllerV3(BaseControllerV3):
 
     #@controller.protected()
@@ -131,11 +131,8 @@ class FiwareApiControllerV3(BaseControllerV3):
             See https://github.com/ging/fi-ware-idm/wiki/Using-the-FI-LAB-instance\
             #get-user-information-and-roles
         """
-        token = token_model.KeystoneToken(
-                            token_id=token_id,
-                            token_data=self.token_provider_api.validate_token(
-                                token_id))
-        user_id = token.user_id
+        token = self.oauth2_api.get_access_token(token_id)
+        user_id = token['authorizing_user_id']
         # get the user
         user = self.identity_api.get_user(user_id)
         # roles associated with this user

@@ -15,6 +15,7 @@
 import uuid
 
 from keystone import config
+from keystone.common import dependency
 from keystone.contrib.roles import core
 from keystone.tests import test_v3
 
@@ -524,7 +525,7 @@ class PermissionCrudTests(RolesBaseTests):
         response = self._remove_permission_from_role(role_id=role['id'], 
                                                      permission_id=permission['id'])
 
-
+@dependency.requires('oauth2_api')
 class FiwareApiTests(RolesBaseTests):
 
     # FIWARE API tests
@@ -566,11 +567,17 @@ class FiwareApiTests(RolesBaseTests):
                                     user_id=user['id'],
                                     organization_id=organization['id'])
         # get a token for the user
-        auth_data = self.build_authentication_request(username=user['name'],
-                                                    user_domain_id=test_v3.DEFAULT_DOMAIN_ID,
-                                                    password=user['password'])
-        auth_response = self.post('/auth/tokens', body=auth_data)
-        token_id = auth_response.headers.get('X-Subject-Token')
+        token_dict = {
+            'id':uuid.uuid4().hex,
+            'consumer_id':uuid.uuid4().hex,
+            'authorizing_user_id':user['id'],
+            'scopes': [uuid.uuid4().hex],
+            'expires_at':uuid.uuid4().hex,
+        }
+        # TODO(garcianavalon) the correct thing to do here is mock up the
+        # get_access_token call inside our method
+        oauth2_access_token = self.oauth2_api.store_access_token(token_dict)
+        token_id = oauth2_access_token['id']
         # acces the resource
         url = '/access-tokens/%s' %token_id
         response = self.get(url)
