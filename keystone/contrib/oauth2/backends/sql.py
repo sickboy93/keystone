@@ -25,7 +25,7 @@ VALID_RESPONSE_TYPES = sql.Enum('code')
 VALID_CLIENT_TYPES = sql.Enum('confidential')
 VALID_GRANT_TYPES = sql.Enum('authorization_code')
 
-class Consumer(sql.ModelBase, sql.ModelDictMixin):
+class Consumer(sql.ModelBase, sql.DictBase):
     __tablename__ = 'consumer_oauth2'
     attributes = ['id', 'name', 'description', 'secret', 'client_type', 'redirect_uris',
                     'grant_type', 'response_type', 'scopes', 'owner', 'extra']
@@ -44,7 +44,7 @@ class Consumer(sql.ModelBase, sql.ModelDictMixin):
     owner = sql.Column(sql.String(64), nullable=False)
     extra = sql.Column(sql.JsonBlob(), nullable=True)
 
-class AuthorizationCode(sql.ModelBase, sql.ModelDictMixin):
+class AuthorizationCode(sql.ModelBase, sql.DictBase):
     __tablename__ = 'authorization_code_oauth2'
 
     attributes = ['code', 'consumer_id', 'authorizing_user_id', 'expires_at', 'scopes',
@@ -62,7 +62,7 @@ class AuthorizationCode(sql.ModelBase, sql.ModelDictMixin):
     redirect_uri = sql.Column(sql.String(64), nullable=False)
     valid = sql.Column(sql.Boolean(), default=True, nullable=False)
 
-class ConsumerCredentials(sql.ModelBase, sql.ModelDictMixin):
+class ConsumerCredentials(sql.ModelBase, sql.DictBase):
     __tablename__ = 'consumer_credentials_oauth2'
     attributes = ['id', 'user_id', 'client_id', 'redirect_uri',
                 'response_type', 'state', 'created_at']
@@ -78,7 +78,7 @@ class ConsumerCredentials(sql.ModelBase, sql.ModelDictMixin):
     created_at = sql.Column(sql.DateTime(), default=None, nullable=False)
     
 
-class AccessToken(sql.ModelBase, sql.ModelDictMixin):
+class AccessToken(sql.ModelBase, sql.DictBase):
     __tablename__ = 'access_token_oauth2'
 
     attributes = ['id', 'consumer_id', 'authorizing_user_id', 'expires_at',
@@ -137,10 +137,15 @@ class OAuth2(oauth2.Driver):
 
     def update_consumer(self, consumer_id, consumer):
         session = sql.get_session()
-        with session.begin():
+        with session.begin():            
             consumer_ref = self._get_consumer(session, consumer_id)
-            for k in consumer:
-                setattr(consumer_ref, k, consumer[k])
+            old_consumer_dict = consumer_ref.to_dict()
+            old_consumer_dict.update(consumer)
+            new_consumer = Consumer.from_dict(old_consumer_dict)
+            for attr in Consumer.attributes:
+                if attr != 'id':
+                    setattr(consumer_ref, attr, getattr(new_consumer, attr))
+            consumer_ref.extra = new_consumer.extra
         return consumer_ref.to_dict()
 
     def delete_consumer(self, consumer_id):
