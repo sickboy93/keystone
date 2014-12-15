@@ -61,6 +61,7 @@ class AuthorizationCode(sql.ModelBase, sql.DictBase):
     state = sql.Column(sql.String(64), nullable=True)
     redirect_uri = sql.Column(sql.String(64), nullable=False)
     valid = sql.Column(sql.Boolean(), default=True, nullable=False)
+    extra = sql.Column(sql.JsonBlob(), nullable=True)
 
 class ConsumerCredentials(sql.ModelBase, sql.DictBase):
     __tablename__ = 'consumer_credentials_oauth2'
@@ -76,6 +77,7 @@ class ConsumerCredentials(sql.ModelBase, sql.DictBase):
     response_type = sql.Column(VALID_RESPONSE_TYPES, nullable=False)
     state = sql.Column(sql.String(64), nullable=True)
     created_at = sql.Column(sql.DateTime(), default=None, nullable=False)
+    extra = sql.Column(sql.JsonBlob(), nullable=True)
     
 
 class AccessToken(sql.ModelBase, sql.DictBase):
@@ -94,6 +96,7 @@ class AccessToken(sql.ModelBase, sql.DictBase):
     scopes = sql.Column(sql.JsonBlob(), nullable=True)
     refresh_token = sql.Column(sql.String(64), nullable=True)
     valid = sql.Column(sql.Boolean(), default=True, nullable=False)
+    extra = sql.Column(sql.JsonBlob(), nullable=True)
 
 class OAuth2(oauth2.Driver):
     """ CRUD driver for the SQL backend """
