@@ -120,11 +120,16 @@ class RolesDriver(object):
         raise exception.NotImplemented()
 
     @abc.abstractmethod
-    def list_roles_for_user(self, user_id):
+    def list_roles_for_user(self, user_id, organization_id=None):
         """List roles for a user_id
 
         :param user_id: user with roles
         :type user_id: string
+        :param organization_id: organization-scope in which we want to list the
+            roles of the user. If we want user-scoped roles it should be the id of
+            the user default organization (the project created with same name as user
+            when user registration). Optional parameter
+        :type organization_id: string
         ;returns: None.
         """
         raise exception.NotImplemented()

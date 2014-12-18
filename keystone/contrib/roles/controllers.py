@@ -68,8 +68,8 @@ class RoleCrudV3(BaseControllerV3):
         self.roles_api.remove_role_from_user(role_id, user_id, organization_id)  
 
     @controller.protected()
-    def list_roles_for_user(self, context, user_id):
-        ref = self.roles_api.list_roles_for_user(user_id)
+    def list_roles_for_user(self, context, user_id, organization_id):
+        ref = self.roles_api.list_roles_for_user(user_id, organization_id)
         return RoleCrudV3.wrap_collection(context, ref)
 
 

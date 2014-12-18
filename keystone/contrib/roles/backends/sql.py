@@ -116,11 +116,13 @@ class Roles(roles.RolesDriver):
 
             session.delete(role_ref)
 
-    def list_roles_for_user(self, user_id):
+    def list_roles_for_user(self, user_id, organization_id=None):
         session = sql.get_session()
         self.identity_api.get_user(user_id)
         query = session.query(Role, RoleUser.organization_id).join(RoleUser)
         query = query.filter(RoleUser.user_id == user_id)
+        if organization_id:
+            query = query.filter(RoleUser.organization_id == organization_id)
         # query objects are now a tuple (Role, organization_id
         roles_as_dict = []
         for tuple in query:

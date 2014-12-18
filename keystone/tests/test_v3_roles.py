@@ -176,11 +176,13 @@ class RolesBaseTests(test_v3.RestfulTestCase):
                                 %ulr_args
         return self.delete(url, expected_status=expected_status)
 
-    def _list_roles_for_user(self, user_id, expected_status=200):
+    def _list_roles_for_user(self, user_id, organization_id, expected_status=200):
         ulr_args = {
-            'user_id': user_id
+            'user_id': user_id,
+            'organization_id': organization_id
         }   
-        url = self.USERS_URL + '/%(user_id)s/roles/' %ulr_args
+        url = self.USERS_URL + '/%(user_id)s/organizations/%(organization_id)s/roles/' \
+                                %ulr_args
         return self.get(url, expected_status=expected_status)
 
 
@@ -287,7 +289,8 @@ class RoleCrudTests(RolesBaseTests):
         user_roles = self._add_multiple_roles_to_user(number_of_roles, 
                                                 user['id'], organization['id'])
 
-        response = self._list_roles_for_user(user_id=user['id'])
+        response = self._list_roles_for_user(user_id=user['id'],
+                                          organization_id=organization['id'])
         entities = response.result['roles']
 
         #self._assert_list(entities, 'role', user_roles)

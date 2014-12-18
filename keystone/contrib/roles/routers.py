@@ -58,11 +58,12 @@ class RolesExtension(wsgi.V3ExtensionRouter):
 
         self._add_resource(
             mapper, roles_controller,
-            path=self.PATH_PREFIX + '/users/{user_id}/roles',
+            path=self.PATH_PREFIX + '/users/{user_id}/organizations/{organization_id}/roles',
             get_action='list_roles_for_user',
             rel=build_resource_relation(resource_name='roles'),
             path_vars={
                 'user_id':build_parameter_relation(parameter_name='user_id'),
+                'organization_id':build_parameter_relation(parameter_name='organization_id'),
             })
 
         self._add_resource(
