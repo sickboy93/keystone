@@ -16,30 +16,29 @@ from keystone.common import sql
 from keystone.contrib import roles
 from keystone import exception
 from keystone.i18n import _
-from keystone.identity.backends import sql as identity_backend
 
 
 class Role(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'role_fiware'
     __table_args__ = (sql.UniqueConstraint('name', 'application'), {'extend_existing': True})
-    attributes = ['id', 'name', 'is_editable', 'application']
+    attributes = ['id', 'name', 'is_internal', 'application']
                     
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
     name = sql.Column(sql.String(64), nullable=False)
-    is_editable = sql.Column(sql.Boolean(), default=True, nullable=False)
+    is_internal = sql.Column(sql.Boolean(), default=False, nullable=False)
     application = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
-                             nullable=True)
+                             nullable=False, index=True)
 
 class Permission(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'permission_fiware'
-    __table_args__ = (sql.UniqueConstraint('name'), {'extend_existing': True})
-    attributes = ['id', 'name', 'is_editable', 'application']
+    __table_args__ = (sql.UniqueConstraint('name', 'application'), {'extend_existing': True})
+    attributes = ['id', 'name', 'is_internal', 'application']
                     
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
     name = sql.Column(sql.String(64), nullable=False)
-    is_editable = sql.Column(sql.Boolean(), default=True, nullable=False)
+    is_internal = sql.Column(sql.Boolean(), default=False, nullable=False)
     application = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
-                             nullable=True)
+                             nullable=False, index=True)
 
 class RolePermission(sql.ModelBase, sql.DictBase):
     """Role\'s permissions join table."""
@@ -67,9 +66,12 @@ class RoleUser(sql.ModelBase, sql.DictBase):
 class Roles(roles.RolesDriver):
     """ CRUD driver for the SQL backend """
     # ROLES
-    def list_roles(self):
+    def list_roles(self, **kwargs):
         session = sql.get_session()
         roles = session.query(Role)
+        if kwargs:
+            import pdb; pdb.set_trace()
+            roles = roles.filter_by(**kwargs)
         return [role.to_dict() for role in roles]
 
     def create_role(self, role):
@@ -169,9 +171,12 @@ class Roles(roles.RolesDriver):
             session.delete(ref)
 
     # PERMISSIONS
-    def list_permissions(self):
+    def list_permissions(self, **kwargs):
         session = sql.get_session()
         permissions = session.query(Permission)
+        if kwargs:
+            import pdb; pdb.set_trace()
+            permissions = permissions.filter_by(**kwargs)
         return [permission.to_dict() for permission in permissions]
 
     def create_permission(self, permission):
@@ -218,6 +223,7 @@ class Roles(roles.RolesDriver):
         self.get_role(role_id)
         query = session.query(Permission).join(RolePermission)
         query = query.filter(RolePermission.role_id == role_id)
+        
         return [g.to_dict() for g in query]
 
     def add_permission_to_role(self, role_id, permission_id):

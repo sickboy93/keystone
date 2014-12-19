@@ -44,6 +44,9 @@ EXTENSION_DATA = {
 extension.register_admin_extension(EXTENSION_DATA['alias'], EXTENSION_DATA)
 extension.register_public_extension(EXTENSION_DATA['alias'], EXTENSION_DATA)
 
+ASSIGN_ALL_ROLES_PERMISSION = 'Get and assign all application roles'
+ASSIGN_OWNED_ROLES_PERMISSION = 'Get and assign only owned roles'
+
 @dependency.provider('roles_api')
 class RolesManager(manager.Manager):
     """Roles and Permissions Manager.
@@ -58,6 +61,38 @@ class RolesManager(manager.Manager):
             'keystone.contrib.roles.backends.sql.Roles')
 
 
+    def list_roles_allowed_to_assign(self, context, user_id, organization_id):
+        """List the roles that a given user can assign. To be able to assign roles
+        a user needs a certain permission. It can be the 'get and assign all
+        application's roles' or the 'get and assign owned roles'
+
+        :param user_id: user with roles
+        :type user_id: string
+        :param organization_id: organization-scope
+        :type organization_id: string
+        ;returns: list.
+        """
+        import pdb; pdb.set_trace()
+        allowed_roles = {}
+        user_roles = self.driver.list_roles_for_user(user_id)
+        applications = set([r['application'] for r in user_roles])
+        for application in applications:
+            permissions = [p['name'] for p in self.driver.list_permissions(
+                                                            application=application,
+                                                            is_internal=True)]
+            # NOTE(garcianavalon) this is a very poor way to do it, if in the future
+            # a more complex logic and system is required refactor this
+            if ASSIGN_ALL_ROLES_PERMISSION in permissions:
+                # add all roles in the application
+                allowed_roles[application] = self.driver.list_roles(
+                                                    application=application)
+            elif ASSIGN_OWNED_ROLES_PERMISSION in permissions:
+                # add only the roles the user has in the application
+                allowed_roles[application] = [r for r in user_roles 
+                                                if r['application'] == application]
+        return allowed_roles
+
+
 @dependency.requires('assignment_api', 'identity_api')
 @six.add_metaclass(abc.ABCMeta)
 class RolesDriver(object):
@@ -65,7 +100,7 @@ class RolesDriver(object):
 
     # ROLES
     @abc.abstractmethod
-    def list_roles(self):
+    def list_roles(self, **kwargs):
         """List all created roles
 
         :returns: roles list as dict
@@ -121,7 +156,7 @@ class RolesDriver(object):
 
     @abc.abstractmethod
     def list_roles_for_user(self, user_id, organization_id=None):
-        """List roles for a user_id
+        """List roles for a user_id. Optional organization filtering
 
         :param user_id: user with roles
         :type user_id: string
@@ -130,7 +165,7 @@ class RolesDriver(object):
             the user default organization (the project created with same name as user
             when user registration). Optional parameter
         :type organization_id: string
-        ;returns: None.
+        ;returns: list.
         """
         raise exception.NotImplemented()
 
@@ -171,7 +206,7 @@ class RolesDriver(object):
     
     # PERMISSIONS
     @abc.abstractmethod
-    def list_permissions(self):
+    def list_permissions(self, **kwargs):
         """List all created permissions
 
         :returns: permissions list as dict

@@ -40,12 +40,13 @@ class RolesBaseTests(test_v3.RestfulTestCase):
         # but I don't know if its the right way to do it...
         self.manager = core.RolesManager()
 
-    def new_fiware_role_ref(self, name, is_editable=True):
+    def new_fiware_role_ref(self, name, application=False, is_internal=False):
         role_ref = {
-            'name': name,   
+            'name': name,
+            'application': application if application else uuid.uuid4().hex,
         }
-        if not is_editable:
-            role_ref['is_editable'] = False
+        if is_internal:
+            role_ref['is_internal'] = True
         return role_ref
 
     def _create_role(self, role_ref=None):
@@ -55,12 +56,13 @@ class RolesBaseTests(test_v3.RestfulTestCase):
 
         return response.result['role']
 
-    def new_fiware_permission_ref(self, name, is_editable=True):
+    def new_fiware_permission_ref(self, name, application=False, is_internal=False):
         permission_ref = {
-            'name': name,   
+            'name': name,
+            'application': application if application else uuid.uuid4().hex,  
         }
-        if not is_editable:
-            permission_ref['is_editable'] = False
+        if is_internal:
+            permission_ref['is_internal'] = True
         return permission_ref
 
     def _create_permission(self, permission_ref=None):
@@ -185,20 +187,29 @@ class RolesBaseTests(test_v3.RestfulTestCase):
                                 %ulr_args
         return self.get(url, expected_status=expected_status)
 
+    def _list_roles_allowed_to_assign(self, user_id, organization_id, 
+                                                    expected_status=200):
+        ulr_args = {
+            'user_id': user_id,
+            'organization_id': organization_id
+        }   
+        url = self.USERS_URL + '/%(user_id)s/organizations/%(organization_id)s/roles/allowed' \
+                                %ulr_args
+        return self.get(url, expected_status=expected_status)
 
     def _assert_role(self, test_role, reference_role):
         self.assertIsNotNone(test_role)
         self.assertIsNotNone(test_role['id'])
         self.assertEqual(reference_role['name'], test_role['name'])
-        if hasattr(reference_role, 'is_editable'):
-            self.assertEqual(reference_role['is_editable'], test_role['is_editable'])
+        if hasattr(reference_role, 'is_internal'):
+            self.assertEqual(reference_role['is_internal'], test_role['is_internal'])
 
     def _assert_permission(self, test_permission, reference_permission):
         self.assertIsNotNone(test_permission)
         self.assertIsNotNone(test_permission['id'])
         self.assertEqual(reference_permission['name'], test_permission['name'])
-        if hasattr(reference_permission, 'is_editable'):
-            self.assertEqual(reference_permission['is_editable'], test_permission['is_editable'])
+        if hasattr(reference_permission, 'is_internal'):
+            self.assertEqual(reference_permission['is_internal'], test_permission['is_internal'])
 
     def _assert_list(self, entities, entity_type, reference_list):
         """ Utility method to check lists."""
@@ -220,13 +231,13 @@ class RoleCrudTests(RolesBaseTests):
         self._assert_role(role, role_ref)
 
     def test_role_create_explicit(self):
-        role_ref = self.new_fiware_role_ref(uuid.uuid4().hex, is_editable=True)
+        role_ref = self.new_fiware_role_ref(uuid.uuid4().hex, is_internal=True)
         role = self._create_role(role_ref)
 
         self._assert_role(role, role_ref)
 
     def test_role_create_not_editable(self):
-        role_ref = self.new_fiware_role_ref(uuid.uuid4().hex, is_editable=False)
+        role_ref = self.new_fiware_role_ref(uuid.uuid4().hex, is_internal=False)
         role = self._create_role(role_ref)
 
         self._assert_role(role, role_ref)
@@ -323,6 +334,7 @@ class RoleCrudTests(RolesBaseTests):
                                         user_id=uuid.uuid4().hex,
                                         organization_id=uuid.uuid4().hex,
                                         expected_status=404)
+
     def test_add_role_to_user_repeated(self):
         role = self._create_role()
         user, organization = self._create_user()
@@ -332,6 +344,7 @@ class RoleCrudTests(RolesBaseTests):
         response = self._add_role_to_user(role_id=role['id'],
                                         user_id=user['id'],
                                         organization_id=organization['id'])
+
     def test_remove_role_from_user(self):
         role = self._create_role()
         user, organization = self._create_user()
@@ -341,18 +354,21 @@ class RoleCrudTests(RolesBaseTests):
         response = self._remove_role_from_user(role_id=role['id'],
                                         user_id=user['id'],
                                         organization_id=organization['id'])
+
     def test_remove_non_existent_role_from_user(self):
         user, organization = self._create_user()
         response = self._remove_role_from_user(role_id=uuid.uuid4().hex,
                                             user_id=user['id'],
                                             organization_id=organization['id'],
                                             expected_status=404)
+
     def test_remove_role_from_non_existent_user(self):
         role = self._create_role()
         response = self._remove_role_from_user(role_id=role['id'],
                                             user_id=uuid.uuid4().hex,
                                             organization_id=uuid.uuid4().hex,
                                             expected_status=404)
+
     def test_remove_user_from_role_repeated(self):
         role = self._create_role()
         user, organization = self._create_user()
@@ -366,6 +382,37 @@ class RoleCrudTests(RolesBaseTests):
                                         user_id=user['id'],
                                         organization_id=organization['id'])
 
+    def test_list_roles_allowed_to_assign_all(self):
+        user, organization = self._create_user()
+        applications = [
+            uuid.uuid4().hex,
+        ]
+        for app in applications:
+            permissions = []
+            # create the internal permissions
+            perm_ref = self.new_fiware_permission_ref(
+                                    core.ASSIGN_ALL_ROLES_PERMISSION, 
+                                    application=app, 
+                                    is_internal=True)
+            permissions.append(self._create_permission(perm_ref))
+
+            # create the internal role
+            role_ref = self.new_fiware_permission_ref(
+                                    uuid.uuid4().hex, 
+                                    application=app, 
+                                    is_internal=True)
+            role = self._create_role(role_ref)
+            # assign the permissions to the role
+            for permission in permissions:
+                self._add_permission_to_role(role['id'], permission['id'])
+
+            # grant the role to the user
+            self._add_role_to_user(role['id'], user['id'], organization['id'])
+
+        response = self._list_roles_allowed_to_assign(user_id=user['id'],
+                                          organization_id=organization['id'])
+        # check the correct roles are displayed
+
 class PermissionCrudTests(RolesBaseTests):
 
     def test_create_permission_default(self):
@@ -375,13 +422,13 @@ class PermissionCrudTests(RolesBaseTests):
         self._assert_permission(permission, permission_ref)
 
     def test_create_permission_explicit(self):
-        permission_ref = self.new_fiware_permission_ref(uuid.uuid4().hex, is_editable=True)
+        permission_ref = self.new_fiware_permission_ref(uuid.uuid4().hex, is_internal=True)
         permission = self._create_permission(permission_ref)
 
         self._assert_permission(permission, permission_ref)
 
     def test_create_permission_not_editable(self):
-        permission_ref = self.new_fiware_permission_ref(uuid.uuid4().hex, is_editable=False)
+        permission_ref = self.new_fiware_permission_ref(uuid.uuid4().hex, is_internal=False)
         permission = self._create_permission(permission_ref)
 
         self._assert_permission(permission, permission_ref)
