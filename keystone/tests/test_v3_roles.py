@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import json
+import six
 import uuid
 
 from keystone import config
@@ -382,16 +384,39 @@ class RoleCrudTests(RolesBaseTests):
                                         user_id=user['id'],
                                         organization_id=organization['id'])
 
-    def test_list_roles_allowed_to_assign_all(self):
+    def test_list_roles_allowed_to_assign(self):
         user, organization = self._create_user()
         applications = [
-            uuid.uuid4().hex,
+            (uuid.uuid4().hex, core.ASSIGN_ALL_ROLES_PERMISSION),
+            (uuid.uuid4().hex, core.ASSIGN_OWNED_ROLES_PERMISSION),
         ]
-        for app in applications:
+        expected_roles = self._create_internal_roles(user, 
+                                                organization, 
+                                                applications)
+
+        response = self._list_roles_allowed_to_assign(user_id=user['id'],
+                                          organization_id=organization['id'])
+
+        # check the correct roles are returned
+        allowed_roles = json.loads(response.body)['allowed_roles']
+        for (app, permission_name) in applications:
+            current = [r['id'] for r in allowed_roles[app]]
+            if permission_name == core.ASSIGN_ALL_ROLES_PERMISSION:
+                expected = expected_roles[app].keys()
+            elif permission_name == core.ASSIGN_OWNED_ROLES_PERMISSION:
+                # only the one granted to the user
+                expected = [expected_roles[app].keys()[0]]
+            self.assertItemsEqual(current, expected)
+
+    def _create_internal_roles(self, user, organization, applications):
+        expected_roles = {}
+        for (app, permission_name) in applications:
+            expected_roles[app] = {}
             permissions = []
+
             # create the internal permissions
             perm_ref = self.new_fiware_permission_ref(
-                                    core.ASSIGN_ALL_ROLES_PERMISSION, 
+                                    permission_name, 
                                     application=app, 
                                     is_internal=True)
             permissions.append(self._create_permission(perm_ref))
@@ -402,16 +427,23 @@ class RoleCrudTests(RolesBaseTests):
                                     application=app, 
                                     is_internal=True)
             role = self._create_role(role_ref)
+
             # assign the permissions to the role
             for permission in permissions:
                 self._add_permission_to_role(role['id'], permission['id'])
-
+            expected_roles[app][role['id']] = permissions
             # grant the role to the user
             self._add_role_to_user(role['id'], user['id'], organization['id'])
 
-        response = self._list_roles_allowed_to_assign(user_id=user['id'],
-                                          organization_id=organization['id'])
-        # check the correct roles are displayed
+            # now create another role in the app to test all vs owned
+            another_role_ref = self.new_fiware_permission_ref(
+                                    uuid.uuid4().hex, 
+                                    application=app, 
+                                    is_internal=False)
+            another_role = self._create_role(another_role_ref)
+            expected_roles[app][another_role['id']] = []
+        return expected_roles            
+                
 
 class PermissionCrudTests(RolesBaseTests):
 

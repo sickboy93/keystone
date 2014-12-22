@@ -70,7 +70,6 @@ class Roles(roles.RolesDriver):
         session = sql.get_session()
         roles = session.query(Role)
         if kwargs:
-            import pdb; pdb.set_trace()
             roles = roles.filter_by(**kwargs)
         return [role.to_dict() for role in roles]
 
@@ -175,7 +174,6 @@ class Roles(roles.RolesDriver):
         session = sql.get_session()
         permissions = session.query(Permission)
         if kwargs:
-            import pdb; pdb.set_trace()
             permissions = permissions.filter_by(**kwargs)
         return [permission.to_dict() for permission in permissions]
 

@@ -61,7 +61,7 @@ class RolesManager(manager.Manager):
             'keystone.contrib.roles.backends.sql.Roles')
 
 
-    def list_roles_allowed_to_assign(self, context, user_id, organization_id):
+    def list_roles_allowed_to_assign(self, user_id, organization_id):
         """List the roles that a given user can assign. To be able to assign roles
         a user needs a certain permission. It can be the 'get and assign all
         application's roles' or the 'get and assign owned roles'
@@ -72,7 +72,6 @@ class RolesManager(manager.Manager):
         :type organization_id: string
         ;returns: list.
         """
-        import pdb; pdb.set_trace()
         allowed_roles = {}
         user_roles = self.driver.list_roles_for_user(user_id)
         applications = set([r['application'] for r in user_roles])

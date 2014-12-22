@@ -75,7 +75,10 @@ class RoleCrudV3(BaseControllerV3):
     @controller.protected()
     def list_roles_allowed_to_assign(self, context, user_id, organization_id):
         ref = self.roles_api.list_roles_allowed_to_assign(user_id, organization_id)
-        return RoleCrudV3.wrap_collection(context, ref)
+        response = {
+            'allowed_roles': ref
+        }
+        return response
 
         
 class PermissionCrudV3(BaseControllerV3):
