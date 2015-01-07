@@ -27,7 +27,7 @@ class Role(sql.ModelBase, sql.ModelDictMixin):
     name = sql.Column(sql.String(64), nullable=False)
     is_internal = sql.Column(sql.Boolean(), default=False, nullable=False)
     application = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
-                             nullable=False, index=True)
+                             nullable=True, index=True)
 
 class Permission(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'permission_fiware'
@@ -38,7 +38,7 @@ class Permission(sql.ModelBase, sql.ModelDictMixin):
     name = sql.Column(sql.String(64), nullable=False)
     is_internal = sql.Column(sql.Boolean(), default=False, nullable=False)
     application = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
-                             nullable=False, index=True)
+                             nullable=True, index=True)
 
 class RolePermission(sql.ModelBase, sql.DictBase):
     """Role\'s permissions join table."""
