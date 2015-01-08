@@ -396,7 +396,6 @@ class RoleCrudTests(RolesBaseTests):
 
         response = self._list_roles_allowed_to_assign(user_id=user['id'],
                                           organization_id=organization['id'])
-
         # check the correct roles are returned
         allowed_roles = json.loads(response.body)['allowed_roles']
         for (app, permission_name) in applications:
@@ -405,7 +404,9 @@ class RoleCrudTests(RolesBaseTests):
                 expected = expected_roles[app].keys()
             elif permission_name == core.ASSIGN_OWNED_ROLES_PERMISSION:
                 # only the one granted to the user
-                expected = [expected_roles[app].keys()[0]]
+                # TODO(garcianavalon) rewrite this
+                expected = [r_id for r_id in expected_roles[app]
+                                        if expected_roles[app][r_id]]   
             self.assertItemsEqual(current, expected)
 
     def _create_internal_roles(self, user, organization, applications):
