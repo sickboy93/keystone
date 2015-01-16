@@ -36,6 +36,7 @@ class UserRegistrationV3(controller.V3Controller):
 
     @controller.protected()
     def register_user(self, context, user):
+        # TODO(garcianavalon) this method is to long, refactor it into smaller ones
         # Create a new user
         self._require_attribute(user, 'name')
         # The manager layer will generate the unique ID for users
@@ -59,7 +60,12 @@ class UserRegistrationV3(controller.V3Controller):
         user_ref['default_project_id'] = project_ref['id']
         user_ref = self.identity_api.create_user(user_ref)
 
-        # TODO(garcianavalon) get a default role and give it to the user in the project
+        # get a default role and give it to the user in the project
+        # NOTE(garcianavalon) this is written for the v3 Identity API, if v2
+        # support is needed use add_user_to_project(tenant_id, user_id) which
+        # automatically uses de default role defined in keystone.conf
+        default_role = self.registration_api.get_default_role()
+
 
         # Create an activation key 
         activation_profile = self.registration_api.register_user(user_ref)
