@@ -67,8 +67,10 @@ class RegistrationUseCaseTests(RegistrationBaseTests):
         new_user = self._register_new_user(new_user_ref)
 
         # Check the user is not enabled
+        self.assertEqual(new_user['enabled'], False)
 
         # Check the user comes with activation_key
+        self.assertIsNotNone(new_user['activation_key'])
 
     def test_default_project(self):
         new_user_ref = self.new_user_ref(domain_id=self.domain_id)
