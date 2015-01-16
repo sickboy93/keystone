@@ -80,7 +80,8 @@ class RegistrationUseCaseTests(RegistrationBaseTests):
 
         # Check a project with same name as user exists
         self.assertIsNotNone(new_user['default_project_id'])
-        response = self.get(PROJECTS_URL.format(new_user['default_project_id']))
+        response = self.get(self.PROJECTS_URL.format(
+                                        project_id=new_user['default_project_id']))
         new_project = response.result['project']
         self.assertIsNotNone(new_project)
         self.assertEqual(new_user['name'], new_project['name'])
