@@ -38,6 +38,8 @@ class RegistrationBaseTests(test_v3.RestfulTestCase):
     REQUEST_RESET_URL = BASE_URL + '/{user_id}/reset_password'
     PERFORM_RESET_URL = BASE_URL + '/{user_id}/reset_password/{token_id}'
 
+    PROJECTS_URL = '/projects/{project_id}'
+
     def setUp(self):
         super(RegistrationBaseTests, self).setUp()
 
@@ -67,7 +69,7 @@ class RegistrationUseCaseTests(RegistrationBaseTests):
         new_user = self._register_new_user(new_user_ref)
 
         # Check the user is not enabled
-        self.assertEqual(new_user['enabled'], False)
+        self.assertEqual(False, new_user['enabled'])
 
         # Check the user comes with activation_key
         self.assertIsNotNone(new_user['activation_key'])
@@ -77,8 +79,13 @@ class RegistrationUseCaseTests(RegistrationBaseTests):
         new_user = self._register_new_user(new_user_ref)
 
         # Check a project with same name as user exists
-
+        self.assertIsNotNone(new_user['default_project_id'])
+        response = self.get(PROJECTS_URL.format(new_user['default_project_id']))
+        new_project = response.result['project']
+        self.assertIsNotNone(new_project)
+        self.assertEqual(new_user['name'], new_project['name'])
         # and is not enabled
+        self.assertEqual(False, new_project['enabled'])
 
     def test_user_belongs_to_project(self):
         new_user_ref = self.new_user_ref(domain_id=self.domain_id)
