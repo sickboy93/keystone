@@ -64,6 +64,17 @@ class RegistrationBaseTests(test_v3.RestfulTestCase):
 
 class RegistrationUseCaseTests(RegistrationBaseTests):
 
+    def _get_default_project(self, new_user):
+        response = self.get(self.PROJECTS_URL.format(
+                                        project_id=new_user['default_project_id']))
+        return response.result['project']
+
+    def _get_role_assignments(self, user_id, project_id):
+        response = self.get('/role_assignments?user.id={user_id}\
+            &scope.project.id={project_id}'.format(user_id=user_id,
+                                                   project_id=project_id))
+        return response.result['role_assignments']
+
     def test_registered_user(self):
         new_user_ref = self.new_user_ref(domain_id=self.domain_id)
         new_user = self._register_new_user(new_user_ref)
@@ -74,15 +85,15 @@ class RegistrationUseCaseTests(RegistrationBaseTests):
         # Check the user comes with activation_key
         self.assertIsNotNone(new_user['activation_key'])
 
+        # and that it has a project
+        self.assertIsNotNone(new_user['default_project_id'])
+
     def test_default_project(self):
         new_user_ref = self.new_user_ref(domain_id=self.domain_id)
         new_user = self._register_new_user(new_user_ref)
 
         # Check a project with same name as user exists
-        self.assertIsNotNone(new_user['default_project_id'])
-        response = self.get(self.PROJECTS_URL.format(
-                                        project_id=new_user['default_project_id']))
-        new_project = response.result['project']
+        new_project = self._get_default_project(new_user)
         self.assertIsNotNone(new_project)
         self.assertEqual(new_user['name'], new_project['name'])
         # and is not enabled
@@ -93,6 +104,14 @@ class RegistrationUseCaseTests(RegistrationBaseTests):
         new_user = self._register_new_user(new_user_ref)
 
         # Check the user belongs and has a role in his default project
+        new_project = self._get_default_project(new_user)
+        role_assignments = self._get_role_assignments(new_user['id'], 
+                                                    new_project['id'])
+        self.assertIsNotNone(role_assignments)
+        self.assertEqual(1, len(role_assignments))
+
+        # TODO(garcianavalon) maybe check that it actually is the default role?
+
 
 class ActivationUseCaseTest(RegistrationBaseTests):
 
