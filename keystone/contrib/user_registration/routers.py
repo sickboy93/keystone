@@ -25,17 +25,17 @@ build_parameter_relation = functools.partial(
     json_home.build_v3_extension_parameter_relation,
     extension_name='OS-REGISTRATION', extension_version='1.0')
 
-class UserRegistrationExtension(wsgi.V3ExtensionRouter):
+class Registration(wsgi.V3ExtensionRouter):
     """API Endpoints for the user registration extension.
 
     The API looks like::
 
       # user creation and activation endpoint
       POST /OS-REGISTRATION/users
+      GET /OS-REGISTRATION/users/$user_id/activate # get a new activation key
       PATCH /OS-REGISTRATION/users/$user_id/activate/$activation_key
       GET /OS-REGISTRATION/users/$user_id/password_reset #gets a token
       PATCH /OS-REGISTRATION/users/$user_id/password_reset/$token_id
-      GET /OS-REGISTRATION/users/$user_id/new_activation_key
       
     """
 
@@ -49,6 +49,16 @@ class UserRegistrationExtension(wsgi.V3ExtensionRouter):
             path=self.PATH_PREFIX + '/users',
             post_action='register_user',
             rel=build_resource_relation(resource_name='users'))
+        
+        self._add_resource(
+            mapper, user_controller,
+            path=self.PATH_PREFIX + '/users/{user_id}/activate',
+            get_action='get_activation_key',
+            rel=build_resource_relation(resource_name='activation_key'),
+            path_vars={
+                'user_id':
+                build_parameter_relation(parameter_name='user_id'),
+            })
 
         self._add_resource(
             mapper, user_controller,
@@ -82,14 +92,4 @@ class UserRegistrationExtension(wsgi.V3ExtensionRouter):
                 build_parameter_relation(parameter_name='user_id'),
                 'token_id':
                 build_parameter_relation(parameter_name='token_id'),
-            })
-
-        self._add_resource(
-            mapper, user_controller,
-            path=self.PATH_PREFIX + '/users/{user_id}/new_activation_key',
-            get_action='get_activation_key',
-            rel=build_resource_relation(resource_name='activation_key'),
-            path_vars={
-                'user_id':
-                build_parameter_relation(parameter_name='user_id'),
             })

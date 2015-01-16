@@ -21,12 +21,33 @@ def upgrade(migrate_engine):
     meta = sql.MetaData()
     meta.bind = migrate_engine
 
+    activation_table = sql.Table(
+        'user_registration_activation_profile',
+        meta,
+        sql.Column('id', sql.String(64), primary_key=True, nullable=False),
+        sql.Column('user_id', sql.String(64), nullable=False, index=True),
+        sql.Column('project_id', sql.String(64), nullable=False, index=True),
+        sql.Column('expires_at', sql.String(64), nullable=False),
+        sql.Column('used', sql.Boolean(), default=False, nullable=False))
+    activation_table.create(migrate_engine, checkfirst=True)
+
+    reset_table = sql.Table(
+        'user_registration_reset_profile',
+        meta,
+        sql.Column('id', sql.String(64), primary_key=True, nullable=False),
+        sql.Column('user_id', sql.String(64), nullable=False, index=True),
+        sql.Column('expires_at', sql.String(64), nullable=False),
+        sql.Column('used', sql.Boolean(), default=False, nullable=False))
+    reset_table.create(migrate_engine, checkfirst=True)
+
+
 def downgrade(migrate_engine):
     # Operations to reverse the above upgrade go here.
     meta = sql.MetaData()
     meta.bind = migrate_engine
 
-    tables = []
+    tables = ['user_registration_activation_profile', 
+        'user_registration_reset_profile']
     for t in tables:
         table = sql.Table(t, meta, autoload=True)
         table.drop(migrate_engine, checkfirst=True)

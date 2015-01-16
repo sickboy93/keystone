@@ -57,8 +57,54 @@ class Manager(manager.Manager):
             'keystone.contrib.user_registration.backends.sql.Registration')
         # TODO(garcianavalon) set as configuration option in keystone.conf
         
-@dependency.requires('identity_api')
 @six.add_metaclass(abc.ABCMeta)
 class Driver(object):
     """Interface description for drivers"""
-    pass
+
+    @abc.abstractmethod
+    def create_activation_profile(self, activation_profile):
+        """Create an activation_profile for a newly registered user
+
+        :param activation_profile: activation_profile data
+        :type activation_profile: dict
+        :returns: activation_profile
+
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def get_activation_profile(self, user_id, activation_key):
+        """Get activation_profile details for a user, if the key is valid
+        
+        :param user_id: id of user that wants to activate
+        :type user_id: string
+        param activation_key: provided in the registration process
+        :type activation_key: string
+        :returns: activation_profile
+
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def create_reset_profile(self, reset_profile):
+        """Register a user reset password request
+
+        :param reset_profile: reset_profile data
+        :type reset_profile: dict
+        :returns: reset_profile
+
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def get_reset_profile(self, user_id, reset_token):
+        """Get reset_profile details, if the token is valid
+        
+        :param user_id: id of user that wants to activate
+        :type user_id: string
+        param reset_token: provided in the registration process
+        :type reset_token: string
+        :returns: reset_profile
+
+        """
+        raise exception.NotImplemented()

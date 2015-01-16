@@ -62,7 +62,8 @@ class UserRegistrationV3(controller.V3Controller):
         # TODO(garcianavalon) get a default role and give it to the user in the project
 
         # Create an activation key 
-        user_ref['activation_key'] = self.registration_api.create_activation_key(user_ref)
+        activation_profile = self.registration_api.create_activation_profile(user_ref)
+        user_ref['activation_key'] = activation_profile['id']
         return UserRegistrationV3.wrap_member(context, user_ref)
 
     @controller.protected()
@@ -95,10 +96,10 @@ class UserRegistrationV3(controller.V3Controller):
         if not user_ref['enabled']:
             raise exception.Forbidden(message=_('The user is not activated.'))
         # create a new reset token
-        reset_token = self.registration_api.create_reset_token(user_id)
+        reset_profile = self.registration_api.create_reset_profile(user_id)
         return {
             'reset_token': {
-                'id': reset_token
+                'id': reset_profile['id']
             }
         }
 
