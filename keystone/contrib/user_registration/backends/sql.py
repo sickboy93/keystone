@@ -20,7 +20,7 @@ from keystone.contrib import user_registration
 from keystone.i18n import _
 from oslo.utils import timeutils
 
-class ActivationProfile(sql.ModelBase, sql.DictBase):
+class ActivationProfile(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'user_registration_activation_profile'
     attributes = ['id', 'user_id', 'expires_at', 'used']              
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
@@ -39,7 +39,7 @@ class ResetProfile(sql.ModelBase, sql.DictBase):
     expires_at = sql.Column(sql.String(64), nullable=False)
     used = sql.Column(sql.Boolean(), default=False, nullable=False)
 
-class Registrarion(user_registration.Driver):
+class Registration(user_registration.Driver):
     """ CRUD driver for the SQL backend """
 
     def create_reset_profile(self, profile):
@@ -66,6 +66,5 @@ class Registrarion(user_registration.Driver):
     def get_activation_profile(self, user_id, activation_key):
         session = sql.get_session()
         with session.begin():
-            profile_ref = (session.query(ActivationProfile).get(activation_key)
-                            .filter_by(user_id=user_id))
-        return profile_ref.to_dict()
+            profile_ref = session.query(ActivationProfile).get(activation_key)
+        return profile_ref.to_dict() if profile_ref.user_id == user_id else None

@@ -36,7 +36,7 @@ class UserRegistrationV3(controller.V3Controller):
 
     @controller.protected()
     def register_user(self, context, user):
-        # Create a disabled user
+        # Create a new user
         self._require_attribute(user, 'name')
         # The manager layer will generate the unique ID for users
         user_ref = self._normalize_dict(user)
@@ -48,7 +48,7 @@ class UserRegistrationV3(controller.V3Controller):
         # we create a default project with his name, and add the user to the project
         project = {
             'name':user_ref['name'],
-            'domain':user_ref['domain'],
+            'domain_id':user_ref['domain_id'],
             'enabled': False,
         }
         project_ref = self._assign_unique_id(self._normalize_dict(project))
@@ -56,13 +56,13 @@ class UserRegistrationV3(controller.V3Controller):
         project_ref = self.assignment_api.create_project(project_ref['id'], project_ref)
 
         # create the user finally
-        user_ref['default_project_id'] = project['id']
+        user_ref['default_project_id'] = project_ref['id']
         user_ref = self.identity_api.create_user(user_ref)
 
         # TODO(garcianavalon) get a default role and give it to the user in the project
 
         # Create an activation key 
-        activation_profile = self.registration_api.create_activation_profile(user_ref)
+        activation_profile = self.registration_api.register_user(user_ref)
         user_ref['activation_key'] = activation_profile['id']
         return UserRegistrationV3.wrap_member(context, user_ref)
 
@@ -87,7 +87,7 @@ class UserRegistrationV3(controller.V3Controller):
         }
         user_ref = self.identity_api.update_user(user_id, user_ref)
 
-        return wsgi.render_response(status=('200', 'OK'))
+        return UserRegistrationV3.wrap_member(context, user_ref)
 
     @controller.protected()
     def get_reset_token(self, context, user_id):

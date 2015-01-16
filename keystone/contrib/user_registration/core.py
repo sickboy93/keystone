@@ -14,8 +14,10 @@
 
 from __future__ import absolute_import
 
-import six
 import abc
+import datetime
+import six
+import uuid
 
 from keystone.common import dependency
 from keystone.common import extension
@@ -23,6 +25,7 @@ from keystone.common import manager
 from keystone import exception
 from keystone.openstack.common import log
 
+from oslo.utils import timeutils
 
 LOG = log.getLogger(__name__)
 
@@ -43,6 +46,8 @@ EXTENSION_DATA = {
 extension.register_admin_extension(EXTENSION_DATA['alias'], EXTENSION_DATA)
 extension.register_public_extension(EXTENSION_DATA['alias'], EXTENSION_DATA)
 
+
+ACTIVATION_KEY_DURATION = 28800 # TODO(garcianavalon) extract as configuration option
 @dependency.provider('registration_api')
 class Manager(manager.Manager):
     """Manager.
@@ -56,7 +61,23 @@ class Manager(manager.Manager):
         super(Manager, self).__init__(
             'keystone.contrib.user_registration.backends.sql.Registration')
         # TODO(garcianavalon) set as configuration option in keystone.conf
+
+
+    def register_user(self, user_ref):
+        """ Translates the user_ref to an activation profile."""
+        profile_ref = {
+            'user_id': user_ref['id'],
+            'project_id': user_ref['default_project_id'],
+            'expires_at': self._calculate_expiry_date(ACTIVATION_KEY_DURATION),
+            'id': uuid.uuid4().hex,
+        }
+        return self.driver.create_activation_profile(profile_ref)
         
+    def _calculate_expiry_date(self, duration_in_seconds):
+        now = timeutils.utcnow()
+        future = now + datetime.timedelta(seconds=duration_in_seconds)
+        return timeutils.isotime(future, subsecond=True)
+
 @six.add_metaclass(abc.ABCMeta)
 class Driver(object):
     """Interface description for drivers"""

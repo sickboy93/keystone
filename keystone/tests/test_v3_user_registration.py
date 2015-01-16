@@ -35,8 +35,8 @@ class RegistrationBaseTests(test_v3.RestfulTestCase):
     REGISTER_URL = BASE_URL
     REQUEST_NEW_ACTIVATION_KEY_URL = BASE_URL + '/{user_id}/activate'
     PERFORM_ACTIVATION_URL = BASE_URL + '/{user_id}/activate/{activation_key}'
-    REQUEST_RESET_URL = BASE_URL + '/{user_id}/password_reset'
-    PERFORM_RESET_URL = BASE_URL + '/{user_id}/password_reset/{token_id}'
+    REQUEST_RESET_URL = BASE_URL + '/{user_id}/reset_password'
+    PERFORM_RESET_URL = BASE_URL + '/{user_id}/reset_password/{token_id}'
 
     def setUp(self):
         super(RegistrationBaseTests, self).setUp()
@@ -48,7 +48,8 @@ class RegistrationBaseTests(test_v3.RestfulTestCase):
         self.manager = core.Manager()
 
     def _register_new_user(self, user_ref=None):
-        user_ref = user_ref if user_ref else self.new_user_ref()
+        user_ref = user_ref if user_ref else self.new_user_ref(
+                                                    domain_id=self.domain_id)
 
         response = self.post(self.REGISTER_URL, body={'user': user_ref})
         return response.result['user']
@@ -56,13 +57,12 @@ class RegistrationBaseTests(test_v3.RestfulTestCase):
     def _activate_user(self, user_id, activation_key):
         response = self.patch(self.PERFORM_ACTIVATION_URL.format(user_id=user_id,
                                                     activation_key=activation_key))
-        return response.result['user']
 
 
 class RegistrationUseCaseTests(RegistrationBaseTests):
 
     def test_registered_user(self):
-        new_user_ref = self.new_user_ref()
+        new_user_ref = self.new_user_ref(domain_id=self.domain_id)
         new_user = self._register_new_user(new_user_ref)
 
         # Check the user is not enabled
@@ -70,7 +70,7 @@ class RegistrationUseCaseTests(RegistrationBaseTests):
         # Check the user comes with activation_key
 
     def test_default_project(self):
-        new_user_ref = self.new_user_ref()
+        new_user_ref = self.new_user_ref(domain_id=self.domain_id)
         new_user = self._register_new_user(new_user_ref)
 
         # Check a project with same name as user exists
@@ -78,7 +78,7 @@ class RegistrationUseCaseTests(RegistrationBaseTests):
         # and is not enabled
 
     def test_user_belongs_to_project(self):
-        new_user_ref = self.new_user_ref()
+        new_user_ref = self.new_user_ref(domain_id=self.domain_id)
         new_user = self._register_new_user(new_user_ref)
 
         # Check the user belongs and has a role in his default project

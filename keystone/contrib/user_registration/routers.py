@@ -34,8 +34,8 @@ class Registration(wsgi.V3ExtensionRouter):
       POST /OS-REGISTRATION/users
       GET /OS-REGISTRATION/users/$user_id/activate # get a new activation key
       PATCH /OS-REGISTRATION/users/$user_id/activate/$activation_key
-      GET /OS-REGISTRATION/users/$user_id/password_reset #gets a token
-      PATCH /OS-REGISTRATION/users/$user_id/password_reset/$token_id
+      GET /OS-REGISTRATION/users/$user_id/reset_password #gets a token
+      PATCH /OS-REGISTRATION/users/$user_id/reset_password/$token_id
       
     """
 
@@ -49,7 +49,7 @@ class Registration(wsgi.V3ExtensionRouter):
             path=self.PATH_PREFIX + '/users',
             post_action='register_user',
             rel=build_resource_relation(resource_name='users'))
-        
+
         self._add_resource(
             mapper, user_controller,
             path=self.PATH_PREFIX + '/users/{user_id}/activate',
@@ -74,7 +74,7 @@ class Registration(wsgi.V3ExtensionRouter):
 
         self._add_resource(
             mapper, user_controller,
-            path=self.PATH_PREFIX + '/users/{user_id}/password_reset',
+            path=self.PATH_PREFIX + '/users/{user_id}/reset_password',
             get_action='get_reset_token',
             rel=build_resource_relation(resource_name='reset_token'),
             path_vars={
@@ -84,8 +84,8 @@ class Registration(wsgi.V3ExtensionRouter):
 
         self._add_resource(
             mapper, user_controller,
-            path=self.PATH_PREFIX + '/users/{user_id}/password_reset/{token_id}',
-            patch_action='password_reset',
+            path=self.PATH_PREFIX + '/users/{user_id}/reset_password/{token_id}',
+            patch_action='reset_password',
             rel=build_resource_relation(resource_name='user'),
             path_vars={
                 'user_id':
