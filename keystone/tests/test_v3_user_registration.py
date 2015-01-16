@@ -57,6 +57,7 @@ class RegistrationBaseTests(test_v3.RestfulTestCase):
     def _activate_user(self, user_id, activation_key):
         response = self.patch(self.PERFORM_ACTIVATION_URL.format(user_id=user_id,
                                                     activation_key=activation_key))
+        return response.result['user']
 
 
 class RegistrationUseCaseTests(RegistrationBaseTests):
