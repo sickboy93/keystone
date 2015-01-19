@@ -83,6 +83,13 @@ class RegistrationBaseTests(test_v3.RestfulTestCase):
                         body={'user': {'password':new_password}})
         return response.result['user']
 
+    def _request_new_activation_key(self, user):
+        response = self.get(self.REQUEST_NEW_ACTIVATION_KEY_URL.format(
+                                                        user_id=user['id']))
+
+        return response.result['activation_key']
+
+
 class RegistrationUseCaseTests(RegistrationBaseTests):
 
 
@@ -184,3 +191,12 @@ class ResetPasswordUseCaseTest(RegistrationBaseTests):
         # check user id, to be sure
         self.assertEqual(active_user['id'], reset_user['id'])
 
+# class ResendActivationKeyUseCase(RegistrationBaseTests):
+
+#     def test_resend_key(self):
+#         new_user = self._register_new_user()
+#         old_activation_key = new_user['activation_key']
+#         new_activation_key = self._request_new_activation_key(new_user)
+
+#         self.assertIsNotNone(new_activation_key)
+#         self.assertNotEqual(old_activation_key, new_activation_key)

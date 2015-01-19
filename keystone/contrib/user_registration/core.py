@@ -161,3 +161,15 @@ class Driver(object):
 
         """
         raise exception.NotImplemented()
+
+    # @abc.abstractmethod
+    # def new_activation_key(self, user_id):
+    #     """Generates a new activation key for the user
+        
+    #     :param user_id: id of user
+    #     :type user_id: string
+    #     :returns: activation_profile
+
+    #     """
+    #     raise exception.NotImplemented()
+        

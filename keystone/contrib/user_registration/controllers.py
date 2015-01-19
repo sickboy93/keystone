@@ -133,7 +133,7 @@ class UserRegistrationV3(controller.V3Controller):
             raise exception.ValidationError(
                     message=_('The user is already activated.'))
         # create a new activation key
-        activation_key = self.registration_api.create_activation_key(user_ref)
+        activation_key = self.registration_api.new_activation_key(user_id)
         return {
             'activation_key': {
                 'id': activation_key
