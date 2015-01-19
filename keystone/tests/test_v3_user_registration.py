@@ -193,6 +193,37 @@ class ResetPasswordUseCaseTest(RegistrationBaseTests):
         # check user id, to be sure
         self.assertEqual(active_user['id'], reset_user['id'])
 
+    def test_reset_twice_reset_token(self):
+        new_user = self._register_new_user()
+        active_user = self._activate_user(user_id=new_user['id'],
+                                activation_key=new_user['activation_key'])
+        old_token = self._request_password_reset(active_user)
+        # request again
+        new_token = self._request_password_reset(active_user)
+
+        # check we have the token
+        self.assertIsNotNone(new_token['id'])
+
+    def test_reset_twice_reset_password(self):
+        new_user = self._register_new_user()
+        active_user = self._activate_user(user_id=new_user['id'],
+                                activation_key=new_user['activation_key'])
+        old_token = self._request_password_reset(active_user)
+        # request again
+        new_token = self._request_password_reset(active_user)
+
+        new_password = 'new_password'
+        reset_user = self._reset_password(active_user, new_token, new_password)
+
+        # check the new password is correct
+        auth_data = self.build_authentication_request(username=reset_user['name'],
+                                            user_domain_id=reset_user['domain_id'],
+                                            password=new_password)
+        self.post('/auth/tokens', body=auth_data)
+
+        # check user id, to be sure
+        self.assertEqual(active_user['id'], reset_user['id'])
+
 class ResendActivationKeyUseCase(RegistrationBaseTests):
 
     def test_resend_key(self):

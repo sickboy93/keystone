@@ -104,6 +104,7 @@ class UserRegistrationV3(controller.V3Controller):
         user_ref = self.identity_api.get_user(user_id)
         if not user_ref['enabled']:
             raise exception.Forbidden(message=_('The user is not activated.'))
+
         # create a new reset token
         reset_profile = self.registration_api.request_password_reset(user_id)
         return {

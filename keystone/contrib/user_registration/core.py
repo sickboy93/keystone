@@ -69,7 +69,7 @@ class Manager(manager.Manager):
         # TODO(garcianavalon) set as configuration option in keystone.conf
 
     def request_password_reset(self, user_id):
-        """ Prepares a reset profile for the user."""
+        """ Prepares a reset profile for the user"""
         profile_ref = {
             'user_id': user_id,
             'expires_at': self._calculate_expiry_date(RESET_TOKEN_DURATION),
