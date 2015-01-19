@@ -65,6 +65,9 @@ class UserRegistrationV3(controller.V3Controller):
         # support is needed use add_user_to_project(tenant_id, user_id) which
         # automatically uses de default role defined in keystone.conf
         default_role = self.registration_api.get_default_role()
+        self.assignment_api.create_grant(default_role['id'], 
+                                        user_id=user_ref['id'],
+                                        project_id=project_ref['id'])
 
 
         # Create an activation key 

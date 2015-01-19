@@ -47,7 +47,13 @@ extension.register_admin_extension(EXTENSION_DATA['alias'], EXTENSION_DATA)
 extension.register_public_extension(EXTENSION_DATA['alias'], EXTENSION_DATA)
 
 
-ACTIVATION_KEY_DURATION = 28800 # TODO(garcianavalon) extract as configuration option
+# TODO(garcianavalon) extract as configuration options in keystone.conf
+ACTIVATION_KEY_DURATION = 28800
+RESET_TOKEN_DURATION = 28800
+DEFAULT_ROLE_ID = '1g5603db1083441e8e63152afd49a1ac'
+DEFAULT_ROLE_NAME = 'default_member'
+
+@dependency.requires('assignment_api')
 @dependency.provider('registration_api')
 class Manager(manager.Manager):
     """Manager.
@@ -77,6 +83,24 @@ class Manager(manager.Manager):
         now = timeutils.utcnow()
         future = now + datetime.timedelta(seconds=duration_in_seconds)
         return timeutils.isotime(future, subsecond=True)
+
+    def get_default_role(self):
+        """ Obtains the default role to give the user in his default organization. If
+        the role doesn't exists creates a new one.
+        """
+        # NOTE(garcianavalon) mimick v2 Identity API behaviour where both
+        # name and id are defined in keystone.conf. But it doesn't look like the
+        # perfect solution, are there other better options to handle this?
+        try:
+            default_role = self.assignment_api.get_role(DEFAULT_ROLE_ID)
+        except exception.RoleNotFound:
+            LOG.info(("Creating the default role {0} because it does not \
+                        exist.").format(DEFAULT_ROLE_ID))
+            role = {'id': DEFAULT_ROLE_ID,
+                    'name': DEFAULT_ROLE_NAME}
+            default_role = self.assignment_api.create_role(DEFAULT_ROLE_ID, role)
+
+        return default_role
 
 @six.add_metaclass(abc.ABCMeta)
 class Driver(object):

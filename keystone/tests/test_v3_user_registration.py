@@ -39,6 +39,7 @@ class RegistrationBaseTests(test_v3.RestfulTestCase):
     PERFORM_RESET_URL = BASE_URL + '/{user_id}/reset_password/{token_id}'
 
     PROJECTS_URL = '/projects/{project_id}'
+    ROLES_URL = '/projects/{project_id}/users/{user_id}/roles'
 
     def setUp(self):
         super(RegistrationBaseTests, self).setUp()
@@ -69,11 +70,10 @@ class RegistrationUseCaseTests(RegistrationBaseTests):
                                         project_id=new_user['default_project_id']))
         return response.result['project']
 
-    def _get_role_assignments(self, user_id, project_id):
-        response = self.get('/role_assignments?user.id={user_id}\
-            &scope.project.id={project_id}'.format(user_id=user_id,
-                                                   project_id=project_id))
-        return response.result['role_assignments']
+    def _get_project_user_roles(self, user_id, project_id):
+        response = self.get(self.ROLES_URL.format(user_id=user_id,
+                                                project_id=project_id))
+        return response.result['roles']
 
     def test_registered_user(self):
         new_user_ref = self.new_user_ref(domain_id=self.domain_id)
@@ -105,13 +105,15 @@ class RegistrationUseCaseTests(RegistrationBaseTests):
 
         # Check the user belongs and has a role in his default project
         new_project = self._get_default_project(new_user)
-        role_assignments = self._get_role_assignments(new_user['id'], 
-                                                    new_project['id'])
-        self.assertIsNotNone(role_assignments)
-        self.assertEqual(1, len(role_assignments))
+        roles = self._get_project_user_roles(new_user['id'], 
+                                            new_project['id'])
+        self.assertIsNotNone(roles)
+        self.assertEqual(1, len(roles))
 
-        # TODO(garcianavalon) maybe check that it actually is the default role?
-
+        # check that it actually is the default role
+        role = roles[0]
+        self.assertEqual(core.DEFAULT_ROLE_ID, role['id'])
+        self.assertEqual(core.DEFAULT_ROLE_NAME, role['name'])
 
 class ActivationUseCaseTest(RegistrationBaseTests):
 
