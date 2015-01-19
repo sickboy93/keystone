@@ -62,9 +62,6 @@ class RegistrationBaseTests(test_v3.RestfulTestCase):
                                                     activation_key=activation_key))
         return response.result['user']
 
-
-class RegistrationUseCaseTests(RegistrationBaseTests):
-
     def _get_default_project(self, new_user):
         response = self.get(self.PROJECTS_URL.format(
                                         project_id=new_user['default_project_id']))
@@ -74,6 +71,10 @@ class RegistrationUseCaseTests(RegistrationBaseTests):
         response = self.get(self.ROLES_URL.format(user_id=user_id,
                                                 project_id=project_id))
         return response.result['roles']
+
+
+class RegistrationUseCaseTests(RegistrationBaseTests):
+
 
     def test_registered_user(self):
         new_user_ref = self.new_user_ref(domain_id=self.domain_id)
@@ -130,5 +131,16 @@ class ActivationUseCaseTest(RegistrationBaseTests):
         # Check id to be sure
         self.assertEqual(new_user['id'], active_user['id'])
 
+    def test_default_project_active(self):
+        new_user = self._register_new_user()
+        new_project = self._get_default_project(new_user)
+        active_user = self._activate_user(user_id=new_user['id'],
+                                activation_key=new_user['activation_key'])
+        active_project = self._get_default_project(new_user)
 
+        # Check the project is active
+        self.assertEqual(True, active_project['enabled'])
+
+        # Check id to be sure
+        self.assertEqual(new_project['id'], active_project['id'])
 
