@@ -22,22 +22,22 @@ from oslo.utils import timeutils
 
 class ActivationProfile(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'user_registration_activation_profile'
-    attributes = ['id', 'user_id', 'expires_at', 'used']              
+    attributes = ['id', 'user_id', 'expires_at', 'activation_key']              
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
     user_id = sql.Column(sql.String(64), nullable=False, index=True)
     project_id = sql.Column(sql.String(64), nullable=False, index=True)
     # TODO(garcianavalon) datetime type or similar?
     expires_at = sql.Column(sql.String(64), nullable=False)
-    used = sql.Column(sql.Boolean(), default=False, nullable=False)
+    activation_key = sql.Column(sql.String(64), nullable=False, index=True)
 
 class ResetProfile(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'user_registration_reset_profile'
-    attributes = ['id', 'user_id', 'expires_at', 'used']              
+    attributes = ['id', 'user_id', 'expires_at', 'reset_token']              
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
     user_id = sql.Column(sql.String(64), nullable=False, index=True)
     # TODO(garcianavalon) datetime type or similar?
     expires_at = sql.Column(sql.String(64), nullable=False)
-    used = sql.Column(sql.Boolean(), default=False, nullable=False)
+    reset_token = sql.Column(sql.String(64), nullable=False, index=True)
 
 class Registration(user_registration.Driver):
     """ CRUD driver for the SQL backend """
@@ -52,8 +52,10 @@ class Registration(user_registration.Driver):
     def get_reset_profile(self, user_id, reset_token):
         session = sql.get_session()
         with session.begin():
-            profile_ref = session.query(ResetProfile).get(reset_token)
-        return profile_ref.to_dict() if profile_ref.user_id == user_id else None
+            profile_ref = session.query(ResetProfile).filter_by(
+                                                reset_token=reset_token,
+                                                user_id=user_id).first()
+        return profile_ref.to_dict()
 
     def create_activation_profile(self, profile):
         session = sql.get_session()
@@ -65,5 +67,7 @@ class Registration(user_registration.Driver):
     def get_activation_profile(self, user_id, activation_key):
         session = sql.get_session()
         with session.begin():
-            profile_ref = session.query(ActivationProfile).get(activation_key)
-        return profile_ref.to_dict() if profile_ref.user_id == user_id else None
+            profile_ref = session.query(ActivationProfile).filter_by(
+                                                activation_key=activation_key,
+                                                user_id=user_id).first()
+        return profile_ref.to_dict()

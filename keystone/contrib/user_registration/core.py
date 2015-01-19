@@ -74,6 +74,7 @@ class Manager(manager.Manager):
             'user_id': user_id,
             'expires_at': self._calculate_expiry_date(RESET_TOKEN_DURATION),
             'id': uuid.uuid4().hex,
+            'reset_token': uuid.uuid4().hex,
         }
         return self.driver.create_reset_profile(profile_ref)
 
@@ -84,6 +85,7 @@ class Manager(manager.Manager):
             'project_id': user_ref['default_project_id'],
             'expires_at': self._calculate_expiry_date(ACTIVATION_KEY_DURATION),
             'id': uuid.uuid4().hex,
+            'activation_key': uuid.uuid4().hex,
         }
         return self.driver.create_activation_profile(profile_ref)
         

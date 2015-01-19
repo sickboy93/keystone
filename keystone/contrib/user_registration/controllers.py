@@ -72,7 +72,7 @@ class UserRegistrationV3(controller.V3Controller):
 
         # Create an activation key 
         activation_profile = self.registration_api.register_user(user_ref)
-        user_ref['activation_key'] = activation_profile['id']
+        user_ref['activation_key'] = activation_profile['activation_key']
         return UserRegistrationV3.wrap_member(context, user_ref)
 
     @controller.protected()
@@ -108,7 +108,7 @@ class UserRegistrationV3(controller.V3Controller):
         reset_profile = self.registration_api.request_password_reset(user_id)
         return {
             'reset_token': {
-                'id': reset_profile['id']
+                'id': reset_profile['reset_token']
             }
         }
 
