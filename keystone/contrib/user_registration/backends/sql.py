@@ -64,10 +64,18 @@ class Registration(user_registration.Driver):
             session.add(profile_ref)
         return profile_ref.to_dict()
 
-    def get_activation_profile(self, user_id, activation_key):
+    def get_activation_profile(self, user_id, activation_key=None):
         session = sql.get_session()
         with session.begin():
-            profile_ref = session.query(ActivationProfile).filter_by(
-                                                activation_key=activation_key,
-                                                user_id=user_id).first()
+            query = session.query(ActivationProfile).filter_by(user_id=user_id)
+            if activation_key:
+                query = query.filter_by(activation_key=activation_key)
+            profile_ref = query.first()
+        return profile_ref.to_dict()
+
+    def store_new_activation_key(self, profile_id, new_key):
+        session = sql.get_session()
+        with session.begin():
+            profile_ref = session.query(ActivationProfile).get(profile_id)
+            profile_ref.activation_key = new_key
         return profile_ref.to_dict()

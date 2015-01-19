@@ -112,6 +112,16 @@ class Manager(manager.Manager):
 
         return default_role
 
+    def new_activation_key(self, user_id):
+        # get the profile
+        profile_ref = self.driver.get_activation_profile(user_id)
+
+        # save and return
+        return self.driver.store_new_activation_key(profile_ref['id'], 
+                                                    uuid.uuid4().hex)
+
+
+
 @six.add_metaclass(abc.ABCMeta)
 class Driver(object):
     """Interface description for drivers"""
@@ -128,12 +138,25 @@ class Driver(object):
         raise exception.NotImplemented()
 
     @abc.abstractmethod
-    def get_activation_profile(self, user_id, activation_key):
+    def store_new_activation_key(self, profile_id, activation_key):
+        """Create an activation_profile for a newly registered user
+
+        :param profile_id: profile_id
+        :type profile_id: string
+        :param activation_key: a new key
+        :type activation_key: string
+        :returns: activation_profile
+
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def get_activation_profile(self, user_id, activation_key=None):
         """Get activation_profile details for a user, if the key is valid
         
         :param user_id: id of user that wants to activate
         :type user_id: string
-        param activation_key: provided in the registration process
+        :param activation_key: provided in the registration process
         :type activation_key: string
         :returns: activation_profile
 
@@ -157,21 +180,10 @@ class Driver(object):
         
         :param user_id: id of user that wants to activate
         :type user_id: string
-        param reset_token: provided in the registration process
+        :param reset_token: provided in the registration process
         :type reset_token: string
         :returns: reset_profile
 
         """
         raise exception.NotImplemented()
-
-    # @abc.abstractmethod
-    # def new_activation_key(self, user_id):
-    #     """Generates a new activation key for the user
-        
-    #     :param user_id: id of user
-    #     :type user_id: string
-    #     :returns: activation_profile
-
-    #     """
-    #     raise exception.NotImplemented()
         

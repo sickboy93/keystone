@@ -191,12 +191,12 @@ class ResetPasswordUseCaseTest(RegistrationBaseTests):
         # check user id, to be sure
         self.assertEqual(active_user['id'], reset_user['id'])
 
-# class ResendActivationKeyUseCase(RegistrationBaseTests):
+class ResendActivationKeyUseCase(RegistrationBaseTests):
 
-#     def test_resend_key(self):
-#         new_user = self._register_new_user()
-#         old_activation_key = new_user['activation_key']
-#         new_activation_key = self._request_new_activation_key(new_user)
+    def test_resend_key(self):
+        new_user = self._register_new_user()
+        old_activation_key = new_user['activation_key']
+        new_activation_key = self._request_new_activation_key(new_user)
 
-#         self.assertIsNotNone(new_activation_key)
-#         self.assertNotEqual(old_activation_key, new_activation_key)
+        self.assertIsNotNone(new_activation_key)
+        self.assertNotEqual(old_activation_key, new_activation_key)
