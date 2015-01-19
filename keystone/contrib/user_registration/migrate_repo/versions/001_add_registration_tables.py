@@ -27,7 +27,7 @@ def upgrade(migrate_engine):
         sql.Column('id', sql.String(64), primary_key=True, nullable=False),
         sql.Column('user_id', sql.String(64), nullable=False, index=True),
         sql.Column('project_id', sql.String(64), nullable=False, index=True),
-        sql.Column('expires_at', sql.String(64), nullable=False),
+        sql.Column('expires_at', sql.DateTime(), nullable=False),
         sql.Column('activation_key', sql.String(64), nullable=False, index=True))
     activation_table.create(migrate_engine, checkfirst=True)
 
@@ -36,7 +36,7 @@ def upgrade(migrate_engine):
         meta,
         sql.Column('id', sql.String(64), primary_key=True, nullable=False),
         sql.Column('user_id', sql.String(64), nullable=False, index=True),
-        sql.Column('expires_at', sql.String(64), nullable=False),
+        sql.Column('expires_at', sql.DateTime(), nullable=False),
         sql.Column('reset_token', sql.String(64), nullable=False, index=True))
     reset_table.create(migrate_engine, checkfirst=True)
 

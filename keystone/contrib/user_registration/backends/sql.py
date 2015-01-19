@@ -26,8 +26,7 @@ class ActivationProfile(sql.ModelBase, sql.ModelDictMixin):
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
     user_id = sql.Column(sql.String(64), nullable=False, index=True)
     project_id = sql.Column(sql.String(64), nullable=False, index=True)
-    # TODO(garcianavalon) datetime type or similar?
-    expires_at = sql.Column(sql.String(64), nullable=False)
+    expires_at = sql.Column(sql.DateTime(), nullable=False)
     activation_key = sql.Column(sql.String(64), nullable=False, index=True)
 
 class ResetProfile(sql.ModelBase, sql.ModelDictMixin):
@@ -35,8 +34,7 @@ class ResetProfile(sql.ModelBase, sql.ModelDictMixin):
     attributes = ['id', 'user_id', 'expires_at', 'reset_token']              
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
     user_id = sql.Column(sql.String(64), nullable=False, index=True)
-    # TODO(garcianavalon) datetime type or similar?
-    expires_at = sql.Column(sql.String(64), nullable=False)
+    expires_at = sql.Column(sql.DateTime(), nullable=False)
     reset_token = sql.Column(sql.String(64), nullable=False, index=True)
 
 class Registration(user_registration.Driver):

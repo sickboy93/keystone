@@ -90,9 +90,8 @@ class Manager(manager.Manager):
         return self.driver.create_activation_profile(profile_ref)
         
     def _calculate_expiry_date(self, duration_in_seconds):
-        now = timeutils.utcnow()
-        future = now + datetime.timedelta(seconds=duration_in_seconds)
-        return timeutils.isotime(future, subsecond=True)
+        expire_delta = datetime.timedelta(seconds=duration_in_seconds)
+        return timeutils.utcnow() + expire_delta
 
     def get_default_role(self):
         """ Obtains the default role to give the user in his default organization. If
@@ -120,6 +119,26 @@ class Manager(manager.Manager):
         return self.driver.store_new_activation_key(profile_ref['id'], 
                                                     uuid.uuid4().hex)
 
+    def _assert_expired(self, ref):
+        current_time = timeutils.normalize_time(timeutils.utcnow())
+        expires = ref['expires_at']
+        if current_time > timeutils.normalize_time(expires):
+            return None
+        return ref
+
+    def get_activation_profile(self, user_id, activation_key=None, 
+                                check_expired=True):
+        profile_ref = self.driver.get_activation_profile(user_id, activation_key)
+        if check_expired:
+            profile_ref = self._assert_expired(profile_ref)
+        return profile_ref
+
+    def get_reset_profile(self, user_id, reset_token, 
+                                check_expired=True):
+        profile_ref = self.driver.get_reset_profile(user_id, reset_token)
+        if check_expired:
+            profile_ref = self._assert_expired(profile_ref)
+        return profile_ref
 
 
 @six.add_metaclass(abc.ABCMeta)
