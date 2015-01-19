@@ -30,7 +30,7 @@ class ActivationProfile(sql.ModelBase, sql.ModelDictMixin):
     expires_at = sql.Column(sql.String(64), nullable=False)
     used = sql.Column(sql.Boolean(), default=False, nullable=False)
 
-class ResetProfile(sql.ModelBase, sql.DictBase):
+class ResetProfile(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'user_registration_reset_profile'
     attributes = ['id', 'user_id', 'expires_at', 'used']              
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
@@ -52,9 +52,8 @@ class Registration(user_registration.Driver):
     def get_reset_profile(self, user_id, reset_token):
         session = sql.get_session()
         with session.begin():
-            profile_ref = (session.query(ResetProfile).get(reset_token)
-                            .filter_by(user_id=user_id))
-        return profile_ref.to_dict()
+            profile_ref = session.query(ResetProfile).get(reset_token)
+        return profile_ref.to_dict() if profile_ref.user_id == user_id else None
 
     def create_activation_profile(self, profile):
         session = sql.get_session()

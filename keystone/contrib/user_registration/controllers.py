@@ -105,7 +105,7 @@ class UserRegistrationV3(controller.V3Controller):
         if not user_ref['enabled']:
             raise exception.Forbidden(message=_('The user is not activated.'))
         # create a new reset token
-        reset_profile = self.registration_api.create_reset_profile(user_id)
+        reset_profile = self.registration_api.request_password_reset(user_id)
         return {
             'reset_token': {
                 'id': reset_profile['id']
@@ -119,12 +119,12 @@ class UserRegistrationV3(controller.V3Controller):
         if not reset_profile:
             raise exception.Forbidden()
 
-        # update user password
+        # update only user password
         user_ref = {
             'password': user['password'],
         }
         user_ref = self.identity_api.update_user(user_id, user_ref)
-        return wsgi.render_response(status=('200', 'OK'))
+        return UserRegistrationV3.wrap_member(context, user_ref)
 
     def get_activation_key(self, context, user_id):
         # check if the user is enabled

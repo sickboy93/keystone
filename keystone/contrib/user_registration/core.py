@@ -68,6 +68,14 @@ class Manager(manager.Manager):
             'keystone.contrib.user_registration.backends.sql.Registration')
         # TODO(garcianavalon) set as configuration option in keystone.conf
 
+    def request_password_reset(self, user_id):
+        """ Prepares a reset profile for the user."""
+        profile_ref = {
+            'user_id': user_id,
+            'expires_at': self._calculate_expiry_date(RESET_TOKEN_DURATION),
+            'id': uuid.uuid4().hex,
+        }
+        return self.driver.create_reset_profile(profile_ref)
 
     def register_user(self, user_ref):
         """ Translates the user_ref to an activation profile."""

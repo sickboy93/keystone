@@ -72,6 +72,16 @@ class RegistrationBaseTests(test_v3.RestfulTestCase):
                                                 project_id=project_id))
         return response.result['roles']
 
+    def _request_password_reset(self, user):
+        response = self.get(self.REQUEST_RESET_URL.format(user_id=user['id']))
+
+        return response.result['reset_token']
+
+    def _reset_password(self, user, token, new_password):
+        response = self.patch(self.PERFORM_RESET_URL.format(user_id=user['id'],
+                                                    token_id=token['id']),
+                        body={'user': {'password':new_password}})
+        return response.result['user']
 
 class RegistrationUseCaseTests(RegistrationBaseTests):
 
@@ -143,4 +153,34 @@ class ActivationUseCaseTest(RegistrationBaseTests):
 
         # Check id to be sure
         self.assertEqual(new_project['id'], active_project['id'])
+
+
+class ResetPasswordUseCaseTest(RegistrationBaseTests):
+
+    def test_get_reset_token(self):
+        new_user = self._register_new_user()
+        active_user = self._activate_user(user_id=new_user['id'],
+                                activation_key=new_user['activation_key'])
+        token = self._request_password_reset(active_user)
+
+        # check we have the token
+        self.assertIsNotNone(token['id'])
+
+    def test_reset_password(self):
+        new_user = self._register_new_user()
+        active_user = self._activate_user(user_id=new_user['id'],
+                                activation_key=new_user['activation_key'])
+        token = self._request_password_reset(active_user)
+
+        new_password = 'new_password'
+        reset_user = self._reset_password(active_user, token, new_password)
+
+        # check the new password is correct
+        auth_data = self.build_authentication_request(username=reset_user['name'],
+                                            user_domain_id=reset_user['domain_id'],
+                                            password=new_password)
+        self.post('/auth/tokens', body=auth_data)
+
+        # check user id, to be sure
+        self.assertEqual(active_user['id'], reset_user['id'])
 
