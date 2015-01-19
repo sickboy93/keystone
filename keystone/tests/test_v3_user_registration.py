@@ -115,6 +115,7 @@ class RegistrationUseCaseTests(RegistrationBaseTests):
         self.assertEqual(core.DEFAULT_ROLE_ID, role['id'])
         self.assertEqual(core.DEFAULT_ROLE_NAME, role['name'])
 
+
 class ActivationUseCaseTest(RegistrationBaseTests):
 
 
@@ -124,8 +125,10 @@ class ActivationUseCaseTest(RegistrationBaseTests):
                                 activation_key=new_user['activation_key'])
 
         # Check the user is active
+        self.assertEqual(True, active_user['enabled'])
 
-        # Check no other user attributes have been changed
+        # Check id to be sure
+        self.assertEqual(new_user['id'], active_user['id'])
 
 
 
