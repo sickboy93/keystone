@@ -126,16 +126,16 @@ class UserRegistrationV3(controller.V3Controller):
         user_ref = self.identity_api.update_user(user_id, user_ref)
         return UserRegistrationV3.wrap_member(context, user_ref)
 
-    def get_activation_key(self, context, user_id):
+    def new_activation_key(self, context, user_id):
         # check if the user is enabled
         user_ref = self.identity_api.get_user(user_id)
         if user_ref['enabled']:
             raise exception.ValidationError(
                     message=_('The user is already activated.'))
         # create a new activation key
-        activation_key = self.registration_api.new_activation_key(user_id)
+        activation_profile = self.registration_api.new_activation_key(user_id)
         return {
             'activation_key': {
-                'id': activation_key
+                'id': activation_profile['activation_key']
             }
         }

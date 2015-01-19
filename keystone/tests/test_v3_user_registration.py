@@ -57,10 +57,12 @@ class RegistrationBaseTests(test_v3.RestfulTestCase):
         response = self.post(self.REGISTER_URL, body={'user': user_ref})
         return response.result['user']
         
-    def _activate_user(self, user_id, activation_key):
+    def _activate_user(self, user_id, activation_key, expected_status=200):
         response = self.patch(self.PERFORM_ACTIVATION_URL.format(user_id=user_id,
-                                                    activation_key=activation_key))
-        return response.result['user']
+                                                    activation_key=activation_key),
+                                expected_status=expected_status)
+        if expected_status == 200:
+            return response.result['user']
 
     def _get_default_project(self, new_user):
         response = self.get(self.PROJECTS_URL.format(
@@ -199,4 +201,24 @@ class ResendActivationKeyUseCase(RegistrationBaseTests):
         new_activation_key = self._request_new_activation_key(new_user)
 
         self.assertIsNotNone(new_activation_key)
-        self.assertNotEqual(old_activation_key, new_activation_key)
+        self.assertNotEqual(old_activation_key, new_activation_key['id'])
+
+    def test_activate_with_new_key(self):
+        new_user = self._register_new_user()
+        new_activation_key = self._request_new_activation_key(new_user)
+        active_user = self._activate_user(user_id=new_user['id'],
+                                activation_key=new_activation_key['id'])
+        # Check the user is active
+        self.assertEqual(True, active_user['enabled'])
+
+        # Check id to be sure
+        self.assertEqual(new_user['id'], active_user['id'])
+
+    def test_activate_with_old_key(self):
+        new_user = self._register_new_user()
+        old_activation_key = new_user['activation_key']
+        new_activation_key = self._request_new_activation_key(new_user)
+
+        active_user = self._activate_user(user_id=new_user['id'],
+                                activation_key=old_activation_key,
+                                expected_status=404)

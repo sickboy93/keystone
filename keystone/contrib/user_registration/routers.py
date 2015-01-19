@@ -53,7 +53,7 @@ class Registration(wsgi.V3ExtensionRouter):
         self._add_resource(
             mapper, user_controller,
             path=self.PATH_PREFIX + '/users/{user_id}/activate',
-            get_action='get_activation_key',
+            get_action='new_activation_key',
             rel=build_resource_relation(resource_name='activation_key'),
             path_vars={
                 'user_id':

@@ -71,6 +71,9 @@ class Registration(user_registration.Driver):
             if activation_key:
                 query = query.filter_by(activation_key=activation_key)
             profile_ref = query.first()
+
+        if profile_ref is None:
+            raise exception.NotFound(_('No Profile found for user: %s' %user_id))
         return profile_ref.to_dict()
 
     def store_new_activation_key(self, profile_id, new_key):
