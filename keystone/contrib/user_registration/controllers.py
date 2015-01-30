@@ -24,7 +24,6 @@ LOG = log.getLogger(__name__)
 
 @dependency.requires('registration_api', 'identity_api', 'assignment_api') 
 class UserRegistrationV3(controller.V3Controller):
-    
     collection_name = 'users'
     member_name = 'user'
 
@@ -36,7 +35,7 @@ class UserRegistrationV3(controller.V3Controller):
 
     @controller.protected()
     def register_user(self, context, user):
-        # TODO(garcianavalon) this method is to long, refactor it into smaller ones
+        # TODO(garcianavalon) this method is too long, refactor it into smaller ones
         # Create a new user
         self._require_attribute(user, 'name')
         # The manager layer will generate the unique ID for users
@@ -66,11 +65,11 @@ class UserRegistrationV3(controller.V3Controller):
         # automatically uses de default role defined in keystone.conf
         default_role = self.registration_api.get_default_role()
         self.assignment_api.create_grant(default_role['id'], 
-                                        user_id=user_ref['id'],
-                                        project_id=project_ref['id'])
+                                         user_id=user_ref['id'],
+                                         project_id=project_ref['id'])
 
 
-        # Create an activation key 
+        # Create an activation key
         activation_profile = self.registration_api.register_user(user_ref)
         user_ref['activation_key'] = activation_profile['activation_key']
         return UserRegistrationV3.wrap_member(context, user_ref)
@@ -79,7 +78,7 @@ class UserRegistrationV3(controller.V3Controller):
     def activate_user(self, context, user_id, activation_key):
         # Check the activation key is valid
         activation_profile = self.registration_api.get_activation_profile(user_id,
-                                                                    activation_key)
+                                                                          activation_key)
         if not activation_profile:
             raise exception.Forbidden()
 
@@ -88,8 +87,8 @@ class UserRegistrationV3(controller.V3Controller):
             'enabled': True,
         }
         project_ref = self.assignment_api.update_project(
-                                        activation_profile['project_id'], 
-                                        project_ref)
+            activation_profile['project_id'],
+            project_ref)
 
         user_ref = {
             'enabled': True,
@@ -132,7 +131,7 @@ class UserRegistrationV3(controller.V3Controller):
         user_ref = self.identity_api.get_user(user_id)
         if user_ref['enabled']:
             raise exception.ValidationError(
-                    message=_('The user is already activated.'))
+                message=_('The user is already activated.'))
         # create a new activation key
         activation_profile = self.registration_api.new_activation_key(user_id)
         return {
