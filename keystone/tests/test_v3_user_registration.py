@@ -132,7 +132,8 @@ class RegistrationUseCaseTests(RegistrationBaseTests):
 
         # check that it actually is the default role
         role = roles[0]
-        self.assertEqual(core.DEFAULT_ROLE_ID, role['id'])
+        if core.DEFAULT_ROLE_ID:
+            self.assertEqual(core.DEFAULT_ROLE_ID, role['id'])
         self.assertEqual(core.DEFAULT_ROLE_NAME, role['name'])
 
 

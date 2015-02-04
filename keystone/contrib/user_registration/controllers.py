@@ -50,6 +50,7 @@ class UserRegistrationV3(controller.V3Controller):
             'name':user_ref['name'],
             'domain_id':user_ref['domain_id'],
             'enabled': False,
+            'is_default': True,
         }
         project_ref = self._assign_unique_id(self._normalize_dict(project))
         project_ref = self._normalize_domain_id(context, project_ref)

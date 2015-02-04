@@ -50,8 +50,8 @@ extension.register_public_extension(EXTENSION_DATA['alias'], EXTENSION_DATA)
 # TODO(garcianavalon) extract as configuration options in keystone.conf
 ACTIVATION_KEY_DURATION = 28800
 RESET_TOKEN_DURATION = 28800
-DEFAULT_ROLE_ID = '1g5603db1083441e8e63152afd49a1ac'
-DEFAULT_ROLE_NAME = 'default_member'
+DEFAULT_ROLE_ID = ''
+DEFAULT_ROLE_NAME = 'admin'
 
 @dependency.requires('assignment_api')
 @dependency.provider('registration_api')
@@ -100,14 +100,19 @@ class Manager(manager.Manager):
         # NOTE(garcianavalon) mimick v2 Identity API behaviour where both
         # name and id are defined in keystone.conf. But it doesn't look like the
         # perfect solution, are there other better options to handle this?
-        try:
-            default_role = self.assignment_api.get_role(DEFAULT_ROLE_ID)
-        except exception.RoleNotFound:
-            LOG.info(("Creating the default role {0} because it does not \
-                        exist.").format(DEFAULT_ROLE_ID))
-            role = {'id': DEFAULT_ROLE_ID,
-                    'name': DEFAULT_ROLE_NAME}
-            default_role = self.assignment_api.create_role(DEFAULT_ROLE_ID, role)
+        if not DEFAULT_ROLE_ID:
+            default_role = next(role 
+                        for role in self.assignment_api.list_roles()
+                        if role['name'] == DEFAULT_ROLE_NAME)
+        else:
+            try:
+                default_role = self.assignment_api.get_role(DEFAULT_ROLE_ID)
+            except exception.RoleNotFound:
+                LOG.info(("Creating the default role {0} because it does not \
+                            exist.").format(DEFAULT_ROLE_ID))
+                role = {'id': DEFAULT_ROLE_ID,
+                        'name': DEFAULT_ROLE_NAME}
+                default_role = self.assignment_api.create_role(DEFAULT_ROLE_ID, role)
 
         return default_role
 
