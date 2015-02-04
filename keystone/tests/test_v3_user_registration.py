@@ -31,12 +31,12 @@ class RegistrationBaseTests(test_v3.RestfulTestCase):
     EXTENSION_NAME = 'user_registration'
     EXTENSION_TO_ADD = 'user_registration_extension'
 
-    BASE_URL = '/OS-REGISTRATION/users'
-    REGISTER_URL = BASE_URL
-    REQUEST_NEW_ACTIVATION_KEY_URL = BASE_URL + '/{user_id}/activate'
-    PERFORM_ACTIVATION_URL = BASE_URL + '/{user_id}/activate/{activation_key}'
-    REQUEST_RESET_URL = BASE_URL + '/{user_id}/reset_password'
-    PERFORM_RESET_URL = BASE_URL + '/{user_id}/reset_password/{token_id}'
+    BASE_URL = '/OS-REGISTRATION'
+    REGISTER_URL = BASE_URL + '/users'
+    REQUEST_NEW_ACTIVATION_KEY_URL = BASE_URL + '/users/{user_id}/activate'
+    PERFORM_ACTIVATION_URL = BASE_URL + '/activate/{activation_key}/users/{user_id}'
+    REQUEST_RESET_URL = BASE_URL + '/users/{user_id}/reset_password'
+    PERFORM_RESET_URL = BASE_URL + '/reset_password/{token_id}/users/{user_id}'
 
     PROJECTS_URL = '/projects/{project_id}'
     ROLES_URL = '/projects/{project_id}/users/{user_id}/roles'
