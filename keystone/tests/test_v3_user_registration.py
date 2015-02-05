@@ -79,10 +79,13 @@ class RegistrationBaseTests(test_v3.RestfulTestCase):
 
         return response.result['reset_token']
 
-    def _reset_password(self, user, token, new_password):
+    def _reset_password(self, user, token, new_password, expected_status=200):
         response = self.patch(self.PERFORM_RESET_URL.format(user_id=user['id'],
                                                     token_id=token['id']),
-                        body={'user': {'password':new_password}})
+                        body={'user': {'password':new_password}},
+                        expected_status=expected_status)
+        if expected_status != 200:
+            return response.result
         return response.result['user']
 
     def _request_new_activation_key(self, user):
@@ -224,6 +227,18 @@ class ResetPasswordUseCaseTest(RegistrationBaseTests):
 
         # check user id, to be sure
         self.assertEqual(active_user['id'], reset_user['id'])
+
+    def test_bad_token(self):
+        new_user = self._register_new_user()
+        active_user = self._activate_user(user_id=new_user['id'],
+                                activation_key=new_user['activation_key'])
+        correct_token = self._request_password_reset(active_user)
+        bad_token = {
+            'id': uuid.uuid4().hex,
+        }
+        new_password = 'new_password'
+        reset_user = self._reset_password(active_user, bad_token, new_password,
+                                        expected_status=404)
 
 class ResendActivationKeyUseCase(RegistrationBaseTests):
 

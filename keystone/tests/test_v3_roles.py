@@ -384,65 +384,58 @@ class RoleCrudTests(RolesBaseTests):
                                         user_id=user['id'],
                                         organization_id=organization['id'])
 
-    def test_list_roles_allowed_to_assign(self):
+    def test_list_roles_allowed_to_assign_all(self):
         user, organization = self._create_user()
-        applications = [
-            (uuid.uuid4().hex, core.ASSIGN_ALL_ROLES_PERMISSION),
-            (uuid.uuid4().hex, core.ASSIGN_OWNED_ROLES_PERMISSION),
-        ]
+        permission = core.ASSIGN_ALL_ROLES_PERMISSION
         expected_roles = self._create_internal_roles(user, 
                                                 organization, 
-                                                applications)
+                                                permission)
 
         response = self._list_roles_allowed_to_assign(user_id=user['id'],
                                           organization_id=organization['id'])
         # check the correct roles are returned
         allowed_roles = json.loads(response.body)['allowed_roles']
-        for (app, permission_name) in applications:
-            current = [r['id'] for r in allowed_roles[app]]
-            if permission_name == core.ASSIGN_ALL_ROLES_PERMISSION:
-                expected = expected_roles[app].keys()
-            elif permission_name == core.ASSIGN_OWNED_ROLES_PERMISSION:
-                # only the one granted to the user
-                # TODO(garcianavalon) rewrite this
-                expected = [r_id for r_id in expected_roles[app]
-                                        if expected_roles[app][r_id]]   
-            self.assertItemsEqual(current, expected)
+        current = [r['id'] for r in allowed_roles]
+        expected = expected_roles.keys()
+        # elif permission_name == core.ASSIGN_OWNED_ROLES_PERMISSION:
+        #     # only the one granted to the user
+        #     # TODO(garcianavalon) rewrite this
+        #     expected = [r_id for r_id in expected_roles[app]
+        #                             if expected_roles[app][r_id]]   
+        self.assertItemsEqual(current, expected)
 
-    def _create_internal_roles(self, user, organization, applications):
+    def _create_internal_roles(self, user, organization, permission):
         expected_roles = {}
-        for (app, permission_name) in applications:
-            expected_roles[app] = {}
-            permissions = []
+        permissions = []
+        app_id = uuid.uuid4().hex
+        # create the internal permissions
+        perm_ref = self.new_fiware_permission_ref(
+                                permission, 
+                                application=app_id, 
+                                is_internal=True)
+        permissions.append(self._create_permission(perm_ref))
 
-            # create the internal permissions
-            perm_ref = self.new_fiware_permission_ref(
-                                    permission_name, 
-                                    application=app, 
-                                    is_internal=True)
-            permissions.append(self._create_permission(perm_ref))
+        # create the internal role
+        role_ref = self.new_fiware_permission_ref(
+                                uuid.uuid4().hex, 
+                                application=app_id, 
+                                is_internal=True)
+        role = self._create_role(role_ref)
 
-            # create the internal role
-            role_ref = self.new_fiware_permission_ref(
-                                    uuid.uuid4().hex, 
-                                    application=app, 
-                                    is_internal=True)
-            role = self._create_role(role_ref)
+        # assign the permissions to the role
+        for permission in permissions:
+            self._add_permission_to_role(role['id'], permission['id'])
+        expected_roles[role['id']] = permissions
+        # grant the role to the user
+        self._add_role_to_user(role['id'], user['id'], organization['id'])
 
-            # assign the permissions to the role
-            for permission in permissions:
-                self._add_permission_to_role(role['id'], permission['id'])
-            expected_roles[app][role['id']] = permissions
-            # grant the role to the user
-            self._add_role_to_user(role['id'], user['id'], organization['id'])
-
-            # now create another role in the app to test all vs owned
-            another_role_ref = self.new_fiware_permission_ref(
-                                    uuid.uuid4().hex, 
-                                    application=app, 
-                                    is_internal=False)
-            another_role = self._create_role(another_role_ref)
-            expected_roles[app][another_role['id']] = []
+        # now create another role in the app to test all vs owned
+        another_role_ref = self.new_fiware_permission_ref(
+                                uuid.uuid4().hex, 
+                                application=app_id, 
+                                is_internal=False)
+        another_role = self._create_role(another_role_ref)
+        expected_roles[another_role['id']] = []
         return expected_roles            
                 
 

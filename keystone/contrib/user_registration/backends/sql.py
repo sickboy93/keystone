@@ -53,6 +53,8 @@ class Registration(user_registration.Driver):
             profile_ref = session.query(ResetProfile).filter_by(
                                                 reset_token=reset_token,
                                                 user_id=user_id).first()
+        if profile_ref is None:
+            raise exception.NotFound(_('No Profile found for user: %s' %user_id))
         return profile_ref.to_dict()
 
     def create_activation_profile(self, profile):

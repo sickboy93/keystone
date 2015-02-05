@@ -80,8 +80,6 @@ class UserRegistrationV3(controller.V3Controller):
         # Check the activation key is valid
         activation_profile = self.registration_api.get_activation_profile(user_id,
                                                                           activation_key)
-        if not activation_profile:
-            raise exception.Forbidden()
 
         # Enable the user and the project
         project_ref = {
@@ -117,8 +115,6 @@ class UserRegistrationV3(controller.V3Controller):
         # check if the token is valid
         reset_profile = self.registration_api.get_reset_profile(user_id,
                                                                 token_id)
-        if not reset_profile:
-            raise exception.Forbidden()
 
         # update only user password
         user_ref = {

@@ -128,7 +128,7 @@ class Manager(manager.Manager):
         current_time = timeutils.normalize_time(timeutils.utcnow())
         expires = ref['expires_at']
         if current_time > timeutils.normalize_time(expires):
-            return None
+            raise exception.Forbidden()
         return ref
 
     def get_activation_profile(self, user_id, activation_key=None, 
@@ -143,6 +143,7 @@ class Manager(manager.Manager):
         profile_ref = self.driver.get_reset_profile(user_id, reset_token)
         if check_expired:
             profile_ref = self._assert_expired(profile_ref)
+
         return profile_ref
 
 
