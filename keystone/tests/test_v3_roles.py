@@ -387,27 +387,31 @@ class RoleCrudTests(RolesBaseTests):
     def test_list_roles_allowed_to_assign_all(self):
         user, organization = self._create_user()
         permission = core.ASSIGN_ALL_ROLES_PERMISSION
+        app_id = uuid.uuid4().hex
         expected_roles = self._create_internal_roles(user, 
                                                 organization, 
-                                                permission)
+                                                permission,
+                                                app_id)
 
         response = self._list_roles_allowed_to_assign(user_id=user['id'],
                                           organization_id=organization['id'])
         # check the correct roles are returned
         allowed_roles = json.loads(response.body)['allowed_roles']
-        current = [r['id'] for r in allowed_roles]
-        expected = expected_roles.keys()
-        # elif permission_name == core.ASSIGN_OWNED_ROLES_PERMISSION:
-        #     # only the one granted to the user
-        #     # TODO(garcianavalon) rewrite this
-        #     expected = [r_id for r_id in expected_roles[app]
-        #                             if expected_roles[app][r_id]]   
-        self.assertItemsEqual(current, expected)
+        for app in allowed_roles:
+            self.assertEqual(app_id, app)
+            current = [r['id'] for r in allowed_roles[app]]
+            expected = expected_roles.keys()
+            # elif permission_name == core.ASSIGN_OWNED_ROLES_PERMISSION:
+            #     # only the one granted to the user
+            #     # TODO(garcianavalon) rewrite this
+            #     expected = [r_id for r_id in expected_roles[app]
+            #                             if expected_roles[app][r_id]]   
+            self.assertItemsEqual(current, expected)
 
-    def _create_internal_roles(self, user, organization, permission):
+    def _create_internal_roles(self, user, organization, permission, app_id):
         expected_roles = {}
         permissions = []
-        app_id = uuid.uuid4().hex
+        
         # create the internal permissions
         perm_ref = self.new_fiware_permission_ref(
                                 permission, 
