@@ -28,13 +28,25 @@ build_parameter_relation = functools.partial(
     extension_name='OS-ROLES', extension_version='1.0')
 
 class RolesExtension(wsgi.V3ExtensionRouter):
+    """The API looks like:
 
+    # ROLES
+    GET /OS-ROLES/roles list all roles
+    POST /OS-ROLES/roles create a role
+    
+    GET /OS-ROLES/roles/{role_id} get role
+    PATCH /OS-ROLES/roles/{role_id} 
+    DELETE /OS-ROLES/roles/{role_id}
+
+
+    """
     PATH_PREFIX = '/OS-ROLES'
 
     def add_routes(self, mapper):
         roles_controller = controllers.RoleCrudV3()
         permissions_controller = controllers.PermissionCrudV3()
         fiware_api_controller = controllers.FiwareApiControllerV3()
+        assignment_controller = controllers.RoleAssignmentV3()
         
         # ROLES
         self._add_resource(
@@ -57,14 +69,10 @@ class RolesExtension(wsgi.V3ExtensionRouter):
             })
 
         self._add_resource(
-            mapper, roles_controller,
-            path=self.PATH_PREFIX + '/users/{user_id}/organizations/{organization_id}/roles',
-            get_action='list_roles_for_user',
-            rel=build_resource_relation(resource_name='roles'),
-            path_vars={
-                'user_id':build_parameter_relation(parameter_name='user_id'),
-                'organization_id':build_parameter_relation(parameter_name='organization_id'),
-            })
+            mapper, assignment_controller,
+            path=self.PATH_PREFIX + '/role_assignments',
+            get_action='list_role_assignments',
+            rel=build_resource_relation(resource_name='role_assignments'))
 
         self._add_resource(
             mapper, roles_controller,
@@ -77,15 +85,18 @@ class RolesExtension(wsgi.V3ExtensionRouter):
             })
 
         self._add_resource(
-            mapper, roles_controller,
-            path=self.PATH_PREFIX + '/users/{user_id}/organizations/{organization_id}/roles/{role_id}',
+            mapper, assignment_controller,
+            path=self.PATH_PREFIX + '/users/{user_id}/organizations/{organization_id}/applications/{application_id}/roles/{role_id}',
             put_action='add_role_to_user',
             delete_action='remove_role_from_user',
             rel=build_resource_relation(resource_name='role_user'),
             path_vars={
                 'role_id':build_parameter_relation(parameter_name='role_id'),
                 'user_id':build_parameter_relation(parameter_name='user_id'),
-                'organization_id':build_parameter_relation(parameter_name='organization_id'),
+                'organization_id':
+                    build_parameter_relation(parameter_name='organization_id'),
+                'application_id':
+                    build_parameter_relation(parameter_name='application_id'),
             })
 
         # PERMISSIONS

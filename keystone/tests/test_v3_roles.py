@@ -16,6 +16,8 @@ import json
 import six
 import uuid
 
+from urllib import urlencode
+
 from keystone import config
 from keystone.common import dependency
 from keystone.contrib.roles import core
@@ -31,6 +33,8 @@ class RolesBaseTests(test_v3.RestfulTestCase):
     ROLES_URL = '/OS-ROLES/roles'
     PERMISSIONS_URL = '/OS-ROLES/permissions'
     USERS_URL = '/OS-ROLES/users'
+    ASSIGNMENTS_URL = '/OS-ROLES/role_assignments'
+    USER_ROLES_URL = '/OS-ROLES/users/{user_id}/organizations/{organization_id}/applications/{application_id}/roles/{role_id}'
 
 
     def setUp(self):
@@ -121,24 +125,26 @@ class RolesBaseTests(test_v3.RestfulTestCase):
             user_id, project_id, keystone_role_id)
 
     def _add_role_to_user(self, role_id, user_id, 
-                        organization_id, expected_status=204):
-        ulr_args = {
+                          organization_id, application_id, 
+                          expected_status=204):
+        url_args = {
             'role_id': role_id,
             'user_id': user_id,
             'organization_id': organization_id,
+            'application_id': application_id,
         }
-        url = self.USERS_URL + '/%(user_id)s/organizations/%(organization_id)s/roles/%(role_id)s' \
-                                %ulr_args
+        url = self.USER_ROLES_URL.format(**url_args)
         return self.put(url, expected_status=expected_status)
 
     def _add_multiple_roles_to_user(self, number_of_roles, user_id, 
-                        organization_id):
+                                    organization_id, application_id):
         user_roles = []
         for i in range(number_of_roles):
             user_roles.append(self._create_role())
             self._add_role_to_user(role_id=user_roles[i]['id'], 
-                                    user_id=user_id,
-                                    organization_id=organization_id)
+                                   user_id=user_id,
+                                   organization_id=organization_id,
+                                   application_id=application_id)
 
         return user_roles
 
@@ -170,24 +176,24 @@ class RolesBaseTests(test_v3.RestfulTestCase):
         return self.delete(url, expected_status=expected_status)
 
     def _remove_role_from_user(self, role_id, user_id, 
-                            organization_id, expected_status=204):
-        ulr_args = {
-            'role_id':role_id,
-            'user_id':user_id,
+                               organization_id, application_id,
+                               expected_status=204):
+        url_args = {
+            'role_id': role_id,
+            'user_id': user_id,
             'organization_id': organization_id,
+            'application_id': application_id,
         }
-        url = self.USERS_URL + '/%(user_id)s/organizations/%(organization_id)s/roles/%(role_id)s' \
-                                %ulr_args
+        url = self.USER_ROLES_URL.format(**url_args)
         return self.delete(url, expected_status=expected_status)
 
-    def _list_roles_for_user(self, user_id, organization_id, expected_status=200):
-        ulr_args = {
-            'user_id': user_id,
-            'organization_id': organization_id
-        }   
-        url = self.USERS_URL + '/%(user_id)s/organizations/%(organization_id)s/roles/' \
-                                %ulr_args
-        return self.get(url, expected_status=expected_status)
+    def _list_role_assignments(self, filters=None, expected_status=200):
+        url = self.ASSIGNMENTS_URL
+        if filters:
+            query_string = urlencode(filters)
+            url += query_string
+        response = self.get(url, expected_status=expected_status)
+        return response.result['role_assignments']
 
     def _list_roles_allowed_to_assign(self, user_id, organization_id, 
                                                     expected_status=200):
@@ -213,16 +219,6 @@ class RolesBaseTests(test_v3.RestfulTestCase):
         if hasattr(reference_permission, 'is_internal'):
             self.assertEqual(reference_permission['is_internal'], test_permission['is_internal'])
 
-    def _assert_list(self, entities, entity_type, reference_list):
-        """ Utility method to check lists."""
-        self.assertIsNotNone(entities)
-        self.assertEqual(len(reference_list), len(entities))
-        for entity in entities:
-            reference_entity = [item for item in reference_list if item['id'] == entity['id']]
-            self.assertEqual(len(reference_entity), 1)
-            # FIXME(garcianavalon) not ready yet! dont use this method!
-            entity_assert_method = getattr(RolesBaseTests, 'assert_%s' %entity_type)
-            entity_assert_method(entity, reference_entity)
 
 class RoleCrudTests(RolesBaseTests):
 
@@ -295,94 +291,132 @@ class RoleCrudTests(RolesBaseTests):
         role_id = role['id']
         response = self._delete_role(role_id)
 
-        
-    def test_list_roles_for_user(self):
-        user, organization = self._create_user()
+
+class RoleAssignmentTests(RolesBaseTests):
+
+    def test_list_role_assignments_no_filters(self):
+        number_of_users = 2
         number_of_roles = 2
-        user_roles = self._add_multiple_roles_to_user(number_of_roles, 
-                                                user['id'], organization['id'])
+        references = []
+        for i in range(number_of_users):
+            application_id = uuid.uuid4().hex
+            user, organization = self._create_user()
+            
+            user_roles = self._add_multiple_roles_to_user(number_of_roles, 
+                         user['id'], organization['id'], application_id)
+            references.append((user, organization, application_id, user_roles))
 
-        response = self._list_roles_for_user(user_id=user['id'],
-                                          organization_id=organization['id'])
-        entities = response.result['roles']
+        assignments = self._list_role_assignments()
 
-        #self._assert_list(entities, 'role', user_roles)
-        self.assertIsNotNone(entities)
-        self.assertEqual(len(user_roles), len(entities))
-        for role in entities:
-            reference_role = [r for r in user_roles if r['id'] == role['id']]
-            self.assertEqual(len(reference_role), 1)
-            self._assert_role(role, reference_role[0])
-            self.assertIsNotNone(role['organization_id'])
-            self.assertEqual(organization['id'], role['organization_id'])
+        for (user, organization, application_id, user_roles) in references:
+            current_assignments = [a['role_id'] for a in assignments 
+                                     if a['user_id'] == user['id']
+                                     and a['organization_id'] == organization['id']
+                                     and a['application_id'] == application_id]
+            current_roles = [r['id'] for r in user_roles]                         
+            self.assertEqual(current_roles, current_assignments)
+
 
     def test_add_role_to_user(self):
-        role = self._create_role()
+        application = uuid.uuid4().hex
+        role_ref = self.new_fiware_role_ref(uuid.uuid4().hex,
+                                            application=application)
+        role = self._create_role(role_ref)
         user, organization = self._create_user()
         response = self._add_role_to_user(role_id=role['id'],
-                                        user_id=user['id'],
-                                        organization_id=organization['id'])
+                                          user_id=user['id'],
+                                          organization_id=organization['id'],
+                                          application_id=application)
 
     def test_add_non_existent_role_to_user(self):
+        application = uuid.uuid4().hex
         user, organization = self._create_user()
         response = self._add_role_to_user(role_id=uuid.uuid4().hex,
                                         user_id=user['id'],
                                         organization_id=organization['id'],
+                                        application_id=application,
                                         expected_status=404)
 
     def test_add_role_to_non_existent_user(self):
-        role = self._create_role()
+        application = uuid.uuid4().hex
+        role_ref = self.new_fiware_role_ref(uuid.uuid4().hex,
+                                            application=application)
+        role = self._create_role(role_ref)
         response = self._add_role_to_user(role_id=role['id'],
                                         user_id=uuid.uuid4().hex,
                                         organization_id=uuid.uuid4().hex,
+                                        application_id=application,
                                         expected_status=404)
 
     def test_add_role_to_user_repeated(self):
-        role = self._create_role()
+        application = uuid.uuid4().hex
+        role_ref = self.new_fiware_role_ref(uuid.uuid4().hex,
+                                            application=application)
+        role = self._create_role(role_ref)
         user, organization = self._create_user()
         response = self._add_role_to_user(role_id=role['id'],
                                         user_id=user['id'],
-                                        organization_id=organization['id'])
+                                        organization_id=organization['id'],
+                                        application_id=application)
         response = self._add_role_to_user(role_id=role['id'],
                                         user_id=user['id'],
-                                        organization_id=organization['id'])
+                                        organization_id=organization['id'],
+                                        application_id=application)
 
     def test_remove_role_from_user(self):
-        role = self._create_role()
+        application = uuid.uuid4().hex
+        role_ref = self.new_fiware_role_ref(uuid.uuid4().hex,
+                                            application=application)
+        role = self._create_role(role_ref)
         user, organization = self._create_user()
         response = self._add_role_to_user(role_id=role['id'],
                                         user_id=user['id'],
-                                        organization_id=organization['id'])
+                                        organization_id=organization['id'],
+                                        application_id=application)
         response = self._remove_role_from_user(role_id=role['id'],
                                         user_id=user['id'],
-                                        organization_id=organization['id'])
+                                        organization_id=organization['id'],
+                                        application_id=application)
 
     def test_remove_non_existent_role_from_user(self):
+        application = uuid.uuid4().hex
         user, organization = self._create_user()
         response = self._remove_role_from_user(role_id=uuid.uuid4().hex,
                                             user_id=user['id'],
                                             organization_id=organization['id'],
+                                            application_id=application,
                                             expected_status=404)
 
     def test_remove_role_from_non_existent_user(self):
-        role = self._create_role()
+        application = uuid.uuid4().hex
+        role_ref = self.new_fiware_role_ref(uuid.uuid4().hex,
+                                            application=application)
+        role = self._create_role(role_ref)
         response = self._remove_role_from_user(role_id=role['id'],
                                             user_id=uuid.uuid4().hex,
                                             organization_id=uuid.uuid4().hex,
+                                            application_id=application,
                                             expected_status=404)
 
     def test_remove_user_from_role_repeated(self):
-        role = self._create_role()
+        application = uuid.uuid4().hex
+        role_ref = self.new_fiware_role_ref(uuid.uuid4().hex,
+                                            application=application)
+        role = self._create_role(role_ref)
         user, organization = self._create_user()
         response = self._add_role_to_user(role_id=role['id'],
                                         user_id=user['id'],
-                                        organization_id=organization['id'])
+                                        organization_id=organization['id'],
+                                        application_id=application)
         response = self._remove_role_from_user(role_id=role['id'],
                                         user_id=user['id'],
-                                        organization_id=organization['id'])
+                                        organization_id=organization['id'],
+                                        application_id=application)
         response = self._remove_role_from_user(role_id=role['id'],
                                         user_id=user['id'],
-                                        organization_id=organization['id'])
+                                        organization_id=organization['id'],
+                                        application_id=application)
+
 
 class InternalRolesTests(RolesBaseTests):
     # TODO(garcianavalon) refactor this for better reuse, create more tests
@@ -403,7 +437,7 @@ class InternalRolesTests(RolesBaseTests):
         allowed_roles = json.loads(response.body)['allowed_roles']
         for app in allowed_roles:
             self.assertEqual(app_id, app)
-            current = [r['id'] for r in allowed_roles[app]]
+            current = [r_id for r_id in allowed_roles[app]]
             expected = [r_id for r_id in expected_roles
                                     if expected_roles[r_id]]   
             self.assertItemsEqual(current, expected)
@@ -423,7 +457,7 @@ class InternalRolesTests(RolesBaseTests):
         allowed_roles = json.loads(response.body)['allowed_roles']
         for app in allowed_roles:
             self.assertEqual(app_id, app)
-            current = [r['id'] for r in allowed_roles[app]]
+            current = [r_id for r_id in allowed_roles[app]]
             expected = expected_roles.keys() 
             self.assertItemsEqual(current, expected)
 
@@ -450,7 +484,10 @@ class InternalRolesTests(RolesBaseTests):
             self._add_permission_to_role(role['id'], permission['id'])
         expected_roles[role['id']] = permissions
         # grant the role to the user
-        self._add_role_to_user(role['id'], user['id'], organization['id'])
+        self._add_role_to_user(role['id'], 
+                               user['id'], 
+                               organization['id'], 
+                               app_id)
 
         # now create another role in the app to test all vs owned
         another_role_ref = self.new_fiware_permission_ref(
@@ -641,10 +678,13 @@ class FiwareApiTests(RolesBaseTests):
     def _assign_user_scoped_roles(self, user, user_organization, number):
         user_roles = []
         for i in range(number):
-            user_roles.append(self._create_role())
+            app_id = uuid.uuid4().hex
+            role = self._create_role(self.new_fiware_role_ref(app_id))
+            user_roles.append(role)
             self._add_role_to_user(role_id=user_roles[i]['id'], 
                                     user_id=user['id'],
-                                    organization_id=user_organization['id'])
+                                    organization_id=user_organization['id'],
+                                    application_id=app_id)
         return user_roles
 
     def _assign_organization_scoped_roles(self, user, organizations, number):
@@ -652,12 +692,14 @@ class FiwareApiTests(RolesBaseTests):
         for organization in organizations:
             organization_roles[organization['name']] = []
             for i in range(number):
-                organization_roles[organization['name']].append(
-                    self._create_role())
+                app_id = uuid.uuid4().hex
+                role = self._create_role(self.new_fiware_role_ref(app_id))
+                organization_roles[organization['name']].append(role)
                 role = organization_roles[organization['name']][i]
                 self._add_role_to_user(role_id=role['id'], 
                                     user_id=user['id'],
-                                    organization_id=organization['id'])
+                                    organization_id=organization['id'],
+                                    application_id=app_id)
         return organization_roles
 
     def _create_oauth2_token(self, user):

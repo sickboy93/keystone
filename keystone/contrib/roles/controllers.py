@@ -60,19 +60,6 @@ class RoleCrudV3(BaseControllerV3):
         self.roles_api.delete_role(role_id)
 
     @controller.protected()
-    def add_role_to_user(self, context, role_id, user_id, organization_id):
-        self.roles_api.add_role_to_user(role_id, user_id, organization_id)
-
-    @controller.protected()
-    def remove_role_from_user(self, context, role_id, user_id, organization_id):
-        self.roles_api.remove_role_from_user(role_id, user_id, organization_id)  
-
-    @controller.protected()
-    def list_roles_for_user(self, context, user_id, organization_id):
-        ref = self.roles_api.list_roles_for_user(user_id, organization_id)
-        return RoleCrudV3.wrap_collection(context, ref)
-
-    @controller.protected()
     def list_roles_allowed_to_assign(self, context, user_id, organization_id):
         ref = self.roles_api.list_roles_allowed_to_assign(user_id, organization_id)
         response = {
@@ -80,7 +67,31 @@ class RoleCrudV3(BaseControllerV3):
         }
         return response
 
-        
+class RoleAssignmentV3(BaseControllerV3):
+    collection_name = 'role_assignments'
+    member_name = 'role_assignment'
+
+    @classmethod
+    def _add_self_referential_link(cls, context, ref):
+        pass
+
+    @controller.protected()
+    def list_role_assignments(self, context):
+        ref = self.roles_api.list_role_assignments()
+        return RoleAssignmentV3.wrap_collection(context, ref)
+
+    @controller.protected()
+    def add_role_to_user(self, context, role_id, user_id, 
+                         organization_id, application_id):
+        self.roles_api.add_role_to_user(role_id, user_id, 
+                                        organization_id, application_id)
+
+    @controller.protected()
+    def remove_role_from_user(self, context, role_id, user_id, 
+                            organization_id, application_id):
+        self.roles_api.remove_role_from_user(role_id, user_id, 
+                                             organization_id, application_id)
+
 class PermissionCrudV3(BaseControllerV3):
 
     collection_name = 'permissions'
@@ -145,15 +156,19 @@ class FiwareApiControllerV3(BaseControllerV3):
         # get the user_id
         user = self.identity_api.get_user(user_id)
         # roles associated with this user
-        roles = self.roles_api.list_roles_for_user(user_id)
+        assignments = self.roles_api.list_role_assignments(user_id)
         # organizations the user is in
         organizations = self.assignment_api.list_projects_for_user(user_id)
         # filter to only organizations with roles
         organizations = [org for org in organizations 
-                    if org['id'] in [role['organization_id'] for role in roles]]
+                    if org['id'] in [a['organization_id'] for a in assignments]]
         for organization in organizations:
-            organization['roles'] = [role for role in roles 
-                                if role['organization_id'] == organization['id']]
+            role_ids = [a['role_id'] for a in assignments 
+                        if a['organization_id'] == organization['id']]            
+            # Load roles' names
+            organization['roles'] = [dict(id=r['id'], name=r['name']) for r
+                    in [self.roles_api.get_role(id) for id in role_ids]]
+
         # remove the user-default organization from the organizations list
         user_organization = [org for org in organizations 
                             if org['name'] == user['name']]

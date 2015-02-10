@@ -70,11 +70,11 @@ class RolesManager(manager.Manager):
         :type user_id: string
         :param organization_id: organization-scope
         :type organization_id: string
-        ;returns: list.
+        ;returns: list of ids
         """
         allowed_roles = {}
-        user_roles = self.driver.list_roles_for_user(user_id)
-        applications = set([r['application'] for r in user_roles])
+        user_roles = self.driver.list_role_assignments(user_id, organization_id)
+        applications = set([a['application_id'] for a in user_roles])
         for application in applications:
             permissions = [p['name'] for p in self.driver.list_permissions(
                                                             application=application,
@@ -83,16 +83,16 @@ class RolesManager(manager.Manager):
             # a more complex logic and system is required refactor this
             if ASSIGN_ALL_ROLES_PERMISSION in permissions:
                 # add all roles in the application
-                allowed_roles[application] = self.driver.list_roles(
-                                                    application=application)
+                allowed_roles[application] = [r['id'] for r in self.driver.list_roles(
+                                                    application=application)]
             elif ASSIGN_OWNED_ROLES_PERMISSION in permissions:
                 # add only the roles the user has in the application
-                allowed_roles[application] = [r for r in user_roles 
-                                                if r['application'] == application]
+                allowed_roles[application] = [a['role_id'] for a in user_roles 
+                                                if a['application_id'] == application]
         return allowed_roles
 
 
-@dependency.requires('assignment_api', 'identity_api')
+@dependency.requires('assignment_api', 'identity_api', 'oauth2_api')
 @six.add_metaclass(abc.ABCMeta)
 class RolesDriver(object):
     """Interface description for Roles and Permissions driver."""
@@ -154,23 +154,27 @@ class RolesDriver(object):
         raise exception.NotImplemented()
 
     @abc.abstractmethod
-    def list_roles_for_user(self, user_id, organization_id=None):
-        """List roles for a user_id. Optional organization filtering
+    def list_role_assignments(self, user_id=None, organization_id=None, 
+                              application_id=None):
+        """List all role assignments. Filtering by user, organization and/or 
+        application
 
-        :param user_id: user with roles
+        :param user_id: user to filter by. Optional parameter
         :type user_id: string
         :param organization_id: organization-scope in which we want to list the
             roles of the user. If we want user-scoped roles it should be the id of
             the user default organization (the project created with same name as user
             when user registration). Optional parameter
         :type organization_id: string
-        ;returns: list.
+        :param application_id: application to filter by. Optional parameter
+        :type application_id: string
+        :returns: list of assignments
         """
         raise exception.NotImplemented()
 
     @abc.abstractmethod
-    def add_role_to_user(self, role_id, user_id, organization_id):
-        """Delete role.
+    def add_role_to_user(self, role_id, user_id, organization_id, application_id):
+        """Grant role to a user.
 
         :param role_id: id of role to add user to
         :type role_id: string
@@ -181,14 +185,17 @@ class RolesDriver(object):
             the user default organization (the project created with same name as user
             when user registration)
         :type organization_id: string
+        :param application_id: application in which assign the role
+        :type application_id: string
         :returns: None.
 
         """
         raise exception.NotImplemented()
 
     @abc.abstractmethod
-    def remove_role_from_user(self, role_id, user_id, organization_id):
-        """Remove user from role.
+    def remove_role_from_user(self, role_id, user_id, 
+                              organization_id, application_id):
+        """Revoke role from user.
 
         :param role_id: id of role to remove user from
         :type role_id: string
@@ -198,6 +205,8 @@ class RolesDriver(object):
             If is a user-scoped role it should be the id of the user default organization 
             (the project created with same name as user when user registration)
         :type organization_id: string
+        :param application_id: application in which the role was assigned
+        :type application_id: string
         :returns: None.
 
         """
