@@ -51,7 +51,7 @@ class RolePermission(sql.ModelBase, sql.DictBase):
                           primary_key=True)
 
 class RoleUser(sql.ModelBase, sql.ModelDictMixin):
-    """Role\'s users join table."""
+    """Roles users join table."""
     __tablename__ = 'role_user_fiware'
     role_id = sql.Column(sql.String(64),
                          sql.ForeignKey('role_fiware.id'),
@@ -65,6 +65,20 @@ class RoleUser(sql.ModelBase, sql.ModelDictMixin):
     application_id = sql.Column(sql.String(64),
                          sql.ForeignKey('consumer_oauth2.id'),
                          primary_key=True)
+
+class RoleOrganization(sql.ModelBase, sql.ModelDictMixin):
+    """Roles organizations join table."""
+    __tablename__ = 'role_organization_fiware'
+    role_id = sql.Column(sql.String(64),
+                         sql.ForeignKey('role_fiware.id'),
+                         primary_key=True)
+    organization_id = sql.Column(sql.String(64),
+                         sql.ForeignKey('project.id'),
+                         primary_key=True)
+    application_id = sql.Column(sql.String(64),
+                         sql.ForeignKey('consumer_oauth2.id'),
+                         primary_key=True)
+
 
 class Roles(roles.RolesDriver):
     """ CRUD driver for the SQL backend """
@@ -120,37 +134,20 @@ class Roles(roles.RolesDriver):
 
             session.delete(role_ref)
 
-    def list_role_assignments(self, user_id=None, organization_id=None, 
+    # ROLE-USER
+    def list_role_user_assignments(self, user_id=None, organization_id=None, 
                          application_id=None):
-    
         session = sql.get_session() 
         query = session.query(RoleUser)
         if user_id:
-            query = query.filter(RoleUser.user_id == user_id)
+            query = query.filter_by(user_id=user_id)
         if organization_id:
-            query = query.filter(RoleUser.organization_id == organization_id)
+            query = query.filter_by(organization_id=organization_id)
         if application_id:
-            query = query.filter(RoleUser.application_id == application_id)    
+            query = query.filter_by(application_id=application_id)    
 
         return [assignment.to_dict() for assignment in query]
 
-    # def list_roles_for_user(self, user_id, organization_id=None):
-    #     session = sql.get_session()
-    #     self.identity_api.get_user(user_id)
-    #     query = session.query(Role, RoleUser.organization_id).join(RoleUser)
-    #     query = query.filter(RoleUser.user_id == user_id)
-    #     if organization_id:
-    #         query = query.filter(RoleUser.organization_id == organization_id)
-    #     # query objects are now a tuple (Role, organization_id
-    #     roles_as_dict = []
-    #     for tuple in query:
-    #         role = tuple[0]
-    #         role_dict = role.to_dict()
-    #         role_dict['organization_id'] = tuple[1]
-    #         roles_as_dict.append(role_dict)
-
-    #     return roles_as_dict
-        
 
     def add_role_to_user(self, role_id, user_id, organization_id, application_id):
         session = sql.get_session()
@@ -184,6 +181,55 @@ class Roles(roles.RolesDriver):
         query = query.filter_by(user_id=user_id)
         query = query.filter_by(role_id=role_id)
         query = query.filter_by(organization_id=organization_id)
+        query = query.filter_by(application_id=application_id)
+        ref = query.first()
+        if not ref:
+            return
+
+        with session.begin():
+            session.delete(ref)
+
+    # ROLE-ORGANIZATION
+    def list_role_organization_assignments(self, organization_id=None, 
+                                           application_id=None):
+        session = sql.get_session() 
+        query = session.query(RoleOrganization)
+        if organization_id:
+            query = query.filter_by(organization_id=organization_id)
+        if application_id:
+            query = query.filter_by(application_id=application_id)    
+
+        return [assignment.to_dict() for assignment in query]
+
+
+    def add_role_to_organization(self, role_id, 
+                                 organization_id, application_id):
+        session = sql.get_session()
+        self.get_role(role_id)
+        self.assignment_api.get_project(organization_id)
+        # self.oauth2_api.get_consumer(application_id)
+        query = session.query(RoleOrganization)
+        query = query.filter_by(role_id=role_id)
+        query = query.filter_by(organization_id=organization_id)
+        query = query.filter_by(application_id=application_id)
+        ref = query.first()
+        if ref:
+            return
+
+        with session.begin():
+            session.add(RoleOrganization(role_id=role_id,
+                                         organization_id=organization_id,
+                                         application_id=application_id)) 
+
+    def remove_role_from_organization(self, role_id, organization_id, 
+                                      application_id):
+        session = sql.get_session()
+        self.get_role(role_id)
+        self.assignment_api.get_project(organization_id)
+        # self.oauth2_api.get_consumer(application_id)
+        query = session.query(RoleOrganization)
+        query = query.filter_by(organization_id=organization_id)
+        query = query.filter_by(role_id=role_id)
         query = query.filter_by(application_id=application_id)
         ref = query.first()
         if not ref:

@@ -33,8 +33,10 @@ class RolesBaseTests(test_v3.RestfulTestCase):
     ROLES_URL = '/OS-ROLES/roles'
     PERMISSIONS_URL = '/OS-ROLES/permissions'
     USERS_URL = '/OS-ROLES/users'
-    ASSIGNMENTS_URL = '/OS-ROLES/role_assignments'
+    USER_ASSIGNMENTS_URL = '/OS-ROLES/users/role_assignments'
     USER_ROLES_URL = '/OS-ROLES/users/{user_id}/organizations/{organization_id}/applications/{application_id}/roles/{role_id}'
+    ORGANIZATION_ASSIGNMENTS_URL = '/OS-ROLES/organizations/role_assignments'
+    ORGANIZATION_ROLES_URL = '/OS-ROLES/organizations/{organization_id}/applications/{application_id}/roles/{role_id}'
 
 
     def setUp(self):
@@ -124,6 +126,15 @@ class RolesBaseTests(test_v3.RestfulTestCase):
         self.assignment_api.add_role_to_user_and_project(
             user_id, project_id, keystone_role_id)
 
+    # ROLE-USERS
+    def _list_role_user_assignments(self, filters=None, expected_status=200):
+        url = self.USER_ASSIGNMENTS_URL
+        if filters:
+            query_string = urlencode(filters)
+            url += '?' + query_string
+        response = self.get(url, expected_status=expected_status)
+        return response.result['role_assignments']
+
     def _add_role_to_user(self, role_id, user_id, 
                           organization_id, application_id, 
                           expected_status=204):
@@ -147,6 +158,60 @@ class RolesBaseTests(test_v3.RestfulTestCase):
                                    application_id=application_id)
 
         return user_roles
+
+    def _remove_role_from_user(self, role_id, user_id, 
+                               organization_id, application_id,
+                               expected_status=204):
+        url_args = {
+            'role_id': role_id,
+            'user_id': user_id,
+            'organization_id': organization_id,
+            'application_id': application_id,
+        }
+        url = self.USER_ROLES_URL.format(**url_args)
+        return self.delete(url, expected_status=expected_status)
+
+    # ROLES-ORGANIZATIONS
+    def _list_role_organization_assignments(self, filters=None, expected_status=200):
+        url = self.ORGANIZATION_ASSIGNMENTS_URL
+        if filters:
+            query_string = urlencode(filters)
+            url += '?' + query_string
+        response = self.get(url, expected_status=expected_status)
+        return response.result['role_assignments']
+
+    def _add_role_to_organization(self, role_id, 
+                                  organization_id, application_id, 
+                                  expected_status=204):
+        url_args = {
+            'role_id': role_id,
+            'organization_id': organization_id,
+            'application_id': application_id,
+        }
+        url = self.ORGANIZATION_ROLES_URL.format(**url_args)
+        return self.put(url, expected_status=expected_status)
+
+    def _add_multiple_roles_to_organization(self, number_of_roles, 
+                                            organization_id, application_id):
+        organization_roles = []
+        for i in range(number_of_roles):
+            organization_roles.append(self._create_role())
+            self._add_role_to_organization(role_id=organization_roles[i]['id'], 
+                                           organization_id=organization_id,
+                                           application_id=application_id)
+
+        return organization_roles
+
+    def _remove_role_from_organization(self, role_id,
+                                       organization_id, application_id,
+                                       expected_status=204):
+        url_args = {
+            'role_id': role_id,
+            'organization_id': organization_id,
+            'application_id': application_id,
+        }
+        url = self.ORGANIZATION_ROLES_URL.format(**url_args)
+        return self.delete(url, expected_status=expected_status)
 
     def _delete_role(self, role_id, expected_status=204):
 
@@ -175,26 +240,7 @@ class RolesBaseTests(test_v3.RestfulTestCase):
                                 %ulr_args
         return self.delete(url, expected_status=expected_status)
 
-    def _remove_role_from_user(self, role_id, user_id, 
-                               organization_id, application_id,
-                               expected_status=204):
-        url_args = {
-            'role_id': role_id,
-            'user_id': user_id,
-            'organization_id': organization_id,
-            'application_id': application_id,
-        }
-        url = self.USER_ROLES_URL.format(**url_args)
-        return self.delete(url, expected_status=expected_status)
-
-    def _list_role_assignments(self, filters=None, expected_status=200):
-        url = self.ASSIGNMENTS_URL
-        if filters:
-            query_string = urlencode(filters)
-            url += '?' + query_string
-        response = self.get(url, expected_status=expected_status)
-        return response.result['role_assignments']
-
+    
     def _list_roles_allowed_to_assign(self, user_id, organization_id, 
                                                     expected_status=200):
         ulr_args = {
@@ -292,9 +338,9 @@ class RoleCrudTests(RolesBaseTests):
         response = self._delete_role(role_id)
 
 
-class RoleAssignmentTests(RolesBaseTests):
+class RoleUserAssignmentTests(RolesBaseTests):
 
-    def test_list_role_assignments_no_filters(self):
+    def test_list_role_user_assignments_no_filters(self):
         number_of_users = 2
         number_of_roles = 2
         references = []
@@ -306,7 +352,7 @@ class RoleAssignmentTests(RolesBaseTests):
                          user['id'], organization['id'], application_id)
             references.append((user, organization, application_id, user_roles))
 
-        assignments = self._list_role_assignments()
+        assignments = self._list_role_user_assignments()
 
         self.assertEqual(number_of_roles * number_of_users, len(assignments))
         for (user, organization, application_id, user_roles) in references:
@@ -331,7 +377,7 @@ class RoleAssignmentTests(RolesBaseTests):
             references.append((user, organization, application_id, user_roles))
 
         app_to_filter = references[0][2]
-        assignments = self._list_role_assignments(
+        assignments = self._list_role_user_assignments(
             filters={'application_id':app_to_filter})
 
         self.assertEqual(number_of_roles, len(assignments))
@@ -362,7 +408,7 @@ class RoleAssignmentTests(RolesBaseTests):
             references.append((user, organization, application_id, user_roles))
 
         user_to_filter = references[0][0]['id']
-        assignments = self._list_role_assignments(
+        assignments = self._list_role_user_assignments(
             filters={'user_id':user_to_filter})
 
         self.assertEqual(number_of_roles, len(assignments))
@@ -393,7 +439,7 @@ class RoleAssignmentTests(RolesBaseTests):
             references.append((user, organization, application_id, user_roles))
 
         organization_to_filter = references[0][1]['id']
-        assignments = self._list_role_assignments(
+        assignments = self._list_role_user_assignments(
             filters={'organization_id':organization_to_filter})
 
         self.assertEqual(number_of_roles, len(assignments))
@@ -511,6 +557,180 @@ class RoleAssignmentTests(RolesBaseTests):
                                         organization_id=organization['id'],
                                         application_id=application)
 
+
+class RoleOrganizationAssignmentTests(RolesBaseTests):
+
+    def test_list_role_organization_assignments_no_filters(self):
+        number_of_organizations = 2
+        number_of_roles = 2
+        references = []
+        for i in range(number_of_organizations):
+            application_id = uuid.uuid4().hex
+            organization = self._create_organization()
+            
+            organization_roles = self._add_multiple_roles_to_organization(
+                number_of_roles, organization['id'], application_id)
+            references.append((organization, application_id, organization_roles))
+
+        assignments = self._list_role_organization_assignments()
+
+        self.assertEqual(number_of_roles * number_of_organizations, len(assignments))
+        for (organization, application_id, organization_roles) in references:
+            current_assignments = [a['role_id'] for a in assignments 
+                                     if a['organization_id'] == organization['id']
+                                     and a['application_id'] == application_id]
+            current_roles = [r['id'] for r in organization_roles]                         
+            self.assertEqual(current_roles, current_assignments)
+
+    def test_list_organizations_with_roles_in_application(self):
+        number_of_organizations = 2
+        number_of_roles = 2
+        references = []
+        
+        for i in range(number_of_organizations):
+            application_id = uuid.uuid4().hex
+            organization = self._create_organization()
+            
+            organization_roles = self._add_multiple_roles_to_organization(
+                number_of_roles, organization['id'], application_id)
+            references.append((organization, application_id, organization_roles))
+
+        app_to_filter = references[0][1]
+        assignments = self._list_role_organization_assignments(
+            filters={'application_id':app_to_filter})
+
+        self.assertEqual(number_of_roles, len(assignments))
+        self.assertEqual(set([app_to_filter]), 
+                         set([a['application_id'] for a in assignments]))
+
+        # filter references
+        references = [r for r in references if r[1] == app_to_filter]
+        for (organization, application_id, organization_roles) in references:
+            current_assignments = [a['role_id'] for a in assignments 
+                                     if a['organization_id'] == organization['id']
+                                     and a['application_id'] == application_id]
+            current_roles = [r['id'] for r in organization_roles]                         
+            self.assertEqual(current_roles, current_assignments)
+
+
+    def test_list_applications_where_organization_has_roles(self):
+        number_of_organizations = 2
+        number_of_roles = 2
+        references = []
+        
+        for i in range(number_of_organizations):
+            application_id = uuid.uuid4().hex
+            organization = self._create_organization()
+            organization_roles = self._add_multiple_roles_to_organization(
+                number_of_roles, organization['id'], application_id)
+            references.append((organization, application_id, organization_roles))
+
+        organization_to_filter = references[0][0]['id']
+        assignments = self._list_role_organization_assignments(
+            filters={'organization_id':organization_to_filter})
+
+        self.assertEqual(number_of_roles, len(assignments))
+        self.assertEqual(set([organization_to_filter]), 
+                         set([a['organization_id'] for a in assignments]))
+
+        # filter references
+        references = [r for r in references if r[0]['id'] == organization_to_filter]
+        for (organization, application_id, organization_roles) in references:
+            current_assignments = [a['role_id'] for a in assignments
+                                   if a['organization_id'] == organization['id']
+                                   and a['application_id'] == application_id]
+            current_roles = [r['id'] for r in organization_roles]                    
+            self.assertEqual(current_roles, current_assignments)
+
+
+
+    def test_add_role_to_organization(self):
+        application = uuid.uuid4().hex
+        role_ref = self.new_fiware_role_ref(uuid.uuid4().hex,
+                                            application=application)
+        role = self._create_role(role_ref)
+        organization = self._create_organization()
+        response = self._add_role_to_organization(role_id=role['id'],
+                                          organization_id=organization['id'],
+                                          application_id=application)
+
+    def test_add_non_existent_role_to_organization(self):
+        application = uuid.uuid4().hex
+        organization = self._create_organization()
+        response = self._add_role_to_organization(role_id=uuid.uuid4().hex,
+                                        organization_id=organization['id'],
+                                        application_id=application,
+                                        expected_status=404)
+
+    def test_add_role_to_non_existent_organization(self):
+        application = uuid.uuid4().hex
+        role_ref = self.new_fiware_role_ref(uuid.uuid4().hex,
+                                            application=application)
+        role = self._create_role(role_ref)
+        response = self._add_role_to_organization(role_id=role['id'],
+                                        organization_id=uuid.uuid4().hex,
+                                        application_id=application,
+                                        expected_status=404)
+
+    def test_add_role_to_organization_repeated(self):
+        application = uuid.uuid4().hex
+        role_ref = self.new_fiware_role_ref(uuid.uuid4().hex,
+                                            application=application)
+        role = self._create_role(role_ref)
+        organization = self._create_organization()
+        response = self._add_role_to_organization(role_id=role['id'],
+                                        organization_id=organization['id'],
+                                        application_id=application)
+        response = self._add_role_to_organization(role_id=role['id'],
+                                        organization_id=organization['id'],
+                                        application_id=application)
+
+    def test_remove_role_from_organization(self):
+        application = uuid.uuid4().hex
+        role_ref = self.new_fiware_role_ref(uuid.uuid4().hex,
+                                            application=application)
+        role = self._create_role(role_ref)
+        organization = self._create_organization()
+        response = self._add_role_to_organization(role_id=role['id'],
+                                        organization_id=organization['id'],
+                                        application_id=application)
+        response = self._remove_role_from_organization(role_id=role['id'],
+                                        organization_id=organization['id'],
+                                        application_id=application)
+
+    def test_remove_non_existent_role_from_organization(self):
+        application = uuid.uuid4().hex
+        organization = self._create_organization()
+        response = self._remove_role_from_organization(role_id=uuid.uuid4().hex,
+                                            organization_id=organization['id'],
+                                            application_id=application,
+                                            expected_status=404)
+
+    def test_remove_role_from_non_existent_organization(self):
+        application = uuid.uuid4().hex
+        role_ref = self.new_fiware_role_ref(uuid.uuid4().hex,
+                                            application=application)
+        role = self._create_role(role_ref)
+        response = self._remove_role_from_organization(role_id=role['id'],
+                                            organization_id=uuid.uuid4().hex,
+                                            application_id=application,
+                                            expected_status=404)
+
+    def test_remove_organization_from_role_repeated(self):
+        application = uuid.uuid4().hex
+        role_ref = self.new_fiware_role_ref(uuid.uuid4().hex,
+                                            application=application)
+        role = self._create_role(role_ref)
+        organization = self._create_organization()
+        response = self._add_role_to_organization(role_id=role['id'],
+                                        organization_id=organization['id'],
+                                        application_id=application)
+        response = self._remove_role_from_organization(role_id=role['id'],
+                                        organization_id=organization['id'],
+                                        application_id=application)
+        response = self._remove_role_from_organization(role_id=role['id'],
+                                        organization_id=organization['id'],
+                                        application_id=application)
 
 class InternalRolesTests(RolesBaseTests):
     # TODO(garcianavalon) refactor this for better reuse, create more tests

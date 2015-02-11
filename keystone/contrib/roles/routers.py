@@ -46,7 +46,8 @@ class RolesExtension(wsgi.V3ExtensionRouter):
         roles_controller = controllers.RoleCrudV3()
         permissions_controller = controllers.PermissionCrudV3()
         fiware_api_controller = controllers.FiwareApiControllerV3()
-        assignment_controller = controllers.RoleAssignmentV3()
+        user_assignment_controller = controllers.RoleUserAssignmentV3()
+        organization_assignment_controller = controllers.RoleOrganizationAssignmentV3()
         
         # ROLES
         self._add_resource(
@@ -68,10 +69,11 @@ class RolesExtension(wsgi.V3ExtensionRouter):
                 build_parameter_relation(parameter_name='role_id'),
             })
 
+        # ROLES-USERS
         self._add_resource(
-            mapper, assignment_controller,
-            path=self.PATH_PREFIX + '/role_assignments',
-            get_action='list_role_assignments',
+            mapper, user_assignment_controller,
+            path=self.PATH_PREFIX + '/users/role_assignments',
+            get_action='list_role_user_assignments',
             rel=build_resource_relation(resource_name='role_assignments'))
 
         self._add_resource(
@@ -85,7 +87,7 @@ class RolesExtension(wsgi.V3ExtensionRouter):
             })
 
         self._add_resource(
-            mapper, assignment_controller,
+            mapper, user_assignment_controller,
             path=self.PATH_PREFIX + '/users/{user_id}/organizations/{organization_id}/applications/{application_id}/roles/{role_id}',
             put_action='add_role_to_user',
             delete_action='remove_role_from_user',
@@ -99,6 +101,35 @@ class RolesExtension(wsgi.V3ExtensionRouter):
                     build_parameter_relation(parameter_name='application_id'),
             })
 
+        # ROLES_ORGANIZATIONS
+        self._add_resource(
+            mapper, organization_assignment_controller,
+            path=self.PATH_PREFIX + '/organizations/role_assignments',
+            get_action='list_role_organization_assignments',
+            rel=build_resource_relation(resource_name='role_assignments'))
+
+        self._add_resource(
+            mapper, roles_controller,
+            path=self.PATH_PREFIX + '/organizations/{organization_id}/roles/allowed',
+            get_action='list_roles_allowed_to_assign',
+            rel=build_resource_relation(resource_name='roles'),
+            path_vars={
+                'organization_id':build_parameter_relation(parameter_name='organization_id'),
+            })
+
+        self._add_resource(
+            mapper, organization_assignment_controller,
+            path=self.PATH_PREFIX + '/organizations/{organization_id}/applications/{application_id}/roles/{role_id}',
+            put_action='add_role_to_organization',
+            delete_action='remove_role_from_organization',
+            rel=build_resource_relation(resource_name='role_organization'),
+            path_vars={
+                'role_id':build_parameter_relation(parameter_name='role_id'),
+                'organization_id':
+                    build_parameter_relation(parameter_name='organization_id'),
+                'application_id':
+                    build_parameter_relation(parameter_name='application_id'),
+            })
         # PERMISSIONS
         self._add_resource(
             mapper, permissions_controller,

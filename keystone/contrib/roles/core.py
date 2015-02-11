@@ -73,7 +73,7 @@ class RolesManager(manager.Manager):
         ;returns: list of ids
         """
         allowed_roles = {}
-        user_roles = self.driver.list_role_assignments(user_id, organization_id)
+        user_roles = self.driver.list_role_user_assignments(user_id, organization_id)
         applications = set([a['application_id'] for a in user_roles])
         for application in applications:
             permissions = [p['name'] for p in self.driver.list_permissions(
@@ -153,10 +153,11 @@ class RolesDriver(object):
         """
         raise exception.NotImplemented()
 
+    # ROLE-USER
     @abc.abstractmethod
-    def list_role_assignments(self, user_id=None, organization_id=None, 
+    def list_role_user_assignments(self, user_id=None, organization_id=None, 
                               application_id=None):
-        """List all role assignments. Filtering by user, organization and/or 
+        """List all role to userassignments. Filtering by user, organization and/or 
         application
 
         :param user_id: user to filter by. Optional parameter
@@ -195,7 +196,7 @@ class RolesDriver(object):
     @abc.abstractmethod
     def remove_role_from_user(self, role_id, user_id, 
                               organization_id, application_id):
-        """Revoke role from user.
+        """Revoke an user's role.
 
         :param role_id: id of role to remove user from
         :type role_id: string
@@ -210,7 +211,53 @@ class RolesDriver(object):
         :returns: None.
 
         """
-        raise exception.NotImplemented()   
+        raise exception.NotImplemented()
+
+    # ROLE-ORGANIZATION
+    @abc.abstractmethod
+    def list_role_organization_assignments(self, organization_id=None, 
+                                           application_id=None):
+        """List all role to organization assignments. Filtering by organization and/or 
+        application.
+
+        :param organization_id: organization to filter by. Optional parameter
+        :type organization_id: string
+        :param application_id: application to filter by. Optional parameter
+        :type application_id: string
+        :returns: list of assignments
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def add_role_to_organization(self, role_id, organization_id, application_id):
+        """Grant role to a organization.
+
+        :param role_id: id of role to add organization to
+        :type role_id: string
+        :param organization_id: organization to add to role
+        :type organization_id: string
+        :param application_id: application in which assign the role
+        :type application_id: string
+        :returns: None.
+
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def remove_role_from_organization(self, role_id,  
+                                      organization_id, application_id):
+        """Revoke an organization's role.
+
+        :param role_id: id of role to remove organization from
+        :type role_id: string
+        :param organization_id: organization to remove from role
+        :type organization_id: string
+        :param application_id: application in which the role was assigned
+        :type application_id: string
+        :returns: None.
+
+        """
+        raise exception.NotImplemented() 
     
     # PERMISSIONS
     @abc.abstractmethod

@@ -67,7 +67,7 @@ class RoleCrudV3(BaseControllerV3):
         }
         return response
 
-class RoleAssignmentV3(BaseControllerV3):
+class RoleUserAssignmentV3(BaseControllerV3):
     collection_name = 'role_assignments'
     member_name = 'role_assignment'
 
@@ -76,10 +76,10 @@ class RoleAssignmentV3(BaseControllerV3):
         pass
 
     @controller.protected()
-    def list_role_assignments(self, context):
+    def list_role_user_assignments(self, context):
         filters = context['query_string']
-        ref = self.roles_api.list_role_assignments(**filters)
-        return RoleAssignmentV3.wrap_collection(context, ref)
+        ref = self.roles_api.list_role_user_assignments(**filters)
+        return RoleUserAssignmentV3.wrap_collection(context, ref)
 
     @controller.protected()
     def add_role_to_user(self, context, role_id, user_id, 
@@ -92,6 +92,34 @@ class RoleAssignmentV3(BaseControllerV3):
                             organization_id, application_id):
         self.roles_api.remove_role_from_user(role_id, user_id, 
                                              organization_id, application_id)
+
+class RoleOrganizationAssignmentV3(BaseControllerV3):
+    collection_name = 'role_assignments'
+    member_name = 'role_assignment'
+
+    @classmethod
+    def _add_self_referential_link(cls, context, ref):
+        pass
+
+    @controller.protected()
+    def list_role_organization_assignments(self, context):
+        filters = context['query_string']
+        ref = self.roles_api.list_role_organization_assignments(**filters)
+        return RoleOrganizationAssignmentV3.wrap_collection(context, ref)
+
+    @controller.protected()
+    def add_role_to_organization(self, context, role_id, 
+                                 organization_id, application_id):
+        self.roles_api.add_role_to_organization(role_id,
+                                                organization_id, 
+                                                application_id)
+
+    @controller.protected()
+    def remove_role_from_organization(self, context, role_id, 
+                                      organization_id, application_id):
+        self.roles_api.remove_role_from_organization(role_id,
+                                                     organization_id, 
+                                                     application_id)
 
 class PermissionCrudV3(BaseControllerV3):
 
@@ -157,7 +185,7 @@ class FiwareApiControllerV3(BaseControllerV3):
         # get the user_id
         user = self.identity_api.get_user(user_id)
         # roles associated with this user
-        assignments = self.roles_api.list_role_assignments(user_id)
+        assignments = self.roles_api.list_role_user_assignments(user_id)
         # organizations the user is in
         organizations = self.assignment_api.list_projects_for_user(user_id)
         # filter to only organizations with roles
