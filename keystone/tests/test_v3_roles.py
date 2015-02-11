@@ -241,7 +241,7 @@ class RolesBaseTests(test_v3.RestfulTestCase):
         return self.delete(url, expected_status=expected_status)
 
     
-    def _list_roles_allowed_to_assign(self, user_id, organization_id, 
+    def _list_roles_user_allowed_to_assign(self, user_id, organization_id, 
                                                     expected_status=200):
         ulr_args = {
             'user_id': user_id,
@@ -736,7 +736,7 @@ class InternalRolesTests(RolesBaseTests):
     # TODO(garcianavalon) refactor this for better reuse, create more tests
     # with more complex and limit cases
 
-    def test_list_roles_allowed_to_assing_owned(self):
+    def test_list_roles_user_allowed_to_assing_owned(self):
         user, organization = self._create_user()
         permission = core.ASSIGN_OWNED_ROLES_PERMISSION
         app_id = uuid.uuid4().hex
@@ -745,7 +745,7 @@ class InternalRolesTests(RolesBaseTests):
                                                 permission,
                                                 app_id)
 
-        response = self._list_roles_allowed_to_assign(user_id=user['id'],
+        response = self._list_roles_user_allowed_to_assign(user_id=user['id'],
                                           organization_id=organization['id'])
         # check the correct roles are returned
         allowed_roles = json.loads(response.body)['allowed_roles']
@@ -756,7 +756,7 @@ class InternalRolesTests(RolesBaseTests):
                                     if expected_roles[r_id]]   
             self.assertItemsEqual(current, expected)
 
-    def test_list_roles_allowed_to_assign_all(self):
+    def test_list_roles_user_allowed_to_assign_all(self):
         user, organization = self._create_user()
         permission = core.ASSIGN_ALL_ROLES_PERMISSION
         app_id = uuid.uuid4().hex
@@ -765,7 +765,7 @@ class InternalRolesTests(RolesBaseTests):
                                                 permission,
                                                 app_id)
 
-        response = self._list_roles_allowed_to_assign(user_id=user['id'],
+        response = self._list_roles_user_allowed_to_assign(user_id=user['id'],
                                           organization_id=organization['id'])
         # check the correct roles are returned
         allowed_roles = json.loads(response.body)['allowed_roles']
