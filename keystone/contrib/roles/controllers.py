@@ -77,7 +77,8 @@ class RoleAssignmentV3(BaseControllerV3):
 
     @controller.protected()
     def list_role_assignments(self, context):
-        ref = self.roles_api.list_role_assignments()
+        filters = context['query_string']
+        ref = self.roles_api.list_role_assignments(**filters)
         return RoleAssignmentV3.wrap_collection(context, ref)
 
     @controller.protected()

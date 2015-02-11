@@ -191,7 +191,7 @@ class RolesBaseTests(test_v3.RestfulTestCase):
         url = self.ASSIGNMENTS_URL
         if filters:
             query_string = urlencode(filters)
-            url += query_string
+            url += '?' + query_string
         response = self.get(url, expected_status=expected_status)
         return response.result['role_assignments']
 
@@ -308,6 +308,70 @@ class RoleAssignmentTests(RolesBaseTests):
 
         assignments = self._list_role_assignments()
 
+        self.assertEqual(number_of_roles * number_of_users, len(assignments))
+        for (user, organization, application_id, user_roles) in references:
+            current_assignments = [a['role_id'] for a in assignments 
+                                     if a['user_id'] == user['id']
+                                     and a['organization_id'] == organization['id']
+                                     and a['application_id'] == application_id]
+            current_roles = [r['id'] for r in user_roles]                         
+            self.assertEqual(current_roles, current_assignments)
+
+    def test_list_users_with_roles_in_application(self):
+        number_of_users = 2
+        number_of_roles = 2
+        references = []
+        
+        for i in range(number_of_users):
+            application_id = uuid.uuid4().hex
+            user, organization = self._create_user()
+            
+            user_roles = self._add_multiple_roles_to_user(number_of_roles, 
+                         user['id'], organization['id'], application_id)
+            references.append((user, organization, application_id, user_roles))
+
+        app_to_filter = references[0][2]
+        assignments = self._list_role_assignments(
+            filters={'application_id':app_to_filter})
+
+        self.assertEqual(number_of_roles, len(assignments))
+        self.assertEqual(set([app_to_filter]), 
+                         set([a['application_id'] for a in assignments]))
+
+        # filter references
+        references = [r for r in references if r[2] == app_to_filter]
+        for (user, organization, application_id, user_roles) in references:
+            current_assignments = [a['role_id'] for a in assignments 
+                                     if a['user_id'] == user['id']
+                                     and a['organization_id'] == organization['id']
+                                     and a['application_id'] == application_id]
+            current_roles = [r['id'] for r in user_roles]                         
+            self.assertEqual(current_roles, current_assignments)
+
+    def test_list_applications_where_user_has_roles(self):
+        number_of_users = 2
+        number_of_roles = 2
+        references = []
+        
+        for i in range(number_of_users):
+            application_id = uuid.uuid4().hex
+            user, organization = self._create_user()
+            
+            user_roles = self._add_multiple_roles_to_user(number_of_roles, 
+                         user['id'], organization['id'], application_id)
+            references.append((user, organization, application_id, user_roles))
+
+        user_to_filter = references[0][0]['id']
+        user_app = references[0][2]
+        assignments = self._list_role_assignments(
+            filters={'user_id':user_to_filter})
+
+        self.assertEqual(number_of_roles, len(assignments))
+        self.assertEqual(set([user_app]), 
+                         set([a['application_id'] for a in assignments]))
+
+        # filter references
+        references = [r for r in references if r[0]['id'] == user_to_filter]
         for (user, organization, application_id, user_roles) in references:
             current_assignments = [a['role_id'] for a in assignments 
                                      if a['user_id'] == user['id']
