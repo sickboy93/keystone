@@ -60,8 +60,16 @@ class RoleCrudV3(BaseControllerV3):
         self.roles_api.delete_role(role_id)
 
     @controller.protected()
-    def list_roles_allowed_to_assign(self, context, user_id, organization_id):
-        ref = self.roles_api.list_roles_allowed_to_assign(user_id, organization_id)
+    def list_roles_user_allowed_to_assign(self, context, user_id, organization_id):
+        ref = self.roles_api.list_roles_user_allowed_to_assign(user_id, organization_id)
+        response = {
+            'allowed_roles': ref
+        }
+        return response
+
+    @controller.protected()
+    def list_roles_organization_allowed_to_assign(self, context, organization_id):
+        ref = self.roles_api.list_roles_organization_allowed_to_assign(organization_id)
         response = {
             'allowed_roles': ref
         }

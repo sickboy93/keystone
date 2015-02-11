@@ -61,7 +61,7 @@ class RolesManager(manager.Manager):
             'keystone.contrib.roles.backends.sql.Roles')
 
 
-    def list_roles_allowed_to_assign(self, user_id, organization_id):
+    def list_roles_user_allowed_to_assign(self, user_id, organization_id):
         """List the roles that a given user can assign. To be able to assign roles
         a user needs a certain permission. It can be the 'get and assign all
         application's roles' or the 'get and assign owned roles'
@@ -70,11 +70,30 @@ class RolesManager(manager.Manager):
         :type user_id: string
         :param organization_id: organization-scope
         :type organization_id: string
-        ;returns: list of ids
+        :returns: dictionary with application ids as keys and list 
+            of role ids as values
         """
+        owned_roles = self.driver.list_role_user_assignments(user_id, organization_id)
+        return self._get_allowed_roles(owned_roles)
+
+
+    def list_roles_organization_allowed_to_assign(self, organization_id):
+        """List the roles that a given organization can assign. To be able to assign roles
+        a organization needs a certain permission. It can be the 'get and assign all
+        application's roles' or the 'get and assign owned roles'
+
+        :param organization_id: organization with roles
+        :type organization_id: string
+        :returns: dictionary with application ids as keys and list 
+            of role ids as values
+        """
+        owned_roles = self.driver.list_role_organization_assignments(organization_id)
+        return self._get_allowed_roles(owned_roles)
+        
+
+    def _get_allowed_roles(self, owned_roles):
         allowed_roles = {}
-        user_roles = self.driver.list_role_user_assignments(user_id, organization_id)
-        applications = set([a['application_id'] for a in user_roles])
+        applications = set([a['application_id'] for a in owned_roles])
         for application in applications:
             permissions = [p['name'] for p in self.driver.list_permissions(
                                                             application=application,
@@ -87,7 +106,7 @@ class RolesManager(manager.Manager):
                                                     application=application)]
             elif ASSIGN_OWNED_ROLES_PERMISSION in permissions:
                 # add only the roles the user has in the application
-                allowed_roles[application] = [a['role_id'] for a in user_roles 
+                allowed_roles[application] = [a['role_id'] for a in owned_roles 
                                                 if a['application_id'] == application]
         return allowed_roles
 

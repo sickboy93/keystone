@@ -32,9 +32,10 @@ class RolesBaseTests(test_v3.RestfulTestCase):
 
     ROLES_URL = '/OS-ROLES/roles'
     PERMISSIONS_URL = '/OS-ROLES/permissions'
-    USERS_URL = '/OS-ROLES/users'
+    USER_ALLOWED_URL = '/OS-ROLES/users/{user_id}/organizations/{organization_id}/roles/allowed'
     USER_ASSIGNMENTS_URL = '/OS-ROLES/users/role_assignments'
     USER_ROLES_URL = '/OS-ROLES/users/{user_id}/organizations/{organization_id}/applications/{application_id}/roles/{role_id}'
+    ORGANIZATION_ALLOWED_URL = '/OS-ROLES/organizations/{organization_id}/roles/allowed'
     ORGANIZATION_ASSIGNMENTS_URL = '/OS-ROLES/organizations/role_assignments'
     ORGANIZATION_ROLES_URL = '/OS-ROLES/organizations/{organization_id}/applications/{application_id}/roles/{role_id}'
 
@@ -113,12 +114,12 @@ class RolesBaseTests(test_v3.RestfulTestCase):
 
     def _add_permission_to_role(self, role_id, permission_id, 
                                 expected_status=204):    
-        ulr_args = {
+        url_args = {
             'role_id':role_id,
             'permission_id':permission_id
         }
         url = self.ROLES_URL + '/%(role_id)s/permissions/%(permission_id)s' \
-                                %ulr_args
+                                %url_args
         return self.put(url, expected_status=expected_status)
 
 
@@ -215,40 +216,47 @@ class RolesBaseTests(test_v3.RestfulTestCase):
 
     def _delete_role(self, role_id, expected_status=204):
 
-        ulr_args = {
+        url_args = {
             'role_id': role_id,
         }
         url = self.ROLES_URL + '/%(role_id)s' \
-                %ulr_args
+                %url_args
         return self.delete(url, expected_status=expected_status)
 
     def _delete_permission(self, permission_id, expected_status=204):
 
-        ulr_args = {
+        url_args = {
             'permission_id': permission_id,
         }
         url = self.PERMISSIONS_URL + '/%(permission_id)s' \
-                    %ulr_args
+                    %url_args
         return self.delete(url, expected_status=expected_status)
 
     def _remove_permission_from_role(self, role_id, permission_id, expected_status=204):
-        ulr_args = {
+        url_args = {
             'role_id':role_id,
             'permission_id':permission_id
         } 
         url = self.ROLES_URL + '/%(role_id)s/permissions/%(permission_id)s' \
-                                %ulr_args
+                                %url_args
         return self.delete(url, expected_status=expected_status)
 
     
     def _list_roles_user_allowed_to_assign(self, user_id, organization_id, 
-                                                    expected_status=200):
-        ulr_args = {
+                                           expected_status=200):
+        url_args = {
             'user_id': user_id,
             'organization_id': organization_id
         }   
-        url = self.USERS_URL + '/%(user_id)s/organizations/%(organization_id)s/roles/allowed' \
-                                %ulr_args
+        url = self.USER_ALLOWED_URL.format(**url_args)
+        return self.get(url, expected_status=expected_status)
+
+    def _list_roles_organization_allowed_to_assign(self, organization_id, 
+                                                   expected_status=200):
+        url_args = {
+            'organization_id': organization_id
+        }   
+        url = self.ORGANIZATION_ALLOWED_URL.format(**url_args)
         return self.get(url, expected_status=expected_status)
 
     def _assert_role(self, test_role, reference_role):
@@ -733,14 +741,14 @@ class RoleOrganizationAssignmentTests(RolesBaseTests):
                                         application_id=application)
 
 class InternalRolesTests(RolesBaseTests):
-    # TODO(garcianavalon) refactor this for better reuse, create more tests
-    # with more complex and limit cases
+    # TODO(garcianavalon) refactor this for better reuse, really bad now
+    # TODO(garcianavalon) create more tests with more complex and limit cases
 
     def test_list_roles_user_allowed_to_assing_owned(self):
         user, organization = self._create_user()
         permission = core.ASSIGN_OWNED_ROLES_PERMISSION
         app_id = uuid.uuid4().hex
-        expected_roles = self._create_internal_roles(user, 
+        expected_roles = self._create_internal_roles_user(user, 
                                                 organization, 
                                                 permission,
                                                 app_id)
@@ -756,11 +764,12 @@ class InternalRolesTests(RolesBaseTests):
                                     if expected_roles[r_id]]   
             self.assertItemsEqual(current, expected)
 
+
     def test_list_roles_user_allowed_to_assign_all(self):
         user, organization = self._create_user()
         permission = core.ASSIGN_ALL_ROLES_PERMISSION
         app_id = uuid.uuid4().hex
-        expected_roles = self._create_internal_roles(user, 
+        expected_roles = self._create_internal_roles_user(user, 
                                                 organization, 
                                                 permission,
                                                 app_id)
@@ -775,7 +784,45 @@ class InternalRolesTests(RolesBaseTests):
             expected = expected_roles.keys() 
             self.assertItemsEqual(current, expected)
 
-    def _create_internal_roles(self, user, organization, permission, app_id):
+
+    def test_list_roles_organization_allowed_to_assign_all(self):
+        organization = self._create_organization()
+        permission = core.ASSIGN_ALL_ROLES_PERMISSION
+        app_id = uuid.uuid4().hex
+        expected_roles = self._create_internal_roles_organization(
+            organization, permission, app_id)
+
+        response = self._list_roles_organization_allowed_to_assign(
+            organization_id=organization['id'])
+        # check the correct roles are returned
+        allowed_roles = json.loads(response.body)['allowed_roles']
+        for app in allowed_roles:
+            self.assertEqual(app_id, app)
+            current = [r_id for r_id in allowed_roles[app]]
+            expected = expected_roles.keys() 
+            self.assertItemsEqual(current, expected)
+
+
+    def test_list_roles_organization_allowed_to_assing_owned(self):
+        organization = self._create_organization()
+        permission = core.ASSIGN_OWNED_ROLES_PERMISSION
+        app_id = uuid.uuid4().hex
+        expected_roles = self._create_internal_roles_organization(
+            organization, permission, app_id)
+
+        response = self._list_roles_organization_allowed_to_assign(
+            organization_id=organization['id'])
+        # check the correct roles are returned
+        allowed_roles = json.loads(response.body)['allowed_roles']
+        for app in allowed_roles:
+            self.assertEqual(app_id, app)
+            current = [r_id for r_id in allowed_roles[app]]
+            expected = [r_id for r_id in expected_roles
+                                    if expected_roles[r_id]]   
+            self.assertItemsEqual(current, expected)
+    
+
+    def _create_internal_roles_user(self, user, organization, permission, app_id):
         expected_roles = {}
         permissions = []
         
@@ -812,6 +859,43 @@ class InternalRolesTests(RolesBaseTests):
         expected_roles[another_role['id']] = []
         return expected_roles            
                 
+
+    def _create_internal_roles_organization(self, organization, permission, app_id):
+        expected_roles = {}
+        permissions = []
+        
+        # create the internal permissions
+        perm_ref = self.new_fiware_permission_ref(
+                                permission, 
+                                application=app_id, 
+                                is_internal=True)
+        permissions.append(self._create_permission(perm_ref))
+
+        # create the internal role
+        role_ref = self.new_fiware_permission_ref(
+                                uuid.uuid4().hex, 
+                                application=app_id, 
+                                is_internal=True)
+        role = self._create_role(role_ref)
+
+        # assign the permissions to the role
+        for permission in permissions:
+            self._add_permission_to_role(role['id'], permission['id'])
+        expected_roles[role['id']] = permissions
+        # grant the role to the user
+        self._add_role_to_organization(role['id'], 
+                               organization['id'], 
+                               app_id)
+
+        # now create another role in the app to test all vs owned
+        another_role_ref = self.new_fiware_permission_ref(
+                                uuid.uuid4().hex, 
+                                application=app_id, 
+                                is_internal=False)
+        another_role = self._create_role(another_role_ref)
+        expected_roles[another_role['id']] = []
+        return expected_roles 
+
 
 class PermissionCrudTests(RolesBaseTests):
 
@@ -893,11 +977,11 @@ class PermissionCrudTests(RolesBaseTests):
         self._add_permission_to_role(role_id=role['id'], 
                                      permission_id=permission['id'])
 
-        ulr_args = {
+        url_args = {
             'role_id':role['id']
         }   
         url = self.ROLES_URL + '/%(role_id)s/permissions/' \
-                                %ulr_args
+                                %url_args
 
         response = self.get(url)
         entities = response.result['permissions']
