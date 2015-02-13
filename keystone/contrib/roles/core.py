@@ -95,11 +95,19 @@ class RolesManager(manager.Manager):
         allowed_roles = {}
         applications = set([a['application_id'] for a in owned_roles])
         for application in applications:
-            permissions = [p['name'] for p in self.driver.list_permissions(
-                                                            application=application,
-                                                            is_internal=True)]
             # NOTE(garcianavalon) this is a very poor way to do it, if in the future
             # a more complex logic and system is required refactor this
+
+            # All the roles in the app
+            roles = [a['role_id'] for a in owned_roles
+                     if a['application_id'] == application]
+            # For every role in the app, load all the permissions
+            permissions = []
+            for role_id in roles:
+                permissions += [p['name'] for p 
+                    in self.driver.list_permissions_for_role(role_id)]
+            
+            # Now check if the internal permissions are present
             if ASSIGN_ALL_ROLES_PERMISSION in permissions:
                 # add all roles in the application
                 allowed_roles[application] = [r['id'] for r in self.driver.list_roles(
