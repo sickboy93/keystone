@@ -110,12 +110,13 @@ class RolesManager(manager.Manager):
             # Now check if the internal permissions are present
             if ASSIGN_ALL_ROLES_PERMISSION in permissions:
                 # add all roles in the application
-                allowed_roles[application] = [r['id'] for r in self.driver.list_roles(
-                                                    application=application)]
+                allowed_roles[application] = set([r['id'] for r 
+                    in (self.driver.list_roles(application=application)
+                        + self.driver.list_roles(is_internal=True))])
             elif ASSIGN_OWNED_ROLES_PERMISSION in permissions:
                 # add only the roles the user has in the application
-                allowed_roles[application] = [a['role_id'] for a in owned_roles 
-                                                if a['application_id'] == application]
+                allowed_roles[application] = [a['role_id'] for a 
+                    in owned_roles if a['application_id'] == application]
         return allowed_roles
 
 
