@@ -46,6 +46,7 @@ extension.register_public_extension(EXTENSION_DATA['alias'], EXTENSION_DATA)
 
 ASSIGN_ALL_ROLES_PERMISSION = 'Get and assign all application roles'
 ASSIGN_OWNED_ROLES_PERMISSION = 'Get and assign only owned roles'
+MANAGE_APPLICATION_PERMISSION = 'Manage the application'
 
 @dependency.provider('roles_api')
 class RolesManager(manager.Manager):
@@ -60,6 +61,23 @@ class RolesManager(manager.Manager):
         super(RolesManager, self).__init__(
             'keystone.contrib.roles.backends.sql.Roles')
 
+    def list_applications_user_allowed_to_manage(self, user_id, 
+                                                 organization_id):
+        """List all the applications in which the user has at least 
+        one role with the permission 'Manage the application' permission.
+        """
+        assignments = self.driver.list_role_user_assignments(
+            user_id, organization_id)
+        return self._get_allowed_applications(assignments)
+       
+    def list_applications_organization_allowed_to_manage(self, 
+                                                         organization_id):
+        """List all the applications in which the organization has at least 
+        one role with the permission 'Manage the application' permission.
+        """
+        assignments = self.driver.list_role_organization_assignments(
+            organization_id)
+        return self._get_allowed_applications(assignments)
 
     def list_roles_user_allowed_to_assign(self, user_id, organization_id):
         """List the roles that a given user can assign. To be able to assign roles
@@ -73,8 +91,9 @@ class RolesManager(manager.Manager):
         :returns: dictionary with application ids as keys and list 
             of role ids as values
         """
-        owned_roles = self.driver.list_role_user_assignments(user_id, organization_id)
-        return self._get_allowed_roles(owned_roles)
+        assignments = self.driver.list_role_user_assignments(
+            user_id, organization_id)
+        return self._get_allowed_roles(assignments)
 
 
     def list_roles_organization_allowed_to_assign(self, organization_id):
@@ -87,36 +106,59 @@ class RolesManager(manager.Manager):
         :returns: dictionary with application ids as keys and list 
             of role ids as values
         """
-        owned_roles = self.driver.list_role_organization_assignments(organization_id)
-        return self._get_allowed_roles(owned_roles)
+        assignments = self.driver.list_role_organization_assignments(
+            organization_id)
+        return self._get_allowed_roles(assignments)
         
+    def _get_all_internal_permissions(self, current_assignments):
+        applications = set([a['application_id'] for a in current_assignments])
+        permissions = {}
+        for application_id in applications:
+            owned_roles = [a['role_id'] for a in current_assignments
+                           if a['application_id'] == application_id]
+            permissions[application_id] = []
+            for role_id in owned_roles:
+                permissions[application_id] += \
+                    [p['name'] for p in 
+                     self.driver.list_permissions_for_role(role_id)
+                     if p['is_internal'] == True]
+        return permissions
 
-    def _get_allowed_roles(self, owned_roles):
+    def _get_allowed_applications(self, current_assignments):
+        application_permissions = self._get_all_internal_permissions(
+            current_assignments)
+        allowed_applications = []
+        for application in application_permissions:
+            permissions = application_permissions[application]
+
+            # Check if the manage internal permission is present
+            if MANAGE_APPLICATION_PERMISSION in permissions:
+                allowed_applications.append(application)
+
+        return allowed_applications
+
+    def _get_allowed_roles(self, current_assignments):
+        application_permissions = self._get_all_internal_permissions(
+            current_assignments)
         allowed_roles = {}
-        applications = set([a['application_id'] for a in owned_roles])
-        for application in applications:
-            # NOTE(garcianavalon) this is a very poor way to do it, if in the future
-            # a more complex logic and system is required refactor this
+        for application in application_permissions:
+            permissions = application_permissions[application]
 
-            # All the roles in the app
-            roles = [a['role_id'] for a in owned_roles
-                     if a['application_id'] == application]
-            # For every role in the app, load all the permissions
-            permissions = []
-            for role_id in roles:
-                permissions += [p['name'] for p 
-                    in self.driver.list_permissions_for_role(role_id)]
-            
             # Now check if the internal permissions are present
             if ASSIGN_ALL_ROLES_PERMISSION in permissions:
                 # add all roles in the application
-                allowed_roles[application] = set([r['id'] for r 
-                    in (self.driver.list_roles(application=application)
-                        + self.driver.list_roles(is_internal=True))])
+                allowed_roles[application] = \
+                    set([r['id'] for r 
+                         in (self.driver.list_roles(application=application)
+                         + self.driver.list_roles(is_internal=True))])
+
             elif ASSIGN_OWNED_ROLES_PERMISSION in permissions:
                 # add only the roles the user has in the application
-                allowed_roles[application] = [a['role_id'] for a 
-                    in owned_roles if a['application_id'] == application]
+                allowed_roles[application] = \
+                    [a['role_id'] for a 
+                     in current_assignments 
+                     if a['application_id'] == application]
+
         return allowed_roles
 
 

@@ -48,7 +48,8 @@ class RolesExtension(wsgi.V3ExtensionRouter):
         fiware_api_controller = controllers.FiwareApiControllerV3()
         user_assignment_controller = controllers.RoleUserAssignmentV3()
         organization_assignment_controller = controllers.RoleOrganizationAssignmentV3()
-        
+        allowed_controller = controllers.AllowedActionsControllerV3()
+
         # ROLES
         self._add_resource(
             mapper, roles_controller,
@@ -77,16 +78,6 @@ class RolesExtension(wsgi.V3ExtensionRouter):
             rel=build_resource_relation(resource_name='role_assignments'))
 
         self._add_resource(
-            mapper, roles_controller,
-            path=self.PATH_PREFIX + '/users/{user_id}/organizations/{organization_id}/roles/allowed',
-            get_action='list_roles_user_allowed_to_assign',
-            rel=build_resource_relation(resource_name='roles'),
-            path_vars={
-                'user_id':build_parameter_relation(parameter_name='user_id'),
-                'organization_id':build_parameter_relation(parameter_name='organization_id'),
-            })
-
-        self._add_resource(
             mapper, user_assignment_controller,
             path=self.PATH_PREFIX + '/users/{user_id}/organizations/{organization_id}/applications/{application_id}/roles/{role_id}',
             put_action='add_role_to_user',
@@ -109,15 +100,6 @@ class RolesExtension(wsgi.V3ExtensionRouter):
             rel=build_resource_relation(resource_name='role_assignments'))
 
         self._add_resource(
-            mapper, roles_controller,
-            path=self.PATH_PREFIX + '/organizations/{organization_id}/roles/allowed',
-            get_action='list_roles_organization_allowed_to_assign',
-            rel=build_resource_relation(resource_name='roles'),
-            path_vars={
-                'organization_id':build_parameter_relation(parameter_name='organization_id'),
-            })
-
-        self._add_resource(
             mapper, organization_assignment_controller,
             path=self.PATH_PREFIX + '/organizations/{organization_id}/applications/{application_id}/roles/{role_id}',
             put_action='add_role_to_organization',
@@ -130,6 +112,46 @@ class RolesExtension(wsgi.V3ExtensionRouter):
                 'application_id':
                     build_parameter_relation(parameter_name='application_id'),
             })
+
+        # ALLOWED ACTIONS
+        self._add_resource(
+            mapper, allowed_controller,
+            path=self.PATH_PREFIX + '/users/{user_id}/organizations/{organization_id}/roles/allowed',
+            get_action='list_roles_user_allowed_to_assign',
+            rel=build_resource_relation(resource_name='roles'),
+            path_vars={
+                'user_id':build_parameter_relation(parameter_name='user_id'),
+                'organization_id':build_parameter_relation(parameter_name='organization_id'),
+            })
+
+        self._add_resource(
+            mapper, allowed_controller,
+            path=self.PATH_PREFIX + '/organizations/{organization_id}/roles/allowed',
+            get_action='list_roles_organization_allowed_to_assign',
+            rel=build_resource_relation(resource_name='roles'),
+            path_vars={
+                'organization_id':build_parameter_relation(parameter_name='organization_id'),
+            })
+
+        self._add_resource(
+            mapper, allowed_controller,
+            path=self.PATH_PREFIX + '/users/{user_id}/organizations/{organization_id}/applications/allowed',
+            get_action='list_applications_user_allowed_to_manage',
+            rel=build_resource_relation(resource_name='applications'),
+            path_vars={
+                'user_id':build_parameter_relation(parameter_name='user_id'),
+                'organization_id':build_parameter_relation(parameter_name='organization_id'),
+            })
+
+        self._add_resource(
+            mapper, allowed_controller,
+            path=self.PATH_PREFIX + '/organizations/{organization_id}/applications/allowed',
+            get_action='list_applications_organization_allowed_to_manage',
+            rel=build_resource_relation(resource_name='applications'),
+            path_vars={
+                'organization_id':build_parameter_relation(parameter_name='organization_id'),
+            })
+
         # PERMISSIONS
         self._add_resource(
             mapper, permissions_controller,

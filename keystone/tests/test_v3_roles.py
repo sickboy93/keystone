@@ -32,12 +32,18 @@ class RolesBaseTests(test_v3.RestfulTestCase):
 
     ROLES_URL = '/OS-ROLES/roles'
     PERMISSIONS_URL = '/OS-ROLES/permissions'
-    USER_ALLOWED_URL = '/OS-ROLES/users/{user_id}/organizations/{organization_id}/roles/allowed'
+
     USER_ASSIGNMENTS_URL = '/OS-ROLES/users/role_assignments'
     USER_ROLES_URL = '/OS-ROLES/users/{user_id}/organizations/{organization_id}/applications/{application_id}/roles/{role_id}'
-    ORGANIZATION_ALLOWED_URL = '/OS-ROLES/organizations/{organization_id}/roles/allowed'
+    
     ORGANIZATION_ASSIGNMENTS_URL = '/OS-ROLES/organizations/role_assignments'
     ORGANIZATION_ROLES_URL = '/OS-ROLES/organizations/{organization_id}/applications/{application_id}/roles/{role_id}'
+
+    USER_ALLOWED_ROLES_URL = '/OS-ROLES/users/{user_id}/organizations/{organization_id}/roles/allowed'
+    ORGANIZATION_ALLOWED_ROLES_URL = '/OS-ROLES/organizations/{organization_id}/roles/allowed'
+
+    USER_ALLOWED_APPLICATIONS_URL = '/OS-ROLES/users/{user_id}/organizations/{organization_id}/applications/allowed'
+    ORGANIZATION_ALLOWED_APPLICATIONS_URL = '/OS-ROLES/organizations/{organization_id}/applications/allowed'
 
 
     def setUp(self):
@@ -241,14 +247,14 @@ class RolesBaseTests(test_v3.RestfulTestCase):
                                 %url_args
         return self.delete(url, expected_status=expected_status)
 
-    
+    # ALLOWED ACTIONS
     def _list_roles_user_allowed_to_assign(self, user_id, organization_id, 
                                            expected_status=200):
         url_args = {
             'user_id': user_id,
             'organization_id': organization_id
         }   
-        url = self.USER_ALLOWED_URL.format(**url_args)
+        url = self.USER_ALLOWED_ROLES_URL.format(**url_args)
         return self.get(url, expected_status=expected_status)
 
     def _list_roles_organization_allowed_to_assign(self, organization_id, 
@@ -256,7 +262,24 @@ class RolesBaseTests(test_v3.RestfulTestCase):
         url_args = {
             'organization_id': organization_id
         }   
-        url = self.ORGANIZATION_ALLOWED_URL.format(**url_args)
+        url = self.ORGANIZATION_ALLOWED_ROLES_URL.format(**url_args)
+        return self.get(url, expected_status=expected_status)
+
+    def _list_applications_user_allowed_to_manage(self, user_id, organization_id, 
+                                                  expected_status=200):
+        url_args = {
+            'user_id': user_id,
+            'organization_id': organization_id
+        }   
+        url = self.USER_ALLOWED_APPLICATIONS_URL.format(**url_args)
+        return self.get(url, expected_status=expected_status)
+
+    def _list_applications_organization_allowed_to_manage(self, organization_id, 
+                                                          expected_status=200):
+        url_args = {
+            'organization_id': organization_id
+        }   
+        url = self.ORGANIZATION_ALLOWED_APPLICATIONS_URL.format(**url_args)
         return self.get(url, expected_status=expected_status)
 
     def _assert_role(self, test_role, reference_role):
@@ -650,8 +673,6 @@ class RoleOrganizationAssignmentTests(RolesBaseTests):
             current_roles = [r['id'] for r in organization_roles]                    
             self.assertEqual(current_roles, current_assignments)
 
-
-
     def test_add_role_to_organization(self):
         application = uuid.uuid4().hex
         role_ref = self.new_fiware_role_ref(uuid.uuid4().hex,
@@ -821,6 +842,36 @@ class InternalRolesTests(RolesBaseTests):
                                     if expected_roles[r_id]]   
             self.assertItemsEqual(current, expected)
     
+    def test_list_applications_user_allowed_to_manage(self):
+        user, organization = self._create_user()
+        permission = core.MANAGE_APPLICATION_PERMISSION
+        app_id = uuid.uuid4().hex
+        self._create_internal_roles_user(user, 
+                                         organization, 
+                                         permission,
+                                         app_id)
+
+        response = self._list_applications_user_allowed_to_manage(
+            user_id=user['id'], organization_id=organization['id'])
+
+        # check the correct applications are returned
+        allowed_apps = json.loads(response.body)['allowed_applications']
+        self.assertEqual([app_id], allowed_apps)
+
+    def test_list_applications_organization_allowed_to_manage(self):
+        organization = self._create_organization()
+        permission = core.MANAGE_APPLICATION_PERMISSION
+        app_id = uuid.uuid4().hex
+        self._create_internal_roles_organization(
+            organization, permission, app_id)
+
+        response = self._list_applications_organization_allowed_to_manage(
+            organization_id=organization['id'])
+
+        # check the correct applications are returned
+        allowed_apps = json.loads(response.body)['allowed_applications']
+        self.assertEqual([app_id], allowed_apps)
+
 
     def _create_internal_roles_user(self, user, organization, permission, app_id):
         expected_roles = {}
