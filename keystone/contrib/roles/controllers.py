@@ -59,21 +59,6 @@ class RoleCrudV3(BaseControllerV3):
     def delete_role(self, context, role_id):
         self.roles_api.delete_role(role_id)
 
-    @controller.protected()
-    def list_roles_user_allowed_to_assign(self, context, user_id, organization_id):
-        ref = self.roles_api.list_roles_user_allowed_to_assign(user_id, organization_id)
-        response = {
-            'allowed_roles': ref
-        }
-        return response
-
-    @controller.protected()
-    def list_roles_organization_allowed_to_assign(self, context, organization_id):
-        ref = self.roles_api.list_roles_organization_allowed_to_assign(organization_id)
-        response = {
-            'allowed_roles': ref
-        }
-        return response
 
 class RoleUserAssignmentV3(BaseControllerV3):
     collection_name = 'role_assignments'
@@ -100,6 +85,7 @@ class RoleUserAssignmentV3(BaseControllerV3):
                             organization_id, application_id):
         self.roles_api.remove_role_from_user(role_id, user_id, 
                                              organization_id, application_id)
+
 
 class RoleOrganizationAssignmentV3(BaseControllerV3):
     collection_name = 'role_assignments'
@@ -129,6 +115,50 @@ class RoleOrganizationAssignmentV3(BaseControllerV3):
                                                      organization_id, 
                                                      application_id)
 
+
+class AllowedActionsControllerV3(BaseControllerV3):
+
+    @controller.protected()
+    def list_roles_user_allowed_to_assign(self, context, user_id, 
+                                          organization_id):
+        ref = self.roles_api.list_roles_user_allowed_to_assign(
+            user_id, organization_id)
+        response = {
+            'allowed_roles': ref
+        }
+        return response
+
+    @controller.protected()
+    def list_roles_organization_allowed_to_assign(self, context, 
+                                                  organization_id):
+        ref = self.roles_api.list_roles_organization_allowed_to_assign(
+            organization_id)
+        response = {
+            'allowed_roles': ref
+        }
+        return response
+
+    @controller.protected()
+    def list_applications_user_allowed_to_manage(self, context, user_id, 
+                                                 organization_id):
+        ref = self.roles_api.list_applications_user_allowed_to_manage(
+            user_id, organization_id)
+        response = {
+            'allowed_applications': ref
+        }
+        return response
+
+    @controller.protected()
+    def list_applications_organization_allowed_to_manage(self, context, 
+                                                         organization_id):
+        ref = self.roles_api.list_applications_organization_allowed_to_manage(
+            organization_id)
+        response = {
+            'allowed_applications': ref
+        }
+        return response
+
+        
 class PermissionCrudV3(BaseControllerV3):
 
     collection_name = 'permissions'
