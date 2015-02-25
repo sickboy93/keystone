@@ -46,8 +46,6 @@ class UserRegistrationV3(controller.V3Controller):
 
         # NOTE(garcianavalon) in order for the user to get project scoped tokens
         # we create a default project with his name, and add the user to the project
-        import pdb
-        pdb.set_trace()
         project = {
             'name':user_ref['username'],
             'domain_id':user_ref['domain_id'],
