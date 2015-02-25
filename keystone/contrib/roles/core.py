@@ -47,6 +47,7 @@ extension.register_public_extension(EXTENSION_DATA['alias'], EXTENSION_DATA)
 ASSIGN_ALL_ROLES_PERMISSION = 'Get and assign all application roles'
 ASSIGN_OWNED_ROLES_PERMISSION = 'Get and assign only owned roles'
 MANAGE_APPLICATION_PERMISSION = 'Manage the application'
+MANAGE_ROLES_PERMISSION = 'Manage roles'
 
 @dependency.provider('roles_api')
 class RolesManager(manager.Manager):
@@ -60,6 +61,24 @@ class RolesManager(manager.Manager):
     def __init__(self):
         super(RolesManager, self).__init__(
             'keystone.contrib.roles.backends.sql.Roles')
+
+    def list_applications_user_allowed_to_manage_roles(self, user_id, 
+                                                       organization_id):
+        """List all the applications in which the user has at least 
+        one role with the permission 'Manage the application' permission.
+        """
+        assignments = self.driver.list_role_user_assignments(
+            user_id, organization_id)
+        return self._get_allowed_applications_manage_roles(assignments)
+       
+    def list_applications_organization_allowed_to_manage_roles(self, 
+                                                               organization_id):
+        """List all the applications in which the organization has at least 
+        one role with the permission 'Manage the application' permission.
+        """
+        assignments = self.driver.list_role_organization_assignments(
+            organization_id)
+        return self._get_allowed_applications_manage_roles(assignments)
 
     def list_applications_user_allowed_to_manage(self, user_id, 
                                                  organization_id):
@@ -123,6 +142,19 @@ class RolesManager(manager.Manager):
                      self.driver.list_permissions_for_role(role_id)
                      if p['is_internal'] == True]
         return permissions
+
+    def _get_allowed_applications_manage_roles(self, current_assignments):
+        application_permissions = self._get_all_internal_permissions(
+            current_assignments)
+        allowed_applications = []
+        for application in application_permissions:
+            permissions = application_permissions[application]
+
+            # Check if the manage internal permission is present
+            if MANAGE_ROLES_PERMISSION in permissions:
+                allowed_applications.append(application)
+
+        return allowed_applications
 
     def _get_allowed_applications(self, current_assignments):
         application_permissions = self._get_all_internal_permissions(

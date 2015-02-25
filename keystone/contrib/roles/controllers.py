@@ -158,6 +158,26 @@ class AllowedActionsControllerV3(BaseControllerV3):
         }
         return response
 
+    @controller.protected()
+    def list_applications_user_allowed_to_manage_roles(self, context, user_id, 
+                                                       organization_id):
+        ref = self.roles_api.list_applications_user_allowed_to_manage_roles(
+            user_id, organization_id)
+        response = {
+            'allowed_applications': ref
+        }
+        return response
+
+    @controller.protected()
+    def list_applications_organization_allowed_to_manage_roles(self, context, 
+                                                               organization_id):
+        ref = self.roles_api.list_applications_organization_allowed_to_manage_roles(
+            organization_id)
+        response = {
+            'allowed_applications': ref
+        }
+        return response
+
         
 class PermissionCrudV3(BaseControllerV3):
 

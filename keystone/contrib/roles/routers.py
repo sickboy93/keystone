@@ -152,6 +152,25 @@ class RolesExtension(wsgi.V3ExtensionRouter):
                 'organization_id':build_parameter_relation(parameter_name='organization_id'),
             })
 
+        self._add_resource(
+            mapper, allowed_controller,
+            path=self.PATH_PREFIX + '/users/{user_id}/organizations/{organization_id}/applications/allowed_roles',
+            get_action='list_applications_user_allowed_to_manage_roles',
+            rel=build_resource_relation(resource_name='applications'),
+            path_vars={
+                'user_id':build_parameter_relation(parameter_name='user_id'),
+                'organization_id':build_parameter_relation(parameter_name='organization_id'),
+            })
+
+        self._add_resource(
+            mapper, allowed_controller,
+            path=self.PATH_PREFIX + '/organizations/{organization_id}/applications/allowed_roles',
+            get_action='list_applications_organization_allowed_to_manage_roles',
+            rel=build_resource_relation(resource_name='applications'),
+            path_vars={
+                'organization_id':build_parameter_relation(parameter_name='organization_id'),
+            })
+
         # PERMISSIONS
         self._add_resource(
             mapper, permissions_controller,
