@@ -85,7 +85,7 @@ class OAuth2Extension(wsgi.V3ExtensionRouter):
 
         self._add_resource(
             mapper, consumer_controller,
-            path=self.PATH_PREFIX +'/users/{user_id}' + '/consumers',
+            path='/users/{user_id}' + self.PATH_PREFIX + '/consumers',
             get_action='list_consumers_for_user',
             rel=build_resource_relation(resource_name='consumers'),
             path_vars={

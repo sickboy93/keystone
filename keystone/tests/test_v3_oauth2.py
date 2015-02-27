@@ -25,15 +25,16 @@ from keystone.contrib.oauth2 import core
 from keystone.tests import test_v3
 
 CONF = config.CONF
+PATH_PREFIX = '/OS-OAUTH2'
 
 class OAuth2BaseTests(test_v3.RestfulTestCase):
 
     EXTENSION_NAME = 'oauth2'
     EXTENSION_TO_ADD = 'oauth2_extension'
 
-    CONSUMER_URL = '/OS-OAUTH2/consumers'
+    CONSUMER_URL = PATH_PREFIX + '/consumers'
     USERS_URL = '/users/{user_id}'
-    ACCESS_TOKENS_URL = '/OS-OAUTH2/access_tokens'
+    ACCESS_TOKENS_URL = PATH_PREFIX + '/access_tokens'
 
     DEFAULT_REDIRECT_URIS = [
         'https://%s.com' %uuid.uuid4().hex,
@@ -141,7 +142,7 @@ class ConsumerCRUDTests(OAuth2BaseTests):
         self.assertEqual(response.result['links']['self'], self_url)
         self.assertValidListLinks(response.result['links'])
 
-    def test_consumer_list(self):
+    def test_consumer_list_by_user(self):
         self._create_consumer()
         url = self.USERS_URL.format(user_id=self.user['id']) + self.CONSUMER_URL
         response = self.get(url)
@@ -154,7 +155,6 @@ class ConsumerCRUDTests(OAuth2BaseTests):
             self.assertIsNotNone(consumer['name'])
             self.assertEqual(self.user['id'], consumer['owner'])
        
-
     def test_consumer_update(self):
         consumer, data = self._create_consumer()
         original_id = consumer['id']
