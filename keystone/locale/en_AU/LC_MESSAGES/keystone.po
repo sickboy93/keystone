@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  Keystone\n"
 "Report-Msgid-Bugs-To: https://bugs.launchpad.net/keystone\n"
-"POT-Creation-Date: 2014-11-06 06:07+0000\n"
-"PO-Revision-Date: 2014-10-30 05:25+0000\n"
+"POT-Creation-Date: 2014-10-07 14:35+0000\n"
+"PO-Revision-Date: 2014-04-19 01:30+0000\n"
 "Last-Translator: openstackjenkins <jenkins@openstack.org>\n"
 "Language-Team: English (Australia) "
 "(http://www.transifex.com/projects/p/keystone/language/en_AU/)\n"
@@ -515,12 +515,6 @@ msgstr ""
 #, python-format
 msgid "Role %s not found"
 msgstr "Role %s not found"
-
-#: keystone/assignment/backends/ldap.py:551
-#: keystone/assignment/backends/sql.py:405
-#, python-format
-msgid "Cannot remove role that has not been granted, %s"
-msgstr "Cannot remove role that has not been granted, %s"
 
 #: keystone/assignment/backends/ldap.py:647
 #, python-format
@@ -1217,7 +1211,7 @@ msgstr ""
 msgid "User '%(user_id)s' not found in group '%(group_id)s'"
 msgstr ""
 
-#: keystone/identity/backends/ldap.py:332
+#: keystone/identity/backends/ldap.py:337
 #, python-format
 msgid "User %(user_id)s is already a member of group %(group_id)s"
 msgstr "User %(user_id)s is already a member of group %(group_id)s"

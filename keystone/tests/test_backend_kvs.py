@@ -26,6 +26,131 @@ from keystone.tests import test_backend
 CONF = config.CONF
 
 
+class KvsIdentity(tests.TestCase, test_backend.IdentityTests):
+    def setUp(self):
+        # NOTE(dstanek): setup the database for subsystems that only have a
+        # SQL backend (like credentials)
+        self.useFixture(database.Database())
+
+        super(KvsIdentity, self).setUp()
+        self.load_backends()
+        self.load_fixtures(default_fixtures)
+
+    def config_overrides(self):
+        super(KvsIdentity, self).config_overrides()
+        self.config_fixture.config(
+            group='identity',
+            driver='keystone.identity.backends.kvs.Identity')
+
+    def test_password_hashed(self):
+        driver = self.identity_api._select_identity_driver(
+            self.user_foo['domain_id'])
+        user_ref = driver._get_user(self.user_foo['id'])
+        self.assertNotEqual(user_ref['password'], self.user_foo['password'])
+
+    def test_list_projects_for_user_with_grants(self):
+        self.skipTest('kvs backend is now deprecated')
+
+    def test_create_duplicate_group_name_in_different_domains(self):
+        self.skipTest('Blocked by bug 1119770')
+
+    def test_create_duplicate_user_name_in_different_domains(self):
+        self.skipTest('Blocked by bug 1119770')
+
+    def test_create_duplicate_project_name_in_different_domains(self):
+        self.skipTest('Blocked by bug 1119770')
+
+    def test_move_user_between_domains(self):
+        self.skipTest('Blocked by bug 1119770')
+
+    def test_move_user_between_domains_with_clashing_names_fails(self):
+        self.skipTest('Blocked by bug 1119770')
+
+    def test_move_group_between_domains(self):
+        self.skipTest('Blocked by bug 1119770')
+
+    def test_move_group_between_domains_with_clashing_names_fails(self):
+        self.skipTest('Blocked by bug 1119770')
+
+    def test_move_project_between_domains(self):
+        self.skipTest('Blocked by bug 1119770')
+
+    def test_move_project_between_domains_with_clashing_names_fails(self):
+        self.skipTest('Blocked by bug 1119770')
+
+    def test_delete_group_removes_role_assignments(self):
+        # When a group is deleted any role assignments for the group are
+        # supposed to be removed, but the KVS backend doesn't implement the
+        # funcationality so the assignments are left around.
+
+        DEFAULT_DOMAIN_ID = CONF.identity.default_domain_id
+        MEMBER_ROLE_ID = 'member'
+
+        def get_member_assignments():
+            assignments = self.assignment_api.list_role_assignments()
+            return filter(lambda x: x['role_id'] == MEMBER_ROLE_ID,
+                          assignments)
+
+        # Create a group.
+        new_group = {
+            'domain_id': DEFAULT_DOMAIN_ID,
+            'name': self.getUniqueString(prefix='tdgrra')}
+        new_group = self.identity_api.create_group(new_group)
+
+        # Create a project.
+        new_project = {
+            'id': uuid.uuid4().hex,
+            'name': self.getUniqueString(prefix='tdgrra'),
+            'domain_id': DEFAULT_DOMAIN_ID}
+        self.assignment_api.create_project(new_project['id'], new_project)
+
+        # Assign a role to the group.
+        self.assignment_api.create_grant(
+            group_id=new_group['id'], project_id=new_project['id'],
+            role_id=MEMBER_ROLE_ID)
+
+        new_role_assignments = get_member_assignments()
+
+        # Delete the group.
+        self.identity_api.delete_group(new_group['id'])
+
+        # Check that the role assignment for the group is still there since
+        # kvs doesn't implement cleanup.
+        member_assignments = get_member_assignments()
+
+        self.assertThat(member_assignments,
+                        matchers.Equals(new_role_assignments))
+
+    def test_get_roles_for_groups_on_domain(self):
+        self.assertRaises(
+            exception.NotImplemented,
+            super(KvsIdentity, self).test_get_roles_for_groups_on_domain)
+
+    def test_list_domains_for_groups(self):
+        self.assertRaises(
+            exception.NotImplemented,
+            super(KvsIdentity, self).test_list_domains_for_groups)
+
+    def test_get_roles_for_groups_on_project(self):
+        self.assertRaises(
+            exception.NotImplemented,
+            super(KvsIdentity, self).test_get_roles_for_groups_on_project)
+
+    def test_list_projects_for_groups(self):
+        self.assertRaises(
+            exception.NotImplemented,
+            super(KvsIdentity, self).test_list_projects_for_groups)
+
+    def test_update_role_no_name(self):
+        # Override
+        # In the case of KVS assignment backend, this test raises. See
+        # bug 1241134
+        # FIXME(blk-u): this shouldn't fail.
+        self.assertRaises(
+            KeyError,
+            super(KvsIdentity, self).test_update_role_no_name)
+
+
 class KvsToken(tests.TestCase, test_backend.TokenTests):
     def setUp(self):
         super(KvsToken, self).setUp()
