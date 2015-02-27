@@ -50,6 +50,11 @@ class RegistrationBaseTests(test_v3.RestfulTestCase):
         # but I don't know if its the right way to do it...
         self.manager = core.Manager()
 
+    def new_user_ref(self, *args, **kwargs):
+        user_ref = super(RegistrationBaseTests, self).new_user_ref(*args, **kwargs)
+        user_ref['username'] = user_ref['name']
+        return user_ref
+
     def _register_new_user(self, user_ref=None):
         user_ref = user_ref if user_ref else self.new_user_ref(
                                                     domain_id=self.domain_id)
