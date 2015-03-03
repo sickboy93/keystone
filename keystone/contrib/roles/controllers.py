@@ -35,7 +35,8 @@ class RoleCrudV3(BaseControllerV3):
     @controller.protected()
     def list_roles(self, context):
         """Description of the controller logic."""
-        ref = self.roles_api.list_roles()
+        filters = context['query_string']
+        ref = self.roles_api.list_roles(**filters)
         return RoleCrudV3.wrap_collection(context, ref)
 
     @controller.protected()
@@ -187,7 +188,8 @@ class PermissionCrudV3(BaseControllerV3):
     @controller.protected()
     def list_permissions(self, context):
         """Description of the controller logic."""
-        ref = self.roles_api.list_permissions()
+        filters = context['query_string']
+        ref = self.roles_api.list_permissions(**filters)
         return PermissionCrudV3.wrap_collection(context, ref)
 
     @controller.protected()
