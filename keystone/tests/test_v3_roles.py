@@ -338,14 +338,34 @@ class RoleCrudTests(RolesBaseTests):
         self._assert_role(role, role_ref)
 
     def test_roles_list(self):
+        application = uuid.uuid4().hex
+        role_ref1 = self.new_fiware_role_ref(uuid.uuid4().hex, 
+                                             application=application)
+        role1 = self._create_role(role_ref1)
+
+        role_ref2 = self.new_fiware_role_ref(uuid.uuid4().hex, 
+                                             application=uuid.uuid4().hex)
+        role2 = self._create_role(role_ref2)
+        response = self.get(self.ROLES_URL + 
+            '?application={0}'.format(application))
+        entities = response.result['roles']
+        self.assertIsNotNone(entities)
+
+        self_url = ''.join(['http://localhost/v3', 
+            self.ROLES_URL, '?application={0}'.format(application)])
+        self.assertEqual(response.result['links']['self'], self_url)
+        self.assertValidListLinks(response.result['links'])
+
+        self.assertEqual(1, len(entities))
+
+    def test_roles_list_filter_by_application(self):
         role1 = self._create_role()
         role2 = self._create_role()
         response = self.get(self.ROLES_URL)
         entities = response.result['roles']
         self.assertIsNotNone(entities)
 
-        self_url = ['http://localhost/v3', self.ROLES_URL]
-        self_url = ''.join(self_url)
+        self_url = ''.join(['http://localhost/v3', self.ROLES_URL])
         self.assertEqual(response.result['links']['self'], self_url)
         self.assertValidListLinks(response.result['links'])
 
