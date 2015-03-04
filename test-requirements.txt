@@ -43,37 +43,15 @@ WebTest>=2.0,<=2.0.18
 #mox>=0.5.3
 
 discover
-<<<<<<< HEAD
-python-subunit>=0.0.18
-testrepository>=0.0.18
-testtools>=0.9.36
-testscenarios>=0.4
-
-# for python-keystoneclient
-# keystoneclient <0.2.1
-httplib2>=0.7.5
-# replaces httplib2 in keystoneclient >=0.2.1
-requests>=2.2.0,!=2.4.0
-keyring>=2.1,!=3.3
-
-=======
 python-subunit>=0.0.18,<=1.0.0
 testrepository>=0.0.18,<=0.0.20
 testtools>=0.9.34,!=1.4.0,<=1.5.0
 testscenarios>=0.4
 
->>>>>>> juno
 # For documentation
 oslosphinx>=2.2.0,<2.5.0  # Apache-2.0
 
 # Used only by oslo
-<<<<<<< HEAD
-kombu>=2.5.0
-lockfile>=0.8
-stevedore>=1.1.0  # Apache-2.0
-
-=======
 kombu==3.0.7
 lockfile>=0.8,<=0.8
 stevedore>=1.0.0,<=1.2.0 # Apache-2.0
->>>>>>> juno
