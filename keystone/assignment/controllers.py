@@ -111,7 +111,7 @@ class Tenant(controller.V2Controller):
             raise exception.ValidationError(message=msg)
 
         self.assert_admin(context)
-        tenant_ref['id'] = tenant_ref.get('id', uuid.uuid4().hex) # migration!
+        tenant_ref['id'] = tenant_ref.get('id', uuid.uuid4().hex)
         tenant = self.assignment_api.create_project(
             tenant_ref['id'],
             self._normalize_domain_id(context, tenant_ref))
