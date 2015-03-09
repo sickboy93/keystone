@@ -75,16 +75,17 @@ class Driver(object):
         """
         raise exception.NotImplemented()  
 
-    @abc.abstractmethod
-    def list_consumers_for_user(self, user_id):
-        """List all registered consumers owned by the user
+    # NOTE(garcianavalon) removed because owner field is removed
+    # @abc.abstractmethod
+    # def list_consumers_for_user(self, user_id):
+    #     """List all registered consumers owned by the user
         
-        :param user_id: user id
-        :type user_id: string
-        :returns: List of consumers
+    #     :param user_id: user id
+    #     :type user_id: string
+    #     :returns: List of consumers
 
-        """
-        raise exception.NotImplemented()  
+    #     """
+    #     raise exception.NotImplemented()  
 
     @abc.abstractmethod
     def create_consumer(self, consumer):

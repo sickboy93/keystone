@@ -83,14 +83,15 @@ class OAuth2Extension(wsgi.V3ExtensionRouter):
                 build_parameter_relation(parameter_name='consumer_id'),
             })
 
-        self._add_resource(
-            mapper, consumer_controller,
-            path='/users/{user_id}' + self.PATH_PREFIX + '/consumers',
-            get_action='list_consumers_for_user',
-            rel=build_resource_relation(resource_name='consumers'),
-            path_vars={
-                'user_id':build_parameter_relation(parameter_name='user_id'),
-            })
+        # NOTE(garcianavalon) removed because owner field is removed
+        # self._add_resource(
+        #     mapper, consumer_controller,
+        #     path='/users/{user_id}' + self.PATH_PREFIX + '/consumers',
+        #     get_action='list_consumers_for_user',
+        #     rel=build_resource_relation(resource_name='consumers'),
+        #     path_vars={
+        #         'user_id':build_parameter_relation(parameter_name='user_id'),
+        #     })
 
         # Resource Owner CRUD for Access Tokens
         self._add_resource(
