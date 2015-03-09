@@ -42,14 +42,14 @@ class UserRegistrationV3(controller.V3Controller):
         user_ref = self._normalize_dict(user)
         user_ref = self._normalize_domain_id(context, user_ref)
         # disabled by default
-        user_ref['enabled'] = False
+        user_ref['enabled'] = True # migration!
 
         # NOTE(garcianavalon) in order for the user to get project scoped tokens
         # we create a default project with his name, and add the user to the project
         project = {
             'name':user_ref['username'],
             'domain_id':user_ref['domain_id'],
-            'enabled': False,
+            'enabled': True, # migration!
             'is_default': True,
         }
         project_ref = self._assign_unique_id(self._normalize_dict(project))

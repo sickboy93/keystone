@@ -111,7 +111,7 @@ class Tenant(controller.V2Controller):
             raise exception.ValidationError(message=msg)
 
         self.assert_admin(context)
-        tenant_ref['id'] = tenant_ref.get('id', uuid.uuid4().hex)
+        tenant_ref['id'] = tenant_ref.get('id', uuid.uuid4().hex) # migration!
         tenant = self.assignment_api.create_project(
             tenant_ref['id'],
             self._normalize_domain_id(context, tenant_ref))
@@ -397,7 +397,9 @@ class ProjectV3(controller.V3Controller):
     @controller.protected()
     @validation.validated(schema.project_create, 'project')
     def create_project(self, context, project):
-        ref = self._assign_unique_id(self._normalize_dict(project))
+        # ref = self._assign_unique_id(self._normalize_dict(project))
+        ref = self._normalize_dict(project) # migration!
+        ref['id'] = project.get('id', uuid.uuid4().hex) # migration!
         ref = self._normalize_domain_id(context, ref)
         ref = self.assignment_api.create_project(ref['id'], ref)
         return ProjectV3.wrap_member(context, ref)
