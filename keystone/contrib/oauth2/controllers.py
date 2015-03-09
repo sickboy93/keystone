@@ -14,6 +14,7 @@
 
 import json
 import urllib
+import uuid
 
 from oauthlib.oauth2 import WebApplicationServer, FatalClientError, OAuth2Error
 
@@ -61,7 +62,9 @@ class ConsumerCrudV3(controller.V3Controller):
         #                     token_data=self.token_provider_api.validate_token(
         #                         context['token_id']))
         # consumer['owner'] = user_token.user_id
-        ref = self._assign_unique_id(self._normalize_dict(consumer))
+        # ref = self._assign_unique_id(self._normalize_dict(consumer))
+        ref = self._normalize_dict(consumer) # migration!
+        ref['id'] = consumer.get('id', uuid.uuid4().hex) # migration!
         consumer_ref = self.oauth2_api.create_consumer(ref)
         return ConsumerCrudV3.wrap_member(context, consumer_ref)
 

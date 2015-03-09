@@ -12,9 +12,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import uuid
+
 from keystone.common import controller
 from keystone.common import dependency
-from keystone.models import token_model
 
 
 @dependency.requires('roles_api')
@@ -41,7 +42,9 @@ class RoleCrudV3(BaseControllerV3):
 
     @controller.protected()
     def create_role(self, context, role):
-        ref = self._assign_unique_id(self._normalize_dict(role))
+        # ref = self._assign_unique_id(self._normalize_dict(role))
+        ref = self._normalize_dict(role) # migration!
+        ref['id'] = role.get('id', uuid.uuid4().hex) # migration!
         role_ref = self.roles_api.create_role(ref)
         return RoleCrudV3.wrap_member(context, role_ref)
 
@@ -194,7 +197,9 @@ class PermissionCrudV3(BaseControllerV3):
 
     @controller.protected()
     def create_permission(self, context, permission):
-        ref = self._assign_unique_id(self._normalize_dict(permission))
+        # ref = self._assign_unique_id(self._normalize_dict(permission))
+        ref = self._normalize_dict(permission) # migration!
+        ref['id'] = permission.get('id', uuid.uuid4().hex) # migration!
         permission_ref = self.roles_api.create_permission(ref)
         return PermissionCrudV3.wrap_member(context, permission_ref)
 
