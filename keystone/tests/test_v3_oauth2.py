@@ -88,7 +88,8 @@ class ConsumerCRUDTests(OAuth2BaseTests):
         self.assertIsNotNone(consumer['id'])
         self.assertIsNotNone(consumer['name'])
         self.assertIsNotNone(consumer['secret'])
-        self.assertEqual(self.user['id'], consumer['owner'])
+        # NOTE(garcianavalon) removed because owner field is removed
+        # self.assertEqual(self.user['id'], consumer['owner'])
 
     def test_create_consumer_with_extra(self):
         extra_data = {
@@ -100,7 +101,8 @@ class ConsumerCRUDTests(OAuth2BaseTests):
         self.assertIsNotNone(consumer['id'])
         self.assertIsNotNone(consumer['name'])
         self.assertIsNotNone(consumer['secret'])
-        self.assertEqual(self.user['id'], consumer['owner'])
+        # NOTE(garcianavalon) removed because owner field is removed
+        # self.assertEqual(self.user['id'], consumer['owner'])
         for k in extra_data:
             self.assertEqual(extra_data[k], consumer[k])
 
@@ -142,18 +144,19 @@ class ConsumerCRUDTests(OAuth2BaseTests):
         self.assertEqual(response.result['links']['self'], self_url)
         self.assertValidListLinks(response.result['links'])
 
-    def test_consumer_list_by_user(self):
-        self._create_consumer()
-        url = self.USERS_URL.format(user_id=self.user['id']) + self.CONSUMER_URL
-        response = self.get(url)
+    # NOTE(garcianavalon) removed because owner field is removed
+    # def test_consumer_list_by_user(self):
+    #     self._create_consumer()
+    #     url = self.USERS_URL.format(user_id=self.user['id']) + self.CONSUMER_URL
+    #     response = self.get(url)
         
-        entities = response.result['consumers']
-        self.assertIsNotNone(entities)
+    #     entities = response.result['consumers']
+    #     self.assertIsNotNone(entities)
 
-        for consumer in entities:
-            self.assertIsNotNone(consumer['id'])
-            self.assertIsNotNone(consumer['name'])
-            self.assertEqual(self.user['id'], consumer['owner'])
+    #     for consumer in entities:
+    #         self.assertIsNotNone(consumer['id'])
+    #         self.assertIsNotNone(consumer['name'])
+    #         self.assertEqual(self.user['id'], consumer['owner'])
        
     def test_consumer_update(self):
         consumer, data = self._create_consumer()

@@ -29,7 +29,7 @@ from keystone.openstack.common import log
 
 LOG = log.getLogger(__name__)
 
-@dependency.requires('oauth2_api', 'token_provider_api') 
+@dependency.requires('oauth2_api') 
 class ConsumerCrudV3(controller.V3Controller):
 
     collection_name = 'consumers'
@@ -47,18 +47,20 @@ class ConsumerCrudV3(controller.V3Controller):
         ref = self.oauth2_api.list_consumers()
         return ConsumerCrudV3.wrap_collection(context, ref)
 
-    @controller.protected()
-    def list_consumers_for_user(self, context, user_id):
-        ref = self.oauth2_api.list_consumers_for_user(user_id)
-        return ConsumerCrudV3.wrap_collection(context, ref)
+    # NOTE(garcianavalon) removed because owner field is removed
+    # @controller.protected()
+    # def list_consumers_for_user(self, context, user_id):
+    #     ref = self.oauth2_api.list_consumers_for_user(user_id)
+    #     return ConsumerCrudV3.wrap_collection(context, ref)
 
     @controller.protected()
     def create_consumer(self, context, consumer):
-        user_token = token_model.KeystoneToken(
-                            token_id=context['token_id'],
-                            token_data=self.token_provider_api.validate_token(
-                                context['token_id']))
-        consumer['owner'] = user_token.user_id
+        # NOTE(garcianavalon) removed because owner field is removed
+        # user_token = token_model.KeystoneToken(
+        #                     token_id=context['token_id'],
+        #                     token_data=self.token_provider_api.validate_token(
+        #                         context['token_id']))
+        # consumer['owner'] = user_token.user_id
         ref = self._assign_unique_id(self._normalize_dict(consumer))
         consumer_ref = self.oauth2_api.create_consumer(ref)
         return ConsumerCrudV3.wrap_member(context, consumer_ref)
