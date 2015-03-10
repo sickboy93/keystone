@@ -36,7 +36,6 @@ def upgrade(migrate_engine):
         sql.Column('response_type', 
             sql.Enum('code', name='response_type'), nullable=False),
         sql.Column('scopes', sql.Text(), nullable=True),
-        sql.Column('owner', sql.String(64), nullable=False),
         sql.Column('extra', sql.Text(), nullable=True))
     consumer_table.create(migrate_engine, checkfirst=True)
 
