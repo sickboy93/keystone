@@ -265,7 +265,7 @@ class FiwareApiControllerV3(BaseControllerV3):
 
         # remove the user-default organization from the organizations list
         user_organization = [org for org in organizations 
-                            if org['name'] == user['name']]
+                            if org['name'] == user.get('username', user['name'])]
         user_roles = []
         if user_organization:
             user_organization = user_organization[0]
@@ -275,8 +275,8 @@ class FiwareApiControllerV3(BaseControllerV3):
 
         response_body = {
             'id':user_id,
-            'email': user['email'],
-            'nickName': user['name'],
+            'email': user['name'],
+            'nickName': user.get('username', user['name']),
             'roles': user_roles,
             'organizations': organizations
         }
