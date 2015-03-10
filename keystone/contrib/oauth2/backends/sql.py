@@ -46,7 +46,7 @@ class AuthorizationCode(sql.ModelBase, sql.DictBase):
     __tablename__ = 'authorization_code_oauth2'
 
     attributes = ['code', 'consumer_id', 'authorizing_user_id', 'expires_at', 'scopes',
-                'state', 'redirect_uri', 'valid']
+                'state', 'redirect_uri', 'valid', 'extra']
 
     code = sql.Column(sql.String(64), primary_key=True, nullable=False)
     consumer_id = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
@@ -64,7 +64,7 @@ class AuthorizationCode(sql.ModelBase, sql.DictBase):
 class ConsumerCredentials(sql.ModelBase, sql.DictBase):
     __tablename__ = 'consumer_credentials_oauth2'
     attributes = ['id', 'user_id', 'client_id', 'redirect_uri',
-                'response_type', 'state', 'created_at']
+                'response_type', 'state', 'created_at', 'extra']
     
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
     # TODO(garcianavalon) shouldnt it be a Foreign Key??
@@ -82,7 +82,7 @@ class AccessToken(sql.ModelBase, sql.DictBase):
     __tablename__ = 'access_token_oauth2'
 
     attributes = ['id', 'consumer_id', 'authorizing_user_id', 'expires_at',
-                'scopes', 'valid']
+                'scopes', 'valid', 'extra']
 
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
     consumer_id = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),

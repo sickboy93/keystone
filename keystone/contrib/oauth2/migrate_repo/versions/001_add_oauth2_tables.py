@@ -63,7 +63,8 @@ def upgrade(migrate_engine):
         sql.Column('redirect_uri', sql.String(64), nullable=False),
         sql.Column('response_type', sql.Enum('code', name='response_type'), nullable=False),
         sql.Column('state', sql.String(64), nullable=True),
-        sql.Column('created_at', sql.DateTime(), default=None, nullable=False))
+        sql.Column('created_at', sql.DateTime(), default=None, nullable=False),
+        sql.Column('extra', sql.Text(), nullable=True))
     consumer_credentials_table.create(migrate_engine, checkfirst=True)
 
     access_token_table = sql.Table(
