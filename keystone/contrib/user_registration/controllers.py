@@ -51,6 +51,7 @@ class UserRegistrationV3(controller.V3Controller):
             'domain_id':user_ref['domain_id'],
             'enabled': True, # migration!
             'is_default': True,
+            'id': user_ref['id'].zfill(32) # migration!
         }
         project_ref = self._assign_unique_id(self._normalize_dict(project))
         project_ref = self._normalize_domain_id(context, project_ref)
