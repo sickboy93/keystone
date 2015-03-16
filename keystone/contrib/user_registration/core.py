@@ -51,7 +51,7 @@ extension.register_public_extension(EXTENSION_DATA['alias'], EXTENSION_DATA)
 ACTIVATION_KEY_DURATION = 28800
 RESET_TOKEN_DURATION = 28800
 DEFAULT_ROLE_ID = ''
-DEFAULT_ROLE_NAME = 'admin'
+DEFAULT_ROLE_NAME = 'owner'
 
 @dependency.requires('assignment_api')
 @dependency.provider('registration_api')
