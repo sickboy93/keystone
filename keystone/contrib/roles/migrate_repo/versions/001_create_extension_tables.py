@@ -31,7 +31,7 @@ def upgrade(migrate_engine):
         sql.Column('id', sql.String(64), primary_key=True),
         sql.Column('name', sql.String(64), nullable=False),
         sql.Column('is_internal', sql.Boolean(), default=False, nullable=False),
-        sql.Column('application', sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
+        sql.Column('application_id', sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
                              nullable=False, index=True))
     role_table.create(migrate_engine, checkfirst=True)
 
@@ -41,7 +41,7 @@ def upgrade(migrate_engine):
         sql.Column('id', sql.String(64), primary_key=True),
         sql.Column('name', sql.String(64), nullable=False),
         sql.Column('is_internal', sql.Boolean(), default=False, nullable=False),
-        sql.Column('application', sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
+        sql.Column('application_id', sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
                              nullable=False, index=True))
     permission_table.create(migrate_engine, checkfirst=True)
 

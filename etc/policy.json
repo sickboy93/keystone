@@ -69,16 +69,16 @@
     "identity:ec2_create_credential": "rule:admin_or_owner",
     "identity:ec2_delete_credential": "rule:admin_required or (rule:owner and user_id:%(target.credential.user_id)s)",
 
-    "identity:get_role": "rule:admin_required",
+    "identity:get_role": "rule:member_or_admin_or_owner",
     "identity:list_roles": "rule:member_or_admin_or_owner",
-    "identity:create_role": "rule:admin_required",
+    "identity:create_role": "rule:member_or_admin_or_owner",
     "identity:update_role": "rule:admin_required",
     "identity:delete_role": "rule:admin_required",
 
     "identity:check_grant": "rule:admin_required",
     "identity:list_grants": "rule:member_or_admin_or_owner",
-    "identity:create_grant": "rule:admin_required",
-    "identity:revoke_grant": "rule:admin_required",
+    "identity:create_grant": "rule:admin_or_owner",
+    "identity:revoke_grant": "rule:admin_or_owner",
 
     "identity:list_role_assignments": "rule:member_or_admin_or_owner",
 
@@ -102,8 +102,8 @@
     "identity:get_role_for_trust": "",
     "identity:delete_trust": "",
 
-    "identity:create_consumer": "rule:admin_required",
-    "identity:get_consumer": "rule:admin_required",
+    "identity:create_consumer": "rule:member_or_admin_or_owner",
+    "identity:get_consumer": "rule:member_or_admin_or_owner",
     "identity:list_consumers": "rule:member_or_admin_or_owner",
     "identity:delete_consumer": "rule:admin_required",
     "identity:update_consumer": "rule:admin_required",
@@ -173,6 +173,15 @@
 
     "identity:list_role_user_assignments": "rule:member_or_admin_or_owner",
     "identity:list_roles_user_allowed_to_assign": "rule:member_or_admin_or_owner",
+    "identity:add_role_to_user": "rule:member_or_admin_or_owner",
+
+    "identity:list_applications_user_allowed_to_manage": "rule:member_or_admin_or_owner",
+    "identity:list_applications_user_allowed_to_manage_roles": "rule:member_or_admin_or_owner",
+
     "identity:list_role_organization_assignments": "rule:member_or_admin_or_owner",
-    "identity:list_roles_organization_allowed_to_assign": "rule:member_or_admin_or_owner"
+    "identity:list_roles_organization_allowed_to_assign": "rule:member_or_admin_or_owner",
+
+    "identity:list_permissions": "rule:member_or_admin_or_owner",
+    "identity:add_permission_to_role": "rule:member_or_admin_or_owner",
+    "identity:list_permissions_for_role": "rule:member_or_admin_or_owner"
 }

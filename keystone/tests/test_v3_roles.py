@@ -61,7 +61,7 @@ class RolesBaseTests(test_v3.RestfulTestCase):
     def new_fiware_role_ref(self, name, application=False, is_internal=False):
         role_ref = {
             'name': name,
-            'application': application if application else uuid.uuid4().hex,
+            'application_id': application if application else uuid.uuid4().hex,
         }
         if is_internal:
             role_ref['is_internal'] = True
@@ -77,7 +77,7 @@ class RolesBaseTests(test_v3.RestfulTestCase):
     def new_fiware_permission_ref(self, name, application=False, is_internal=False):
         permission_ref = {
             'name': name,
-            'application': application if application else uuid.uuid4().hex,  
+            'application_id': application if application else uuid.uuid4().hex,  
         }
         if is_internal:
             permission_ref['is_internal'] = True
@@ -347,12 +347,12 @@ class RoleCrudTests(RolesBaseTests):
                                              application=uuid.uuid4().hex)
         role2 = self._create_role(role_ref2)
         response = self.get(self.ROLES_URL + 
-            '?application={0}'.format(application))
+            '?application_id={0}'.format(application))
         entities = response.result['roles']
         self.assertIsNotNone(entities)
 
         self_url = ''.join(['http://localhost/v3', 
-            self.ROLES_URL, '?application={0}'.format(application)])
+            self.ROLES_URL, '?application_id={0}'.format(application)])
         self.assertEqual(response.result['links']['self'], self_url)
         self.assertValidListLinks(response.result['links'])
 
