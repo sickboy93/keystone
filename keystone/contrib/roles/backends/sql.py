@@ -20,24 +20,24 @@ from keystone.i18n import _
 
 class Role(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'role_fiware'
-    __table_args__ = (sql.UniqueConstraint('name', 'application'), {'extend_existing': True})
-    attributes = ['id', 'name', 'is_internal', 'application']
+    __table_args__ = (sql.UniqueConstraint('name', 'application_id'), {'extend_existing': True})
+    attributes = ['id', 'name', 'is_internal', 'application_id']
                     
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
     name = sql.Column(sql.String(64), nullable=False)
     is_internal = sql.Column(sql.Boolean(), default=False, nullable=False)
-    application = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
+    application_id = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
                              nullable=False, index=True)
 
 class Permission(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'permission_fiware'
-    __table_args__ = (sql.UniqueConstraint('name', 'application'), {'extend_existing': True})
-    attributes = ['id', 'name', 'is_internal', 'application']
+    __table_args__ = (sql.UniqueConstraint('name', 'application_id'), {'extend_existing': True})
+    attributes = ['id', 'name', 'is_internal', 'application_id']
                     
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
     name = sql.Column(sql.String(64), nullable=False)
     is_internal = sql.Column(sql.Boolean(), default=False, nullable=False)
-    application = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
+    application_id = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
                              nullable=False, index=True)
 
 class RolePermission(sql.ModelBase, sql.DictBase):
