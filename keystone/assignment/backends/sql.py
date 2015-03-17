@@ -670,7 +670,7 @@ class Project(sql.ModelBase, sql.DictBase):
     extra = sql.Column(sql.JsonBlob())
     # Unique constraint across two columns to create the separation
     # rather than just only 'name' being unique
-    __table_args__ = (sql.UniqueConstraint('domain_id', 'name'), {})
+    #__table_args__ = (sql.UniqueConstraint('domain_id', 'name'), {})
 
 
 class Role(sql.ModelBase, sql.DictBase):
