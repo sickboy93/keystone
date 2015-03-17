@@ -72,13 +72,13 @@
     "identity:get_role": "rule:member_or_admin_or_owner",
     "identity:list_roles": "rule:member_or_admin_or_owner",
     "identity:create_role": "rule:member_or_admin_or_owner",
-    "identity:update_role": "rule:admin_required",
-    "identity:delete_role": "rule:admin_required",
+    "identity:update_role": "rule:member_or_admin_or_owner",
+    "identity:delete_role": "rule:member_or_admin_or_owner",
 
     "identity:check_grant": "rule:admin_required",
     "identity:list_grants": "rule:member_or_admin_or_owner",
-    "identity:create_grant": "rule:admin_or_owner",
-    "identity:revoke_grant": "rule:admin_or_owner",
+    "identity:create_grant": "rule:member_or_admin_or_owner",
+    "identity:revoke_grant": "rule:member_or_admin_or_owner",
 
     "identity:list_role_assignments": "rule:member_or_admin_or_owner",
 
@@ -180,8 +180,15 @@
 
     "identity:list_role_organization_assignments": "rule:member_or_admin_or_owner",
     "identity:list_roles_organization_allowed_to_assign": "rule:member_or_admin_or_owner",
+    "identity:add_role_to_organization": "rule:member_or_admin_or_owner",
+
+    "identity:list_applications_organization_allowed_to_manage": "rule:member_or_admin_or_owner",
+    "identity:list_applications_organization_allowed_to_manage_roles": "rule:member_or_admin_or_owner",
 
     "identity:list_permissions": "rule:member_or_admin_or_owner",
+    "identity:create_permission": "rule:member_or_admin_or_owner",
+
+    "identity:list_permissions_for_role": "rule:member_or_admin_or_owner",
     "identity:add_permission_to_role": "rule:member_or_admin_or_owner",
-    "identity:list_permissions_for_role": "rule:member_or_admin_or_owner"
+    "identity:remove_permission_from_role": "rule:member_or_admin_or_owner"
 }
