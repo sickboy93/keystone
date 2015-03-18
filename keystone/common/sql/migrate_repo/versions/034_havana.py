@@ -221,9 +221,9 @@ def upgrade(migrate_engine):
                              name='ixu_group_name_domain_id').create()
     migrate.UniqueConstraint(role.c.name,
                              name='ixu_role_name').create()
-    migrate.UniqueConstraint(project.c.domain_id,
-                             project.c.name,
-                             name='ixu_project_name_domain_id').create()
+    # migrate.UniqueConstraint(project.c.domain_id,
+    #                          project.c.name,
+    #                          name='ixu_project_name_domain_id').create()
     migrate.UniqueConstraint(domain.c.name,
                              name='ixu_domain_name').create()
 
