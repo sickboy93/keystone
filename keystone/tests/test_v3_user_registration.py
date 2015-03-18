@@ -50,6 +50,12 @@ class RegistrationBaseTests(test_v3.RestfulTestCase):
         # but I don't know if its the right way to do it...
         self.manager = core.Manager()
 
+        # create the default role
+        keystone_role_ref = self.new_role_ref()
+        keystone_role_ref['name'] = core.DEFAULT_ROLE_NAME
+        keystone_role = self.assignment_api.create_role(keystone_role_ref['id'], 
+                                                        keystone_role_ref)
+
     def new_user_ref(self, *args, **kwargs):
         user_ref = super(RegistrationBaseTests, self).new_user_ref(*args, **kwargs)
         user_ref['username'] = user_ref['name']
