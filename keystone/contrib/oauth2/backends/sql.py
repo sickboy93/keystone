@@ -32,7 +32,7 @@ class Consumer(sql.ModelBase, sql.DictBase):
     __table_args__ = {'extend_existing': True}                
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
     name = sql.Column(sql.String(64), nullable=False)
-    description = sql.Column(sql.String(64), nullable=True)
+    description = sql.Column(sql.Text(), nullable=True)
     secret = sql.Column(sql.String(64), nullable=False)
     client_type = sql.Column(VALID_CLIENT_TYPES, nullable=False) 
     redirect_uris = sql.Column(sql.JsonBlob(), nullable=False)
