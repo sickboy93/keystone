@@ -47,7 +47,7 @@ class UserRegistrationV3(controller.V3Controller):
         # NOTE(garcianavalon) in order for the user to get project scoped tokens
         # we create a default project with his name, and add the user to the project
         project = {
-            'name':user_ref['username'],
+            'name':user_ref['name'],
             'domain_id':user_ref['domain_id'],
             'enabled': True, # migration!
             'is_default': True,
