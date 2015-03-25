@@ -190,5 +190,6 @@
 
     "identity:list_permissions_for_role": "rule:member_or_admin_or_owner",
     "identity:add_permission_to_role": "rule:member_or_admin_or_owner",
-    "identity:remove_permission_from_role": "rule:member_or_admin_or_owner"
+    "identity:remove_permission_from_role": "rule:member_or_admin_or_owner",
+    "identity:validate_token": ""
 }
