@@ -264,7 +264,7 @@ class FiwareApiControllerV3(BaseControllerV3):
         user_roles = []
         if user_organization:
             user_organization = user_organization[0]
-            organizations.remove(user_organization) #there is only one!
+            # organizations.remove(user_organization) #there is only one!
             # extract the user-scoped roles
             user_roles = user_organization['roles'] 
 
