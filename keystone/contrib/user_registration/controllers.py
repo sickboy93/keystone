@@ -15,7 +15,6 @@
 from keystone import exception
 from keystone.common import controller
 from keystone.common import dependency
-from keystone.common import wsgi
 from keystone.contrib.user_registration import core as user_registration
 from keystone.i18n import _
 from keystone.openstack.common import log
@@ -111,6 +110,7 @@ class UserRegistrationV3(controller.V3Controller):
             }
         }
 
+    @controller.protected()
     def reset_password(self, context, user_id, token_id, user):
         # check if the token is valid
         reset_profile = self.registration_api.get_reset_profile(user_id,
@@ -123,6 +123,7 @@ class UserRegistrationV3(controller.V3Controller):
         user_ref = self.identity_api.update_user(user_id, user_ref)
         return UserRegistrationV3.wrap_member(context, user_ref)
 
+    @controller.protected()
     def new_activation_key(self, context, user_id):
         # check if the user is enabled
         user_ref = self.identity_api.get_user(user_id)
