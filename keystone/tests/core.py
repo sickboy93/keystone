@@ -356,7 +356,7 @@ class TestCase(BaseTestCase):
 
     def auth_plugin_config_override(self, methods=None, **method_classes):
         if methods is None:
-            methods = ['external', 'password', 'token', 'oauth1', 'saml2','oauth2']
+            methods = ['external', 'password', 'token', 'oauth1', 'saml2', 'oauth2']
             if not method_classes:
                 method_classes = dict(
                     external='keystone.auth.plugins.external.DefaultDomain',
