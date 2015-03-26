@@ -27,7 +27,7 @@ def upgrade(migrate_engine):
         sql.Column('id', sql.String(64), primary_key=True, nullable=False),
         sql.Column('name', sql.String(64), nullable=False),
         sql.Column('description', sql.String(64), nullable=True),
-        sql.Column('secret', sql.String(64), nullable=False),
+        sql.Column('secret', sql.String(128), nullable=False),
         sql.Column('client_type', 
             sql.Enum('confidential', name='client_type'), nullable=False),
         sql.Column('redirect_uris', sql.Text(), nullable=False),
