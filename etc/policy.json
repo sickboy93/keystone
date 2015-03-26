@@ -105,8 +105,8 @@
     "identity:create_consumer": "rule:member_or_admin_or_owner",
     "identity:get_consumer": "rule:member_or_admin_or_owner",
     "identity:list_consumers": "rule:member_or_admin_or_owner",
-    "identity:delete_consumer": "rule:admin_required",
-    "identity:update_consumer": "rule:admin_required",
+    "identity:delete_consumer": "rule:member_or_admin_or_owner",
+    "identity:update_consumer": "rule:member_or_admin_or_owner",
 
     "identity:authorize_request_token": "rule:admin_required",
     "identity:list_access_token_roles": "rule:admin_required",
@@ -171,6 +171,9 @@
     "identity:get_policy_for_endpoint": "rule:admin_required",
     "identity:list_endpoints_for_policy": "rule:admin_required",
 
+    "identity:request_authorization_code": "rule:member_or_admin_or_owner",
+    "identity:create_authorization_code": "rule:member_or_admin_or_owner",
+
     "identity:list_role_user_assignments": "rule:member_or_admin_or_owner",
     "identity:list_roles_user_allowed_to_assign": "rule:member_or_admin_or_owner",
     "identity:add_role_to_user": "rule:member_or_admin_or_owner",
@@ -191,5 +194,5 @@
     "identity:list_permissions_for_role": "rule:member_or_admin_or_owner",
     "identity:add_permission_to_role": "rule:member_or_admin_or_owner",
     "identity:remove_permission_from_role": "rule:member_or_admin_or_owner",
-    "identity:validate_token": ""
+    "identity:validate_token": ""   
 }
