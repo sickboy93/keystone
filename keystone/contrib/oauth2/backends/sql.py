@@ -33,7 +33,7 @@ class Consumer(sql.ModelBase, sql.DictBase):
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
     name = sql.Column(sql.String(64), nullable=False)
     description = sql.Column(sql.Text(), nullable=True)
-    secret = sql.Column(sql.String(64), nullable=False)
+    secret = sql.Column(sql.String(128), nullable=False)
     client_type = sql.Column(VALID_CLIENT_TYPES, nullable=False) 
     redirect_uris = sql.Column(sql.JsonBlob(), nullable=False)
     grant_type = sql.Column(VALID_GRANT_TYPES, nullable=False) 
@@ -118,7 +118,8 @@ class OAuth2(oauth2.Driver):
     #     return [consumer.to_dict() for consumer in cons]
 
     def create_consumer(self, consumer):
-        consumer['secret'] = uuid.uuid4().hex
+        # consumer['secret'] = uuid.uuid4().hex
+        consumer['secret'] = consumer.get('secret', uuid.uuid4().hex) # migracion!
         if not consumer.get('description'):
             consumer['description'] = None
         session = sql.get_session()
