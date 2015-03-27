@@ -183,6 +183,10 @@
     "identity:list_role_user_assignments": "rule:member_or_admin_or_owner",
     "identity:list_roles_user_allowed_to_assign": "rule:member_or_admin_or_owner",
     "identity:add_role_to_user": "rule:member_or_admin_or_owner",
+    "identity:remove_role_from_user": "rule:member_or_admin_or_owner",
+
+    "identity:add_role_to_organization": "rule:member_or_admin_or_owner",
+    "identity:remove_role_from_organization": "rule:member_or_admin_or_owner",
 
     "identity:list_applications_user_allowed_to_manage": "rule:member_or_admin_or_owner",
     "identity:list_applications_user_allowed_to_manage_roles": "rule:member_or_admin_or_owner",
