@@ -43,9 +43,9 @@
     "identity:get_user": "rule:member_or_admin_or_owner",
     "identity:list_users": "rule:member_or_admin_or_owner",
     "identity:create_user": "rule:admin_required",
-    "identity:update_user": "rule:admin_required",
-    "identity:delete_user": "rule:admin_required",
-    "identity:change_password": "rule:admin_or_owner",
+    "identity:update_user": "rule:member_or_admin_or_owner",
+    "identity:delete_user": "rule:member_or_admin_or_owner",
+    "identity:change_password": "rule:member_or_admin_or_owner",
 
     "identity:get_group": "rule:admin_required",
     "identity:list_groups": "rule:admin_required",
