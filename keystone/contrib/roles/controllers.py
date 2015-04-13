@@ -14,7 +14,6 @@
 
 from keystone.common import controller
 from keystone.common import dependency
-from keystone.models import token_model
 
 
 @dependency.requires('roles_api')
