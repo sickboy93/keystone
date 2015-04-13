@@ -67,7 +67,6 @@ class RolesManager(manager.Manager):
     def get_authorized_organizations(self, user, 
                                     application_id,
                                     include_default_organization=False):
-
         # roles associated with this user in the application
         assignments = self.driver.list_role_user_assignments(
             user_id=user['id'], application_id=application_id)
