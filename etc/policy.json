@@ -37,15 +37,15 @@
     "identity:list_projects": "",
     "identity:list_user_projects": "rule:member_or_admin_or_owner",
     "identity:create_project": "rule:member_or_admin_or_owner",
-    "identity:update_project": "rule:admin_or_owner",
-    "identity:delete_project": "rule:admin_or_owner",
+    "identity:update_project": "rule:member_or_admin_or_owner",
+    "identity:delete_project": "rule:member_or_admin_or_owner",
 
     "identity:get_user": "rule:member_or_admin_or_owner",
     "identity:list_users": "rule:member_or_admin_or_owner",
     "identity:create_user": "rule:admin_required",
-    "identity:update_user": "rule:admin_required",
-    "identity:delete_user": "rule:admin_required",
-    "identity:change_password": "rule:admin_or_owner",
+    "identity:update_user": "rule:member_or_admin_or_owner",
+    "identity:delete_user": "rule:member_or_admin_or_owner",
+    "identity:change_password": "rule:member_or_admin_or_owner",
 
     "identity:get_group": "rule:admin_required",
     "identity:list_groups": "rule:admin_required",
@@ -183,6 +183,10 @@
     "identity:list_role_user_assignments": "rule:member_or_admin_or_owner",
     "identity:list_roles_user_allowed_to_assign": "rule:member_or_admin_or_owner",
     "identity:add_role_to_user": "rule:member_or_admin_or_owner",
+    "identity:remove_role_from_user": "rule:member_or_admin_or_owner",
+
+    "identity:add_role_to_organization": "rule:member_or_admin_or_owner",
+    "identity:remove_role_from_organization": "rule:member_or_admin_or_owner",
 
     "identity:list_applications_user_allowed_to_manage": "rule:member_or_admin_or_owner",
     "identity:list_applications_user_allowed_to_manage_roles": "rule:member_or_admin_or_owner",

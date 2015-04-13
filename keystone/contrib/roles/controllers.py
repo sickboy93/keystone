@@ -233,9 +233,25 @@ class PermissionCrudV3(BaseControllerV3):
         self.roles_api.remove_permission_from_role(role_id, permission_id)
 
 
-@dependency.requires('assignment_api', 'identity_api', 'oauth2_api')
+@dependency.requires('identity_api', 'oauth2_api')
 class FiwareApiControllerV3(BaseControllerV3):
 
+    #@controller.protected()
+    def authorized_organizations(self, context, token_id):
+        """ Returns all the organizations in which the user has a role
+        from the application that got the OAuth2.0 token.
+        """
+        # TODO(garcianavalon) check if token is valid, use user_id to filter in get
+        token = self.oauth2_api.get_access_token(token_id)
+        user = self.identity_api.get_user(token['authorizing_user_id'])
+        application_id = token['consumer_id']
+
+        organizations = self.roles_api.get_authorized_organizations(
+            user, application_id, include_default_organization=True)
+
+        return {
+            'organizations': organizations
+        }
     #@controller.protected()
     def validate_token(self, context, token_id):
         """ Return a list of the roles and permissions of the user associated 
@@ -246,38 +262,29 @@ class FiwareApiControllerV3(BaseControllerV3):
         """
         # TODO(garcianavalon) check if token is valid, use user_id to filter in get
         token = self.oauth2_api.get_access_token(token_id)
-        user_id = token['authorizing_user_id']
-        # get the user_id
-        user = self.identity_api.get_user(user_id)
-        # roles associated with this user
-        assignments = self.roles_api.list_role_user_assignments(user_id)
-        # organizations the user is in
-        organizations = self.assignment_api.list_projects_for_user(user_id)
-        # filter to only organizations with roles
-        organizations = [org for org in organizations 
-                    if org['id'] in [a['organization_id'] for a in assignments]]
-        for organization in organizations:
-            role_ids = [a['role_id'] for a in assignments 
-                        if a['organization_id'] == organization['id']]            
-            # Load roles' names
-            organization['roles'] = [dict(id=r['id'], name=r['name']) for r
-                    in [self.roles_api.get_role(id) for id in role_ids]]
+        user = self.identity_api.get_user(token['authorizing_user_id'])
+        application_id = token['consumer_id']
+        
+        organizations = self.roles_api.get_authorized_organizations(
+            user, application_id)
 
-        # remove the user-default organization from the organizations list
-        user_organization = [org for org in organizations 
-                            if org['name'] == user.get('username', user['name'])]
+        # remove the default organization and extract its roles
         user_roles = []
+        user_organization = next(
+            (org for org in organizations 
+            if org['name'] == user.get('username', user['name'])), None)
+
         if user_organization:
-            user_organization = user_organization[0]
-            # organizations.remove(user_organization) #there is only one!
+            organizations.remove(user_organization)
             # extract the user-scoped roles
-            user_roles = user_organization['roles'] 
+            user_roles = user_organization.pop('roles') 
 
         response_body = {
-            'id':user_id,
+            'id':user['id'],
             'email': user['name'],
-            'nickName': user.get('username', user['name']),
+            'displayName': user.get('username', user['name']),
             'roles': user_roles,
-            'organizations': organizations
+            'organizations': organizations,
+            'app_id': application_id
         }
         return response_body

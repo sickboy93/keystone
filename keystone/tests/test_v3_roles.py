@@ -13,7 +13,6 @@
 # under the License.
 
 import json
-import six
 import uuid
 
 from urllib import urlencode
@@ -22,6 +21,7 @@ from keystone import config
 from keystone.common import dependency
 from keystone.contrib.roles import core
 from keystone.tests import test_v3
+
 
 CONF = config.CONF
 
@@ -807,9 +807,9 @@ class InternalRolesTests(RolesBaseTests):
 
     def test_list_roles_user_allowed_to_assing_owned(self):
         user, organization = self._create_user()
-        permission = core.ASSIGN_OWNED_ROLES_PERMISSION
+        permission = core.ASSIGN_OWNED_PUBLIC_ROLES_PERMISSION
         app_id = uuid.uuid4().hex
-        expected_roles = self._create_internal_roles_user(user, 
+        internal_roles, expected_roles = self._create_internal_roles_user(user, 
                                                 organization, 
                                                 permission,
                                                 app_id)
@@ -828,9 +828,9 @@ class InternalRolesTests(RolesBaseTests):
 
     def test_list_roles_user_allowed_to_assign_all(self):
         user, organization = self._create_user()
-        permission = core.ASSIGN_ALL_ROLES_PERMISSION
+        permission = core.ASSIGN_ALL_PUBLIC_ROLES_PERMISSION
         app_id = uuid.uuid4().hex
-        expected_roles = self._create_internal_roles_user(user, 
+        internal_roles, expected_roles = self._create_internal_roles_user(user, 
                                                 organization, 
                                                 permission,
                                                 app_id)
@@ -845,12 +845,30 @@ class InternalRolesTests(RolesBaseTests):
             expected = expected_roles.keys() 
             self.assertItemsEqual(current, expected)
 
+    def test_list_roles_user_allowed_to_assign_internal(self):
+        user, organization = self._create_user()
+        permission = core.ASSIGN_INTERNAL_ROLES_PERMISSION
+        app_id = uuid.uuid4().hex
+        internal_roles, expected_roles = self._create_internal_roles_user(user, 
+                                                organization, 
+                                                permission,
+                                                app_id)
+
+        response = self._list_roles_user_allowed_to_assign(user_id=user['id'],
+                                          organization_id=organization['id'])
+        # check the correct roles are returned
+        allowed_roles = json.loads(response.body)['allowed_roles']
+        for app in allowed_roles:
+            self.assertEqual(app_id, app)
+            current = [r_id for r_id in allowed_roles[app]]
+            expected = [r['id'] for r in internal_roles]
+            self.assertItemsEqual(current, expected)
 
     def test_list_roles_organization_allowed_to_assign_all(self):
         organization = self._create_organization()
-        permission = core.ASSIGN_ALL_ROLES_PERMISSION
+        permission = core.ASSIGN_ALL_PUBLIC_ROLES_PERMISSION
         app_id = uuid.uuid4().hex
-        expected_roles = self._create_internal_roles_organization(
+        internal_roles, expected_roles = self._create_internal_roles_organization(
             organization, permission, app_id)
 
         response = self._list_roles_organization_allowed_to_assign(
@@ -866,9 +884,9 @@ class InternalRolesTests(RolesBaseTests):
 
     def test_list_roles_organization_allowed_to_assing_owned(self):
         organization = self._create_organization()
-        permission = core.ASSIGN_OWNED_ROLES_PERMISSION
+        permission = core.ASSIGN_OWNED_PUBLIC_ROLES_PERMISSION
         app_id = uuid.uuid4().hex
-        expected_roles = self._create_internal_roles_organization(
+        internal_roles, expected_roles = self._create_internal_roles_organization(
             organization, permission, app_id)
 
         response = self._list_roles_organization_allowed_to_assign(
@@ -882,6 +900,23 @@ class InternalRolesTests(RolesBaseTests):
                                     if expected_roles[r_id]]   
             self.assertItemsEqual(current, expected)
     
+    def test_list_roles_organization_allowed_to_assign_internal(self):
+        organization = self._create_organization()
+        permission = core.ASSIGN_INTERNAL_ROLES_PERMISSION
+        app_id = uuid.uuid4().hex
+        internal_roles, expected_roles = self._create_internal_roles_organization(
+            organization, permission, app_id)
+
+        response = self._list_roles_organization_allowed_to_assign(
+            organization_id=organization['id'])
+        # check the correct roles are returned
+        allowed_roles = json.loads(response.body)['allowed_roles']
+        for app in allowed_roles:
+            self.assertEqual(app_id, app)
+            current = [r_id for r_id in allowed_roles[app]]
+            expected = [r['id'] for r in internal_roles]
+            self.assertItemsEqual(current, expected)
+
     def test_list_applications_user_allowed_to_manage(self):
         user, organization = self._create_user()
         permission = core.MANAGE_APPLICATION_PERMISSION
@@ -943,6 +978,7 @@ class InternalRolesTests(RolesBaseTests):
         self.assertEqual([app_id], allowed_apps)
 
     def _create_internal_roles_user(self, user, organization, permission, app_id):
+        internal_roles = []
         expected_roles = {}
         permissions = []
         
@@ -959,6 +995,7 @@ class InternalRolesTests(RolesBaseTests):
                                 application=app_id, 
                                 is_internal=True)
         role = self._create_role(role_ref)
+        internal_roles.append(role)
 
         # assign the permissions to the role
         for permission in permissions:
@@ -977,10 +1014,11 @@ class InternalRolesTests(RolesBaseTests):
                                 is_internal=False)
         another_role = self._create_role(another_role_ref)
         expected_roles[another_role['id']] = []
-        return expected_roles            
+        return internal_roles, expected_roles
                 
 
     def _create_internal_roles_organization(self, organization, permission, app_id):
+        internal_roles = []
         expected_roles = {}
         permissions = []
         
@@ -997,6 +1035,7 @@ class InternalRolesTests(RolesBaseTests):
                                 application=app_id, 
                                 is_internal=True)
         role = self._create_role(role_ref)
+        internal_roles.append(role)
 
         # assign the permissions to the role
         for permission in permissions:
@@ -1014,7 +1053,7 @@ class InternalRolesTests(RolesBaseTests):
                                 is_internal=False)
         another_role = self._create_role(another_role_ref)
         expected_roles[another_role['id']] = []
-        return expected_roles 
+        return internal_roles, expected_roles
 
 
 class PermissionCrudTests(RolesBaseTests):
@@ -1181,55 +1220,64 @@ class PermissionCrudTests(RolesBaseTests):
 
 @dependency.requires('oauth2_api')
 class FiwareApiTests(RolesBaseTests):
+    number_of_organizations = 0
+    number_of_user_roles = 0
+    number_of_organization_roles = 0
 
-    def _create_organizations_with_user_and_keystone_role(self, 
-                    user, keystone_role, number):
+    def setUp(self):
+        super(FiwareApiTests, self).setUp()
+        # create user
+        self.test_user, self.user_organization = self._create_user()
+
+        # create a keystone role
+        self.keystone_role = self._create_keystone_role()
+
+        # create a fake application
+        self.application_id = uuid.uuid4().hex
+
+    def _create_organizations_with_user_and_keystone_role(self):
         organizations = []
-        for i in range(number):
+        for i in range(self.number_of_organizations):
             organizations.append(self._create_organization())
             self._add_user_to_organization(
                         project_id=organizations[i]['id'], 
-                        user_id=user['id'],
-                        keystone_role_id=keystone_role['id'])
-        return organizations
+                        user_id=self.test_user['id'],
+                        keystone_role_id=self.keystone_role['id'])
+        self.organizations = organizations
 
-    def _assign_user_scoped_roles(self, user, user_organization, number):
+    def _assign_user_scoped_roles(self):
         user_roles = []
-        for i in range(number):
-            app_id = uuid.uuid4().hex
-            role = self._create_role(self.new_fiware_role_ref(app_id))
+        for i in range(self.number_of_user_roles):
+            role = self._create_role(self.new_fiware_role_ref(self.application_id))
             user_roles.append(role)
             self._add_role_to_user(role_id=user_roles[i]['id'], 
-                                    user_id=user['id'],
-                                    organization_id=user_organization['id'],
-                                    application_id=app_id)
-        return user_roles
+                                   user_id=self.test_user['id'],
+                                   organization_id=self.user_organization['id'],
+                                   application_id=self.application_id)
+        self.user_roles = user_roles
 
-    def _assign_organization_scoped_roles(self, user, organizations, number):
+    def _assign_organization_scoped_roles(self):
         organization_roles = {}
-        for organization in organizations:
+        for organization in self.organizations:
             organization_roles[organization['name']] = []
-            for i in range(number):
-                app_id = uuid.uuid4().hex
-                role = self._create_role(self.new_fiware_role_ref(app_id))
+            for i in range(self.number_of_organization_roles):
+                role = self._create_role(self.new_fiware_role_ref(self.application_id))
                 organization_roles[organization['name']].append(role)
                 role = organization_roles[organization['name']][i]
                 self._add_role_to_user(role_id=role['id'], 
-                                    user_id=user['id'],
+                                    user_id=self.test_user['id'],
                                     organization_id=organization['id'],
-                                    application_id=app_id)
-        return organization_roles
+                                    application_id=self.application_id)
+        self.organization_roles = organization_roles
 
-    def _create_oauth2_token(self, user):
+    def _create_oauth2_token(self):
         token_dict = {
             'id':uuid.uuid4().hex,
-            'consumer_id':uuid.uuid4().hex,
-            'authorizing_user_id':user['id'],
+            'consumer_id':self.application_id,
+            'authorizing_user_id':self.test_user['id'],
             'scopes': [uuid.uuid4().hex],
             'expires_at':uuid.uuid4().hex,
         }
-        # TODO(garcianavalon) the correct thing to do here is mock up the
-        # get_access_token call inside our method
         oauth2_access_token = self.oauth2_api.store_access_token(token_dict)
         return oauth2_access_token['id']
 
@@ -1237,98 +1285,145 @@ class FiwareApiTests(RolesBaseTests):
         url = '/access-tokens/%s' %token_id
         return self.get(url)
 
-    def _assert_user_info(self, response):
-        self.assertIsNotNone(response.result['id'])
-        self.assertIsNotNone(response.result['email'])
-        self.assertIsNotNone(response.result['nickName'])
+    def _authorized_organizations(self, token_id):
+        url = '/authorized_organizations/%s' %token_id
+        return self.get(url)
 
-    def _assert_user_scoped_roles(self, response, reference):
-        response_user_roles = response.result['roles']
+    def _assert_user_info(self):
+        result = self.response.result
+        self.assertEqual(self.test_user['id'], result['id'])
+        self.assertIsNotNone(result['email'])
+        self.assertEqual(self.test_user['name'], result['displayName'])
+        self.assertEqual(self.application_id, result['app_id'])
+
+    def _assert_user_scoped_roles(self):
+        response_user_roles = self.response.result['roles']
         self.assertIsNotNone(response_user_roles)
+
         for role in response_user_roles:
             self.assertIsNotNone(role['id'])
             self.assertIsNotNone(role['name'])
+
         actual_user_roles = set([role['id'] for role in response_user_roles])
-        expected_user_roles = set([role['id'] for role in reference])
+        if self.number_of_user_roles:
+            expected_user_roles = set([role['id'] for role in self.user_roles])
+        else:
+            expected_user_roles = set([])
         self.assertEqual(actual_user_roles, expected_user_roles)
     
-    def _assert_organization_scoped_roles(self, response, reference, number_of_organizations):
-        response_organizations = response.result['organizations']
+    def _assert_organization_scoped_roles(self):
+        response_organizations = self.response.result['organizations']
         self.assertIsNotNone(response_organizations)
-        self.assertEqual(number_of_organizations, len(response_organizations))
+
+        expected_orgs = (self.number_of_organizations 
+            if self.number_of_organization_roles else 0)
+        self.assertEqual(expected_orgs, len(response_organizations))
+
         for organization in response_organizations:
             self.assertIsNotNone(organization['id'])
             self.assertIsNotNone(organization['name'])
             self.assertIsNotNone(organization['roles'])
+
             for role in organization['roles']:
                 self.assertIsNotNone(role['id'])
                 self.assertIsNotNone(role['name'])
+
             actual_org_roles = set([role['id'] for role in organization['roles']])
-            expected_org_roles = set([role['id'] for role 
-                                    in reference[organization['name']]])
+            
+            if self.number_of_organization_roles:
+                expected_org_roles = set([role['id'] for role 
+                    in self.organization_roles[organization['name']]])
+            else:
+                expected_org_roles = set([])
             self.assertEqual(expected_org_roles, actual_org_roles)
 
-    # FIWARE API tests
-    def _test_validate_token(self, number_of_organizations=0, number_of_user_roles=0,
-                            number_of_organization_roles=0):
-        # create user
-        user, user_organization = self._create_user()
-        # create a keysrtone role
-        keystone_role = self._create_keystone_role()
-
+    def _create_all(self):
         # create some projects/organizations
-        if number_of_organizations:
-            organizations = self._create_organizations_with_user_and_keystone_role(
-                                            user=user,
-                                            keystone_role=keystone_role,
-                                            number=number_of_organizations)
+        self._create_organizations_with_user_and_keystone_role()
+
         # assign some user-scoped roles
-        if number_of_user_roles:
-            user_roles = self._assign_user_scoped_roles(user=user,
-                                                    user_organization=user_organization,
-                                                    number=number_of_user_roles)
+        self._assign_user_scoped_roles()
 
         # assign some organization-scoped roles
-        if number_of_organization_roles and number_of_organizations:
-            organization_roles = self._assign_organization_scoped_roles(user=user,
-                                                            organizations=organizations,
-                                                            number=number_of_organization_roles)
+        self._assign_organization_scoped_roles()
+
+    def _assert_all(self):
+        self._assert_user_info()
+        self._assert_user_scoped_roles()
+        self._assert_organization_scoped_roles()
+
+    def test_validate_token_basic(self):
+        self.number_of_organizations = 2
+        self.number_of_user_roles = 2
+        self.number_of_organization_roles = 1
+        self._create_all()
         # get a token for the user
-        token_id = self._create_oauth2_token(user)
-        # acces the resource
-        response = self._validate_token(token_id)
-
-        # assertions
-        self._assert_user_info(response)
-        if number_of_user_roles:
-            self._assert_user_scoped_roles(response, reference=user_roles)
-        else:
-            self.assertEquals([], response.result['roles'])
-        if number_of_organization_roles and number_of_organizations:
-            self._assert_organization_scoped_roles(response, 
-                                            reference=organization_roles, 
-                                            number_of_organizations=number_of_organizations)
-        else:
-            self.assertEquals([], response.result['organizations'])
-
-    def test_validate_token(self):
-        self._test_validate_token(number_of_organizations=2, 
-                                number_of_user_roles=2,
-                                number_of_organization_roles=1)
+        token_id = self._create_oauth2_token()
+        # access the resource
+        self.response = self._validate_token(token_id)
+        self._assert_all()
 
     def test_validate_token_no_organizations(self):
-        self._test_validate_token(number_of_user_roles=2)
+        self.number_of_user_roles = 2
+        self._create_all()
+        # get a token for the user
+        token_id = self._create_oauth2_token()
+        # access the resource
+        self.response = self._validate_token(token_id)
+        self._assert_all()
         
     def test_validate_token_no_user_scoped_roles(self):
-        self._test_validate_token(number_of_organizations=2, 
-                                number_of_organization_roles=1)
+        self.number_of_organizations = 2
+        self.number_of_organization_roles = 1
+        self._create_all()
+        # get a token for the user
+        token_id = self._create_oauth2_token()
+        # access the resource
+        self.response = self._validate_token(token_id)
+        self._assert_all()
 
     def test_validate_token_no_organization_scoped_roles(self):
-        self._test_validate_token(number_of_organizations=2, 
-                                number_of_user_roles=2)
+        self.number_of_organizations = 2
+        self.number_of_user_roles = 2
+        self._create_all()
+        # get a token for the user
+        token_id = self._create_oauth2_token()
+        # access the resource
+        self.response = self._validate_token(token_id)
+        self._assert_all()
 
     def test_validate_token_no_roles(self):
-        self._test_validate_token(number_of_organizations=2)
+        self.number_of_organizations = 2
+        self._create_all()
+        # get a token for the user
+        token_id = self._create_oauth2_token()
+        # access the resource
+        self.response = self._validate_token(token_id)
+        self._assert_all()
 
     def test_validate_token_empty_user(self):
-        self._test_validate_token()
+        self._create_all()
+        # get a token for the user
+        token_id = self._create_oauth2_token()
+        # access the resource
+        self.response = self._validate_token(token_id)
+        self._assert_all()
+
+    def test_authorized_organizations(self):
+        self.number_of_organizations = 2
+        self.number_of_user_roles = 2
+        self.number_of_organization_roles = 1
+        self._create_all()
+        # get a token for the user
+        token_id = self._create_oauth2_token()
+        # access the resource
+        self.response = self._authorized_organizations(token_id)
+        
+        # check default org is there
+        response_organizations = self.response.result['organizations']
+        self.assertIsNotNone(response_organizations)
+
+        expected_orgs = (self.number_of_organizations + 1)
+        self.assertEqual(expected_orgs, len(response_organizations))
+        assert(self.user_organization['id']
+            in [o['id'] for o in response_organizations])

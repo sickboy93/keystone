@@ -221,3 +221,12 @@ class RolesExtension(wsgi.V3ExtensionRouter):
                 'token_id':build_parameter_relation(parameter_name='token_id'),
             })
         
+        self._add_resource(
+            mapper, fiware_api_controller,
+            path='/authorized_organizations/{token_id}',
+            get_action='authorized_organizations',
+            rel=build_resource_relation(resource_name='roles'),
+            path_vars={
+                'token_id':build_parameter_relation(parameter_name='token_id'),
+            })
+        

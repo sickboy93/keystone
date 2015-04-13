@@ -44,11 +44,13 @@ EXTENSION_DATA = {
 extension.register_admin_extension(EXTENSION_DATA['alias'], EXTENSION_DATA)
 extension.register_public_extension(EXTENSION_DATA['alias'], EXTENSION_DATA)
 
-ASSIGN_ALL_ROLES_PERMISSION = 'Get and assign all application roles'
-ASSIGN_OWNED_ROLES_PERMISSION = 'Get and assign only owned roles'
+ASSIGN_ALL_PUBLIC_ROLES_PERMISSION = 'Get and assign all public application roles'
+ASSIGN_OWNED_PUBLIC_ROLES_PERMISSION = 'Get and assign only public owned roles'
+ASSIGN_INTERNAL_ROLES_PERMISSION = 'Get and assign all internal application roles'
 MANAGE_APPLICATION_PERMISSION = 'Manage the application'
 MANAGE_ROLES_PERMISSION = 'Manage roles'
 
+@dependency.requires('assignment_api')
 @dependency.provider('roles_api')
 class RolesManager(manager.Manager):
     """Roles and Permissions Manager.
@@ -61,6 +63,43 @@ class RolesManager(manager.Manager):
     def __init__(self):
         super(RolesManager, self).__init__(
             'keystone.contrib.roles.backends.sql.Roles')
+
+    def get_authorized_organizations(self, user, 
+                                    application_id,
+                                    include_default_organization=False):
+        # roles associated with this user in the application
+        assignments = self.driver.list_role_user_assignments(
+            user_id=user['id'], application_id=application_id)
+
+        # organizations the user is in
+        organizations = self.assignment_api.list_projects_for_user(user['id'])
+
+        user_organization = None
+        if include_default_organization:
+            # save the default org to add it even if it has no roles
+            user_organization = next(
+                (org for org in organizations 
+                if org['name'] == user.get('username', user['name'])), None)
+
+        # filter to only organizations with roles
+        organizations = [org for org in organizations 
+            if org['id'] in [a['organization_id'] for a in assignments]]
+
+        for organization in organizations:
+            role_ids = [a['role_id'] for a in assignments 
+                        if a['organization_id'] == organization['id']]            
+            # Load roles' names
+            organization['roles'] = [dict(id=r['id'], name=r['name']) for r
+                    in [self.driver.get_role(id) for id in role_ids]]
+
+        if (include_default_organization 
+            and user_organization
+            and not user_organization in organizations):
+            # add it if it was removed
+            organizations.append(user_organization)
+
+        return organizations
+
 
     def list_applications_user_allowed_to_manage_roles(self, user_id, 
                                                        organization_id):
@@ -175,21 +214,26 @@ class RolesManager(manager.Manager):
         allowed_roles = {}
         for application in application_permissions:
             permissions = application_permissions[application]
-
+            roles_to_add = []
             # Now check if the internal permissions are present
-            if ASSIGN_ALL_ROLES_PERMISSION in permissions:
-                # add all roles in the application
-                allowed_roles[application] = \
-                    set([r['id'] for r 
-                         in (self.driver.list_roles(application_id=application)
-                         + self.driver.list_roles(is_internal=True))])
+            if ASSIGN_ALL_PUBLIC_ROLES_PERMISSION in permissions:
+                # add all public roles in the application
+                roles_to_add += set([r['id'] for r 
+                    in self.driver.list_roles(application_id=application)])
 
-            elif ASSIGN_OWNED_ROLES_PERMISSION in permissions:
-                # add only the roles the user has in the application
-                allowed_roles[application] = \
-                    [a['role_id'] for a 
-                     in current_assignments 
-                     if a['application_id'] == application]
+            elif ASSIGN_OWNED_PUBLIC_ROLES_PERMISSION in permissions:
+                # add only the public roles the user has in the application
+                roles_to_add += [a['role_id'] for a 
+                    in current_assignments 
+                    if a['application_id'] == application]
+
+            # Add the internal permissions if necesary
+            if ASSIGN_INTERNAL_ROLES_PERMISSION in permissions:
+                roles_to_add += [r['id'] for r 
+                    in self.driver.list_roles(is_internal=True)]
+
+            if roles_to_add:
+                allowed_roles[application] = roles_to_add
 
         return allowed_roles
 
