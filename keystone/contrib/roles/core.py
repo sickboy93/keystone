@@ -46,7 +46,7 @@ extension.register_public_extension(EXTENSION_DATA['alias'], EXTENSION_DATA)
 
 ASSIGN_ALL_PUBLIC_ROLES_PERMISSION = 'Get and assign all public application roles'
 ASSIGN_OWNED_PUBLIC_ROLES_PERMISSION = 'Get and assign only public owned roles'
-ASSIGN_PRIVATE_ROLES_PERMISSION = 'Get and assign all private application roles'
+ASSIGN_INTERNAL_ROLES_PERMISSION = 'Get and assign all internal application roles'
 MANAGE_APPLICATION_PERMISSION = 'Manage the application'
 MANAGE_ROLES_PERMISSION = 'Manage roles'
 
@@ -228,8 +228,9 @@ class RolesManager(manager.Manager):
                     if a['application_id'] == application]
 
             # Add the internal permissions if necesary
-            if ASSIGN_PRIVATE_ROLES_PERMISSION in permissions:
-                roles_to_add += self.driver.list_roles(is_internal=True)
+            if ASSIGN_INTERNAL_ROLES_PERMISSION in permissions:
+                roles_to_add += [r['id'] for r 
+                    in self.driver.list_roles(is_internal=True)]
 
             if roles_to_add:
                 allowed_roles[application] = roles_to_add

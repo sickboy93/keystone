@@ -809,7 +809,7 @@ class InternalRolesTests(RolesBaseTests):
         user, organization = self._create_user()
         permission = core.ASSIGN_OWNED_PUBLIC_ROLES_PERMISSION
         app_id = uuid.uuid4().hex
-        expected_roles = self._create_internal_roles_user(user, 
+        internal_roles, expected_roles = self._create_internal_roles_user(user, 
                                                 organization, 
                                                 permission,
                                                 app_id)
@@ -830,7 +830,7 @@ class InternalRolesTests(RolesBaseTests):
         user, organization = self._create_user()
         permission = core.ASSIGN_ALL_PUBLIC_ROLES_PERMISSION
         app_id = uuid.uuid4().hex
-        expected_roles = self._create_internal_roles_user(user, 
+        internal_roles, expected_roles = self._create_internal_roles_user(user, 
                                                 organization, 
                                                 permission,
                                                 app_id)
@@ -845,12 +845,30 @@ class InternalRolesTests(RolesBaseTests):
             expected = expected_roles.keys() 
             self.assertItemsEqual(current, expected)
 
+    def test_list_roles_user_allowed_to_assign_internal(self):
+        user, organization = self._create_user()
+        permission = core.ASSIGN_INTERNAL_ROLES_PERMISSION
+        app_id = uuid.uuid4().hex
+        internal_roles, expected_roles = self._create_internal_roles_user(user, 
+                                                organization, 
+                                                permission,
+                                                app_id)
+
+        response = self._list_roles_user_allowed_to_assign(user_id=user['id'],
+                                          organization_id=organization['id'])
+        # check the correct roles are returned
+        allowed_roles = json.loads(response.body)['allowed_roles']
+        for app in allowed_roles:
+            self.assertEqual(app_id, app)
+            current = [r_id for r_id in allowed_roles[app]]
+            expected = [r['id'] for r in internal_roles]
+            self.assertItemsEqual(current, expected)
 
     def test_list_roles_organization_allowed_to_assign_all(self):
         organization = self._create_organization()
         permission = core.ASSIGN_ALL_PUBLIC_ROLES_PERMISSION
         app_id = uuid.uuid4().hex
-        expected_roles = self._create_internal_roles_organization(
+        internal_roles, expected_roles = self._create_internal_roles_organization(
             organization, permission, app_id)
 
         response = self._list_roles_organization_allowed_to_assign(
@@ -868,7 +886,7 @@ class InternalRolesTests(RolesBaseTests):
         organization = self._create_organization()
         permission = core.ASSIGN_OWNED_PUBLIC_ROLES_PERMISSION
         app_id = uuid.uuid4().hex
-        expected_roles = self._create_internal_roles_organization(
+        internal_roles, expected_roles = self._create_internal_roles_organization(
             organization, permission, app_id)
 
         response = self._list_roles_organization_allowed_to_assign(
@@ -882,6 +900,23 @@ class InternalRolesTests(RolesBaseTests):
                                     if expected_roles[r_id]]   
             self.assertItemsEqual(current, expected)
     
+    def test_list_roles_organization_allowed_to_assign_internal(self):
+        organization = self._create_organization()
+        permission = core.ASSIGN_INTERNAL_ROLES_PERMISSION
+        app_id = uuid.uuid4().hex
+        internal_roles, expected_roles = self._create_internal_roles_organization(
+            organization, permission, app_id)
+
+        response = self._list_roles_organization_allowed_to_assign(
+            organization_id=organization['id'])
+        # check the correct roles are returned
+        allowed_roles = json.loads(response.body)['allowed_roles']
+        for app in allowed_roles:
+            self.assertEqual(app_id, app)
+            current = [r_id for r_id in allowed_roles[app]]
+            expected = [r['id'] for r in internal_roles]
+            self.assertItemsEqual(current, expected)
+
     def test_list_applications_user_allowed_to_manage(self):
         user, organization = self._create_user()
         permission = core.MANAGE_APPLICATION_PERMISSION
@@ -943,6 +978,7 @@ class InternalRolesTests(RolesBaseTests):
         self.assertEqual([app_id], allowed_apps)
 
     def _create_internal_roles_user(self, user, organization, permission, app_id):
+        internal_roles = []
         expected_roles = {}
         permissions = []
         
@@ -959,6 +995,7 @@ class InternalRolesTests(RolesBaseTests):
                                 application=app_id, 
                                 is_internal=True)
         role = self._create_role(role_ref)
+        internal_roles.append(role)
 
         # assign the permissions to the role
         for permission in permissions:
@@ -977,10 +1014,11 @@ class InternalRolesTests(RolesBaseTests):
                                 is_internal=False)
         another_role = self._create_role(another_role_ref)
         expected_roles[another_role['id']] = []
-        return expected_roles            
+        return internal_roles, expected_roles
                 
 
     def _create_internal_roles_organization(self, organization, permission, app_id):
+        internal_roles = []
         expected_roles = {}
         permissions = []
         
@@ -997,6 +1035,7 @@ class InternalRolesTests(RolesBaseTests):
                                 application=app_id, 
                                 is_internal=True)
         role = self._create_role(role_ref)
+        internal_roles.append(role)
 
         # assign the permissions to the role
         for permission in permissions:
@@ -1014,7 +1053,7 @@ class InternalRolesTests(RolesBaseTests):
                                 is_internal=False)
         another_role = self._create_role(another_role_ref)
         expected_roles[another_role['id']] = []
-        return expected_roles 
+        return internal_roles, expected_roles
 
 
 class PermissionCrudTests(RolesBaseTests):
@@ -1388,4 +1427,3 @@ class FiwareApiTests(RolesBaseTests):
         self.assertEqual(expected_orgs, len(response_organizations))
         assert(self.user_organization['id']
             in [o['id'] for o in response_organizations])
-        
