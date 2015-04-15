@@ -34,7 +34,9 @@ class UserRegistrationV3(controller.V3Controller):
 
     @controller.protected()
     def register_user(self, context, user):
-        # TODO(garcianavalon) this method is too long, refactor it into smaller ones
+        # TODO(garcianavalon) this method is too long, refactor it 
+        # into smaller ones
+
         # Create a new user
         self._require_attribute(user, 'name')
         # The manager layer will generate the unique ID for users
@@ -43,8 +45,9 @@ class UserRegistrationV3(controller.V3Controller):
         # disabled by default
         user_ref['enabled'] = False
 
-        # NOTE(garcianavalon) in order for the user to get project scoped tokens
-        # we create a default project with his name, and add the user to the project
+        # NOTE(garcianavalon) in order for the user to get project 
+        # scoped tokens we create a default project with his name, 
+        # and add the user to the project
         project = {
             'name':user_ref['username'],
             'domain_id':user_ref['domain_id'],
@@ -53,7 +56,8 @@ class UserRegistrationV3(controller.V3Controller):
         }
         project_ref = self._assign_unique_id(self._normalize_dict(project))
         project_ref = self._normalize_domain_id(context, project_ref)
-        project_ref = self.assignment_api.create_project(project_ref['id'], project_ref)
+        project_ref = self.assignment_api.create_project(
+            project_ref['id'], project_ref)
 
         # create the user finally
         user_ref['default_project_id'] = project_ref['id']
@@ -68,25 +72,45 @@ class UserRegistrationV3(controller.V3Controller):
                                          user_id=user_ref['id'],
                                          project_id=project_ref['id'])
 
+        # Create the cloud organization and give the user the default role
+        cloud_project = {
+            'name':user_ref['name'] + ' cloud',
+            'domain_id':user_ref['domain_id'],
+            'enabled': False,
+        }
+        cloud_project_ref = self._assign_unique_id(
+            self._normalize_dict(cloud_project))
+        cloud_project_ref = self._normalize_domain_id(context, 
+                                                      cloud_project_ref)
+        cloud_project_ref = self.assignment_api.create_project(
+            cloud_project_ref['id'], cloud_project_ref)
+
+        self.assignment_api.create_grant(default_role['id'], 
+                                         user_id=user_ref['id'],
+                                         project_id=cloud_project_ref['id'])
 
         # Create an activation key
-        activation_profile = self.registration_api.register_user(user_ref)
+        activation_profile = self.registration_api.register_user(
+            user_ref, cloud_project_ref['id'])
         user_ref['activation_key'] = activation_profile['activation_key']
         return UserRegistrationV3.wrap_member(context, user_ref)
 
     @controller.protected()
     def activate_user(self, context, user_id, activation_key):
         # Check the activation key is valid
-        activation_profile = self.registration_api.get_activation_profile(user_id,
-                                                                          activation_key)
+        activation_profile = self.registration_api.get_activation_profile(
+            user_id, activation_key)
 
-        # Enable the user and the project
-        project_ref = {
+        # Enable the user and the projects
+        update_ref = {
             'enabled': True,
         }
-        project_ref = self.assignment_api.update_project(
+        default_project = self.assignment_api.update_project(
             activation_profile['project_id'],
-            project_ref)
+            update_ref)
+        cloud_project = self.assignment_api.update_project(
+            activation_profile['cloud_project_id'],
+            update_ref)
 
         user_ref = {
             'enabled': True,
@@ -113,8 +137,8 @@ class UserRegistrationV3(controller.V3Controller):
     @controller.protected()
     def reset_password(self, context, user_id, token_id, user):
         # check if the token is valid
-        reset_profile = self.registration_api.get_reset_profile(user_id,
-                                                                token_id)
+        reset_profile = self.registration_api.get_reset_profile(
+            user_id, token_id)
 
         # update only user password
         user_ref = {
