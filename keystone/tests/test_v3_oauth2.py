@@ -33,7 +33,8 @@ class OAuth2BaseTests(test_v3.RestfulTestCase):
     EXTENSION_TO_ADD = 'oauth2_extension'
 
     CONSUMER_URL = PATH_PREFIX + '/consumers'
-    ACCESS_TOKENS_URL = PATH_PREFIX + '/users/{user_id}/access_tokens'
+    USERS_URL = '/users/{user_id}'
+    ACCESS_TOKENS_URL = PATH_PREFIX + '/access_tokens'
 
     DEFAULT_REDIRECT_URIS = [
         'https://%s.com' %uuid.uuid4().hex,
@@ -142,7 +143,6 @@ class ConsumerCRUDTests(OAuth2BaseTests):
         self_url = ''.join(self_url)
         self.assertEqual(response.result['links']['self'], self_url)
         self.assertValidListLinks(response.result['links'])
-
        
     def test_consumer_update(self):
         consumer, data = self._create_consumer()
@@ -209,18 +209,18 @@ class AccessTokenEndpointTests(OAuth2BaseTests):
         return access_token
 
     def _list_access_tokens(self, user_id, expected_status=200):
-        url = self.ACCESS_TOKENS_URL.format(user_id=user_id)
+        url = self.USERS_URL.format(user_id=user_id) + self.ACCESS_TOKENS_URL
         response = self.get(url, expected_status=expected_status)
         return response.result['access_tokens']
 
     def _get_access_token(self, user_id, token_id, expected_status=200):
-        url = (self.ACCESS_TOKENS_URL.format(user_id=user_id) 
+        url = (self.USERS_URL.format(user_id=user_id) + self.ACCESS_TOKENS_URL 
                     + '/{0}'.format(token_id))
         response = self.get(url, expected_status=expected_status)
         return response.result['access_token']
 
     def _revoke_access_token(self, user_id, token_id, expected_status=204):
-        url = (self.ACCESS_TOKENS_URL.format(user_id=user_id) 
+        url = (self.USERS_URL.format(user_id=user_id) + self.ACCESS_TOKENS_URL 
                     + '/{0}'.format(token_id))
         self.delete(url, expected_status=expected_status)
 
