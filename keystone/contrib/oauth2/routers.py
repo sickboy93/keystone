@@ -44,9 +44,9 @@ class OAuth2Extension(wsgi.V3ExtensionRouter):
       DELETE /OS-OAUTH2/consumers/$consumer_id
 
       # User access token endpoint
-      GET /users/$user_id/OS-OAUTH2/access_tokens
-      GET /users/$user_id/OS-OAUTH2/access_tokens/{access_token_id}
-      DELETE /users/$user_id/OS-OAUTH2/access_tokens/{access_token_id} # revoke an access token
+      GET /OS-OAUTH2/users/$user_id/access_tokens
+      GET /OS-OAUTH2/users/$user_id/access_tokens/{access_token_id}
+      DELETE /OS-OAUTH2/users/$user_id/access_tokens/{access_token_id} # revoke an access token
 
       # OAuth interfaces
       GET /OS-OAUTH2/authorize # request authorization
@@ -85,7 +85,7 @@ class OAuth2Extension(wsgi.V3ExtensionRouter):
         # Resource Owner CRUD for Access Tokens
         self._add_resource(
             mapper, access_token_controller,
-            path='/users/{user_id}' + self.PATH_PREFIX + '/access_tokens',
+            path=self.PATH_PREFIX + '/users/{user_id}/access_tokens',
             get_action='list_access_tokens',
             rel=build_resource_relation(resource_name='access_tokens'),
             path_vars={
@@ -95,7 +95,7 @@ class OAuth2Extension(wsgi.V3ExtensionRouter):
         
         self._add_resource(
             mapper, access_token_controller,
-            path='/users/{user_id}' + self.PATH_PREFIX + '/access_tokens/{access_token_id}',
+            path=self.PATH_PREFIX + '/users/{user_id}/access_tokens/{access_token_id}',
             get_action='get_access_token',
             delete_action='revoke_access_token',
             rel=build_resource_relation(resource_name='access_token'),
