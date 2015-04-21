@@ -37,8 +37,6 @@ class UserRegistrationV3(controller.V3Controller):
         # TODO(garcianavalon) this method is too long, refactor it 
         # into smaller ones
 
-        cloud_project_id = user.pop('cloud_project_id')  # migration!
-
         # Create a new user
         self._require_attribute(user, 'name')
         # The manager layer will generate the unique ID for users
@@ -67,7 +65,7 @@ class UserRegistrationV3(controller.V3Controller):
             'name':user_ref['name'] + ' cloud',
             'domain_id':user_ref['domain_id'],
             'enabled': True, # migration!
-            'id': cloud_project_id, # migration!
+            'id': user['cloud_project_id'], # migration!
         }
         cloud_project_ref = self._normalize_dict(cloud_project)
         cloud_project_ref = self._normalize_domain_id(context, 
@@ -79,7 +77,8 @@ class UserRegistrationV3(controller.V3Controller):
 
         # create the user finally
         user_ref['default_project_id'] = project_ref['id']
-        user_ref['cloud_project_id'] = cloud_project_ref['id']
+        # migration!
+        # user_ref['cloud_project_id'] = cloud_project_ref['id']
         user_ref = self.identity_api.create_user(user_ref)
 
         # get a default role and give it to the user in the project
