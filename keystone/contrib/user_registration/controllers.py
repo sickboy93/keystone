@@ -128,10 +128,13 @@ class UserRegistrationV3(controller.V3Controller):
 
         # create a new reset token
         reset_profile = self.registration_api.request_password_reset(user_id)
+
+        # add the user for convenience
+        user_ref = self.identity_api.get_user(user_id)
         return {
             'reset_token': {
                 'id': reset_profile['reset_token'],
-                'user_id': reset_profile['user_id'],
+                'user': user_ref,
             }
         }
 
