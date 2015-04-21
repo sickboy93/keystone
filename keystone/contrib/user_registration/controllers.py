@@ -53,9 +53,10 @@ class UserRegistrationV3(controller.V3Controller):
             'domain_id':user_ref['domain_id'],
             'enabled': True, # migration!
             'is_default': True,
+            'id': user['id'].zfill(32), # migration!
         }
 
-        project_ref = self._assign_unique_id(self._normalize_dict(project))
+        project_ref = self._normalize_dict(project) # migration!
         project_ref = self._normalize_domain_id(context, project_ref)
         project_ref = self.assignment_api.create_project(
             project_ref['id'], project_ref)
@@ -67,13 +68,11 @@ class UserRegistrationV3(controller.V3Controller):
             'enabled': True, # migration!
             'id': user['cloud_project_id'], # migration!
         }
-        cloud_project_ref = self._normalize_dict(cloud_project)
+        cloud_project_ref = self._normalize_dict(cloud_project) # migration!
         cloud_project_ref = self._normalize_domain_id(context, 
                                                       cloud_project_ref)
         cloud_project_ref = self.assignment_api.create_project(
             cloud_project_ref['id'], cloud_project_ref)
-
-        
 
         # create the user finally
         user_ref['default_project_id'] = project_ref['id']
