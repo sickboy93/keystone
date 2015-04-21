@@ -62,19 +62,6 @@ class UserRegistrationV3(controller.V3Controller):
         project_ref = self.assignment_api.create_project(
             project_ref['id'], project_ref)
 
-        # create the user finally
-        user_ref['default_project_id'] = project_ref['id']
-        user_ref = self.identity_api.create_user(user_ref)
-
-        # get a default role and give it to the user in the project
-        # NOTE(garcianavalon) this is written for the v3 Identity API, if v2
-        # support is needed use add_user_to_project(tenant_id, user_id) which
-        # automatically uses de default role defined in keystone.conf
-        default_role = self.registration_api.get_default_role()
-        self.assignment_api.create_grant(default_role['id'], 
-                                         user_id=user_ref['id'],
-                                         project_id=project_ref['id'])
-
         # Create the cloud organization and give the user the default role
         cloud_project = {
             'name':user_ref['name'] + ' cloud',
@@ -87,6 +74,23 @@ class UserRegistrationV3(controller.V3Controller):
                                                       cloud_project_ref)
         cloud_project_ref = self.assignment_api.create_project(
             cloud_project_ref['id'], cloud_project_ref)
+
+        
+
+        # create the user finally
+        user_ref['default_project_id'] = project_ref['id']
+        user_ref['cloud_project_id'] = cloud_project_ref['id']
+        user_ref = self.identity_api.create_user(user_ref)
+
+        # get a default role and give it to the user in the project
+        # NOTE(garcianavalon) this is written for the v3 Identity API, if v2
+        # support is needed use add_user_to_project(tenant_id, user_id) which
+        # automatically uses de default role defined in keystone.conf
+        default_role = self.registration_api.get_default_role()
+        
+        self.assignment_api.create_grant(default_role['id'], 
+                                         user_id=user_ref['id'],
+                                         project_id=project_ref['id'])
 
         self.assignment_api.create_grant(default_role['id'], 
                                          user_id=user_ref['id'],
