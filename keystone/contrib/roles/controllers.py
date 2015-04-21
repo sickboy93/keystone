@@ -241,7 +241,7 @@ class FiwareApiControllerV3(BaseControllerV3):
         application_id = token['consumer_id']
 
         organizations = self.roles_api.get_authorized_organizations(
-            user, application_id, include_default_organization=True)
+            user, application_id, include_default_organization=False)
 
         return {
             'organizations': organizations
