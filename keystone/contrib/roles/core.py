@@ -78,8 +78,8 @@ class RolesManager(manager.Manager):
         if include_default_organization:
             # save the default org to add it even if it has no roles
             user_organization = next(
-                (org for org in organizations 
-                if org['name'] == user.get('username', user['name'])), None)
+                org for org in organizations 
+                if org['id'] == user['default_project_id'])
 
         # filter to only organizations with roles
         organizations = [org for org in organizations 

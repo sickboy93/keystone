@@ -78,11 +78,12 @@ class Manager(manager.Manager):
         }
         return self.driver.create_reset_profile(profile_ref)
 
-    def register_user(self, user_ref):
+    def register_user(self, user_ref, cloud_project_id):
         """ Translates the user_ref to an activation profile."""
         profile_ref = {
             'user_id': user_ref['id'],
             'project_id': user_ref['default_project_id'],
+            'cloud_project_id': cloud_project_id,
             'expires_at': self._calculate_expiry_date(ACTIVATION_KEY_DURATION),
             'id': uuid.uuid4().hex,
             'activation_key': uuid.uuid4().hex,

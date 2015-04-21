@@ -26,6 +26,8 @@ class ActivationProfile(sql.ModelBase, sql.ModelDictMixin):
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
     user_id = sql.Column(sql.String(64), nullable=False, index=True)
     project_id = sql.Column(sql.String(64), nullable=False, index=True)
+    cloud_project_id = sql.Column(
+        sql.String(64), nullable=False, index=True)
     expires_at = sql.Column(sql.DateTime(), nullable=False)
     activation_key = sql.Column(sql.String(64), nullable=False, index=True)
 
