@@ -241,7 +241,7 @@ class FiwareApiControllerV3(BaseControllerV3):
         application_id = token['consumer_id']
 
         organizations = self.roles_api.get_authorized_organizations(
-            user, application_id, include_default_organization=False)
+            user, application_id, remove_default_organization=True)
 
         return {
             'organizations': organizations
@@ -264,9 +264,8 @@ class FiwareApiControllerV3(BaseControllerV3):
 
         # remove the default organization and extract its roles
         user_roles = []
-        user_organization = next(
-            (org for org in organizations 
-            if org['name'] == user.get('username', user['name'])), None)
+        user_organization = next((org for org in organizations 
+            if org['id'] == user['default_project_id']), None)
 
         if user_organization:
             organizations.remove(user_organization)

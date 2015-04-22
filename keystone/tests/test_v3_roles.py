@@ -1423,11 +1423,14 @@ class FiwareApiTests(RolesBaseTests):
         # access the resource
         self.response = self._authorized_organizations(token_id)
         
-        # check default org is there
         response_organizations = self.response.result['organizations']
-        self.assertIsNotNone(response_organizations)
+        
+        # check default org is NOT there
+        user_organization = next((org for org in response_organizations 
+            if org['id'] == self.user_organization['id']), None)
+        self.assertIsNone(user_organization)
 
-        expected_orgs = (self.number_of_organizations + 1)
+        # check the others are
+        expected_orgs = (self.number_of_organizations)
         self.assertEqual(expected_orgs, len(response_organizations))
-        assert(self.user_organization['id']
-            in [o['id'] for o in response_organizations])
+
