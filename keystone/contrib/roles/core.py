@@ -66,20 +66,13 @@ class RolesManager(manager.Manager):
 
     def get_authorized_organizations(self, user, 
                                     application_id,
-                                    include_default_organization=False):
+                                    remove_default_organization=False):
         # roles associated with this user in the application
         assignments = self.driver.list_role_user_assignments(
             user_id=user['id'], application_id=application_id)
 
         # organizations the user is in
         organizations = self.assignment_api.list_projects_for_user(user['id'])
-
-        user_organization = None
-        if include_default_organization:
-            # save the default org to add it even if it has no roles
-            user_organization = next(
-                org for org in organizations 
-                if org['id'] == user['default_project_id'])
 
         # filter to only organizations with roles
         organizations = [org for org in organizations 
@@ -92,11 +85,10 @@ class RolesManager(manager.Manager):
             organization['roles'] = [dict(id=r['id'], name=r['name']) for r
                     in [self.driver.get_role(id) for id in role_ids]]
 
-        if (include_default_organization 
-            and user_organization
-            and not user_organization in organizations):
-            # add it if it was removed
-            organizations.append(user_organization)
+        if remove_default_organization:
+            # always remove the default org
+            organizations = [org for org in organizations 
+                if not org['id'] == user['default_project_id']]
 
         return organizations
 
