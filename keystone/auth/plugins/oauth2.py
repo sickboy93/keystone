@@ -12,21 +12,17 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from oslo.utils import timeutils
-
 from keystone import auth
+from keystone import exception
 from keystone.common import controller
 from keystone.common import dependency
 from keystone.contrib.oauth2 import core as oauth2_core
 from keystone.contrib.oauth2 import validator
-from keystone import exception
 from keystone.i18n import _
 from keystone.openstack.common import log
 
-from oauthlib.oauth2 import WebApplicationServer
 
 LOG = log.getLogger(__name__)
-
 
 @dependency.optional('oauth2_api')
 class OAuth2(auth.AuthMethodHandler):
@@ -48,7 +44,7 @@ class OAuth2(auth.AuthMethodHandler):
         http_method = 'POST'
         required_scopes = ['all_info'] 
         request_validator = validator.OAuth2Validator()
-        server = WebApplicationServer(request_validator)
+        server = oauth2_core.Server(request_validator)
         body = {
             'access_token':access_token_id
         }

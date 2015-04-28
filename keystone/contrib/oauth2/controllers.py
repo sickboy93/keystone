@@ -15,13 +15,13 @@
 import json
 import urllib
 
-from oauthlib.oauth2 import WebApplicationServer, FatalClientError, OAuth2Error
+from oauthlib.oauth2 import FatalClientError, OAuth2Error
 
 from keystone import exception
 from keystone.common import controller
 from keystone.common import dependency
 from keystone.common import wsgi
-from keystone.contrib.oauth2 import core as oauth2
+from keystone.contrib.oauth2 import core
 from keystone.contrib.oauth2 import validator
 from keystone.i18n import _
 from keystone.models import token_model
@@ -149,9 +149,14 @@ class OAuth2ControllerV3(controller.V3Controller):
         return user_token.user_id
 
     @controller.protected()
+    def resource_owner_password_credentials(self, context):
+        pass
+
+
+    @controller.protected()
     def request_authorization_code(self, context):
         request_validator = validator.OAuth2Validator()
-        server = WebApplicationServer(request_validator)
+        server = core.Server(request_validator)
         # Validate request
         headers = context['headers']
         body = context['query_string']
@@ -243,7 +248,7 @@ class OAuth2ControllerV3(controller.V3Controller):
     @controller.protected()
     def create_authorization_code(self, context, user_auth):
         request_validator = validator.OAuth2Validator()
-        server = WebApplicationServer(request_validator)
+        server = core.Server(request_validator)
         # Validate request
         headers = context['headers']
         body = user_auth
@@ -303,7 +308,7 @@ class OAuth2ControllerV3(controller.V3Controller):
 
     def create_access_token(self, context, token_request):
         request_validator = validator.OAuth2Validator()
-        server = WebApplicationServer(request_validator)
+        server = core.Server(request_validator)
 
         # Validate request
         headers = context['headers']
@@ -315,9 +320,19 @@ class OAuth2ControllerV3(controller.V3Controller):
         if headers['Content-Type'] == 'application/x-www-form-urlencoded':
             body = context['query_string']
         elif headers['Content-Type'] == 'application/json':
-            if not 'code' in token_request:
+            # TODO(garcianavalon) are these checks really necessary or
+            # can we delegate them to oauthlib?
+            grant_type = token_request.get('grant_type', None)
+            if not grant_type:
+                msg = _('grant_type missing in request body: {0}'
+                    ).format(token_request)
+                raise exception.ValidationError(message=msg)
+            if (grant_type == 'authorization_code' 
+                and not 'code' in token_request):
+
                 msg = _('code missing in request body: %s') %token_request
                 raise exception.ValidationError(message=msg)
+
             body = urllib.urlencode(token_request)
         else:
             msg = _('Content-Type: %s is not supported') %headers['Content-Type']
