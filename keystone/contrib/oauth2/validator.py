@@ -12,15 +12,14 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-"""OAuthlib request validator."""
 
 import six
 import datetime
 
 from keystone import exception
+from keystone.auth import plugins as auth_plugins
 from keystone.common import dependency
 from keystone.contrib.oauth2 import core as oauth2_api
-from keystone.i18n import _
 from keystone.openstack.common import log
 from oauthlib.oauth2 import RequestValidator
 
@@ -31,7 +30,7 @@ LOG = log.getLogger(__name__)
 
 @dependency.requires('oauth2_api')
 class OAuth2Validator(RequestValidator):
-
+    """OAuthlib request validator."""
     # Ordered roughly in order of appearance in the authorization grant flow
 
     # Pre- and post-authorization.
@@ -121,16 +120,18 @@ class OAuth2Validator(RequestValidator):
             client_id, secret = auth.split(':', 1)
             client_dict = self.oauth2_api.get_consumer(client_id)
             if client_dict['secret'] == secret:
-                # TODO(garcianavalon) this can be done in a cleaner way if we change the consumer model attribute to client_id
-                request.client = type('obj', (object,), {'client_id' : client_id})
-                LOG.info('OAUTH2: succesfully authenticated client {0}'.format(
-                                                                    client_dict['name']))
+                # TODO(garcianavalon) this can be done in a cleaner way 
+                #if we change the consumer model attribute to client_id
+                request.client = type('obj', (object,), 
+                    {'client_id' : client_id})
+                LOG.info('OAUTH2: succesfully authenticated client %s',
+                    client_dict['name'])
                 return True
         return False
 
     def authenticate_client_id(self, client_id, request, *args, **kwargs):
         # Don't allow public (non-authenticated) clients
-        # TODO(garcianavalon)
+        # TODO(garcianavalon) check this method
         return False
 
     def validate_code(self, client_id, code, client, request, *args, **kwargs):
@@ -155,10 +156,18 @@ class OAuth2Validator(RequestValidator):
         # Clients should only be allowed to use one type of grant.
         # In this case, it must be "authorization_code" or "refresh_token"
 
-        # TODO(garcianavalon) support for refresh tokens
-        # client_id comes as None, we use the one in request
-        client_dict = self.oauth2_api.get_consumer(request.client.client_id)
-        return grant_type == client_dict['grant_type']
+        # # TODO(garcianavalon) support for refresh tokens
+        # # client_id comes as None, we use the one in request
+        # client_dict = self.oauth2_api.get_consumer(request.client.client_id)
+        # return grant_type == client_dict['grant_type']
+
+        # FIXME(garcianavalon) we need to support multiple grant types
+        # for the same consumers right now. In the future we should
+        # separate them and only allow one grant type (registering
+        # each client one time for each grant or allowing components)
+        # or update the tools to allow to create clients with 
+        # multiple grants 
+        return grant_type in ['password', 'authorization_code']
 
     def save_bearer_token(self, token, request, *args, **kwargs):
         # Remember to associate it with request.scopes, request.user and
@@ -228,3 +237,42 @@ class OAuth2Validator(RequestValidator):
         # request.
         # TODO(garcianavalon)
         pass
+
+    # Support for password grant
+    def validate_user(self, username, password, client, request, 
+                      *args, **kwargs):
+        """Ensure the username and password is valid.
+        OBS! The validation should also set the user attribute of the request
+        to a valid resource owner, i.e. request.user = username or similar. If
+        not set you will be unable to associate a token with a user in the
+        persistance method used (commonly, save_bearer_token).
+        :param username: Unicode username
+        :param password: Unicode password
+        :param client: Client object set by you, see authenticate_client.
+        :param request: The HTTP Request (oauthlib.common.Request)
+        :rtype: True or False
+        Method is used by:
+            - Resource Owner Password Credentials Grant
+        """
+        # To validate the user, try to authenticate it
+        password_plugin = auth_plugins.password.Password()
+        auth_payload = {
+            'user': {
+                "domain": {
+                    "id": "default"
+                },
+                "name": username,
+                "password": password
+            }
+        }
+        auth_context = {}
+        try:
+            password_plugin.authenticate(
+                context={},
+                auth_payload=auth_payload,
+                auth_context=auth_context)
+            # set the request user
+            request.user = auth_context['user_id']
+            return True
+        except Exception:
+            return False

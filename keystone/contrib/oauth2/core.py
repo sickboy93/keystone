@@ -23,6 +23,8 @@ from keystone.common import manager
 from keystone import exception
 from keystone.openstack.common import log
 
+from oauthlib import oauth2 as oauth2lib
+
 
 LOG = log.getLogger(__name__)
 
@@ -43,6 +45,58 @@ EXTENSION_DATA = {
     ]}
 extension.register_admin_extension(EXTENSION_DATA['alias'], EXTENSION_DATA)
 extension.register_public_extension(EXTENSION_DATA['alias'], EXTENSION_DATA)
+
+class Server(oauth2lib.AuthorizationEndpoint, oauth2lib.TokenEndpoint, 
+             oauth2lib.ResourceEndpoint, oauth2lib.RevocationEndpoint):
+
+    """An OAuth2 Server configured with the grants we need."""
+
+    def __init__(self, request_validator, token_expires_in=None,
+                 token_generator=None, refresh_token_generator=None,
+                 *args, **kwargs):
+        """
+        :param request_validator: An implementation of
+                                  oauthlib.oauth2.RequestValidator.
+        :param token_expires_in: An int or a function to generate a token
+                                 expiration offset (in seconds) given a
+                                 oauthlib.common.Request object.
+        :param token_generator: A function to generate a token from a request.
+        :param refresh_token_generator: A function to generate a token from a
+                                        request for the refresh token.
+        :param kwargs: Extra parameters to pass to authorization-,
+                       token-, resource-, and revocation-endpoint constructors.
+        """
+        auth_grant = oauth2lib.AuthorizationCodeGrant(request_validator)
+        #implicit_grant = ImplicitGrant(request_validator)
+        password_grant = oauth2lib.ResourceOwnerPasswordCredentialsGrant(
+            request_validator)
+        #credentials_grant = ClientCredentialsGrant(request_validator)
+        refresh_grant = oauth2lib.RefreshTokenGrant(request_validator)
+        bearer = oauth2lib.BearerToken(request_validator, token_generator,
+                             token_expires_in, refresh_token_generator)
+        oauth2lib.AuthorizationEndpoint.__init__(
+            self, 
+            default_response_type='code',
+            response_types={
+               'code': auth_grant,
+               #'token': implicit_grant,
+            },
+            default_token_type=bearer)
+        oauth2lib.TokenEndpoint.__init__(
+            self, 
+            default_grant_type='authorization_code',
+            grant_types={
+               'authorization_code': auth_grant,
+               'password': password_grant,
+               #'client_credentials': credentials_grant,
+               'refresh_token': refresh_grant,
+            },
+            default_token_type=bearer)
+        oauth2lib.ResourceEndpoint.__init__(self, default_token='Bearer',
+                                  token_types={'Bearer': bearer})
+        oauth2lib.RevocationEndpoint.__init__(self, request_validator)
+
+
 
 @dependency.provider('oauth2_api')
 class Manager(manager.Manager):

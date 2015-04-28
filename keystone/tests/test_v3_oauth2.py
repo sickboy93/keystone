@@ -386,6 +386,20 @@ class OAuth2FlowBaseTests(OAuth2BaseTests):
         if hasattr(error, 'state'):
             self.assertIsNotNone(error['state'])
 
+    def _assert_access_token(self, response, 
+                             expected_scopes=None):
+        access_token = response.result
+
+        self.assertIsNotNone(access_token['access_token'])
+        self.assertIsNotNone(access_token['token_type'])
+        self.assertIsNotNone(access_token['expires_in'])
+        self.assertIsNotNone(access_token['refresh_token'])
+
+        scope = response.result['scope']
+        if not expected_scopes:
+            expected_scopes = ' '.join(self.DEFAULT_SCOPES)
+        self.assertEqual(scope, expected_scopes)
+
 class OAuth2AuthorizationCodeFlowTests(OAuth2FlowBaseTests):
 
 
@@ -583,29 +597,21 @@ class OAuth2AuthorizationCodeFlowTests(OAuth2FlowBaseTests):
         pass
 
 
-
-class OAuth2AccessTokenFlowTests(OAuth2FlowBaseTests):
+class OAuth2AccessTokenFromCodeFlowTests(OAuth2FlowBaseTests):
 
 
     def test_flowstep_obtain_access_token(self):
         expected_redirect_uri = self.DEFAULT_REDIRECT_URIS[0] 
         expected_scopes = self.DEFAULT_SCOPES
         get_response = self._flowstep_request_authorization(
-                                scope=expected_scopes,
-                                redirect_uri=expected_redirect_uri)
+            scope=expected_scopes,
+            redirect_uri=expected_redirect_uri)
 
-        post_response = self._flowstep_grant_authorization(get_response,
-                                                        scopes=expected_scopes)
+        post_response = self._flowstep_grant_authorization(
+            get_response, scopes=expected_scopes)
         response = self._flowstep_obtain_access_token(post_response)
-        access_token = response.result
-
-        self.assertIsNotNone(access_token['access_token'])
-        self.assertIsNotNone(access_token['token_type'])
-        self.assertIsNotNone(access_token['expires_in'])
-        self.assertIsNotNone(access_token['refresh_token'])
-
-        scope = response.result['scope']
-        self.assertEqual(scope, ' '.join(expected_scopes))
+        self._assert_access_token(
+            response, expected_scopes=' '.join(expected_scopes))
 
     def test_access_code_only_one_use(self):
         expected_redirect_uri = self.DEFAULT_REDIRECT_URIS[0] 
@@ -667,3 +673,75 @@ class OAuth2AccessTokenFlowTests(OAuth2FlowBaseTests):
         # POST to the auth url as an unauthenticated user to get a keystone token
         response = self.post('/auth/tokens', body=body)
         self._exchange_access_token_assertions(response)
+
+
+class OAuth2PasswordGrantFlowTests(OAuth2FlowBaseTests):
+    # NOTE(garcianavalon) because right now we can't sent
+    # a domain id in the Password Grant, we need to use the
+    # default_domain_user or the validator will fail
+
+    def _assert_keystone_token(self, response):
+        token = json.loads(response.body)['token']
+        #self.assertEqual(token['project']['id'],self.project_id)
+        self.assertEqual(token['user']['id'], 
+                         self.default_domain_user['id'])
+        self.assertEqual(token['methods'], ["oauth2"])
+        self.assertIsNotNone(token['expires_at'])
+
+    def _generate_urlencoded_request(self):
+        # NOTE(garcianavalon) in order to use this content type the
+        # UrlencodedBodyMiddleware provided in the extension must be
+        # in the pipeline
+        body = ('grant_type=password&username={username}'
+            '&password={password}').format(
+                username=self.default_domain_user['name'],
+                password=self.default_domain_user['password'])
+        headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': self._http_basic(
+                self.consumer['id'], self.consumer['secret'])
+        }
+        return headers, body
+
+    def _generate_json_request(self, scope=None):
+        # NOTE(garcianavalon) this is non-compliant with the 
+        # rfc6749 spec. Used when the UrlencodedBodyMiddleware
+        # is not available in a keystone deployment
+
+        body = {
+            'token_request' : {
+                'grant_type':'password',
+                'username': self.default_domain_user['name'],
+                'password': self.default_domain_user['password'],
+            }
+        }
+        if scope:
+            body['token_request']['scope'] = scope
+        headers = {
+            'Authorization': self._http_basic(
+                self.consumer['id'], self.consumer['secret'])
+        }
+        return headers, body
+
+    def _access_token_request(self, scope=None, expected_status=200):
+        headers, body = self._generate_json_request(scope=scope)
+        return self.post('/OS-OAUTH2/access_token', body=body,
+            headers=headers, expected_status=expected_status)
+
+    def _obtain_keystone_token(self, body):
+        # POST as an unauthenticated user to get a keystone token
+        return self.post('/auth/tokens', body=body, noauth=True)
+
+    def test(self):
+        scope = 'all_info'
+        response = self._access_token_request(scope=scope)
+        self._assert_access_token(response, 
+            expected_scopes=scope)
+
+    def test_auth_with_access_token(self):
+        scope = 'all_info'
+        at_response = self._access_token_request(scope=scope)
+        body = self._auth_body(at_response.result)
+        kt_response = self._obtain_keystone_token(body=body)
+        
+        self._assert_keystone_token(kt_response)
