@@ -65,7 +65,7 @@ class UserRegistrationV3(controller.V3Controller):
             'domain_id':user_ref['domain_id'],
             'enabled': False,
             'description': 'This organization is intended to be used'
-                ' in the Cloud Portal. As long as you are a trial or'
+                ' in the cloud environment. As long as you are a trial or'
                 ' community user this organization will be authorized'
                 ' as purchaser in the Cloud Application.'
         }
