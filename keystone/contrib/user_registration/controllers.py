@@ -64,6 +64,10 @@ class UserRegistrationV3(controller.V3Controller):
             'name':user_ref.get('username', user_ref['name']) + ' cloud',
             'domain_id':user_ref['domain_id'],
             'enabled': False,
+            'description': 'This organization is intended to be used'
+                ' in the Cloud Portal. As long as you are a trial or'
+                ' community user this organization will be authorized'
+                ' as purchaser in the Cloud Application.'
         }
         cloud_project_ref = self._assign_unique_id(
             self._normalize_dict(cloud_project))
