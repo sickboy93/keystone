@@ -84,27 +84,14 @@ class Manager(manager.Manager):
                     break
             return is_candidate
 
-        # # NOTE(wanghong) the final result is the union of the results filtered
-        # # by associated endpoint_group
-        # for endpoint in all_endpoints:
-        #     for filters in all_filters:
-        #         if (_apply_filters(filters, endpoint) and
-        #                 endpoint['id'] not in filtered_endpoints):
-        #             filtered_endpoints[endpoint['id']] = endpoint
-        #             break
-
-        # NOTE(garcianavalon) we don't want filters to be inclusive,
-        # but exclusive. An endpoint must pass ALL filters not at least one
+        # NOTE(wanghong) the final result is the union of the results filtered
+        # by associated endpoint_group
         for endpoint in all_endpoints:
-            satisfies_all_filters = True
             for filters in all_filters:
-                if not _apply_filters(filters, endpoint):
-                    satisfies_all_filters = False
+                if (_apply_filters(filters, endpoint) and
+                        endpoint['id'] not in filtered_endpoints):
+                    filtered_endpoints[endpoint['id']] = endpoint
                     break
-
-            if (satisfies_all_filters and 
-                    endpoint['id'] not in filtered_endpoints):        
-                filtered_endpoints[endpoint['id']] = endpoint
 
         return [v for v in six.itervalues(filtered_endpoints)]
 
