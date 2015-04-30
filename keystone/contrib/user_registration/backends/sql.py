@@ -84,3 +84,11 @@ class Registration(user_registration.Driver):
             profile_ref = session.query(ActivationProfile).get(profile_id)
             profile_ref.activation_key = new_key
         return profile_ref.to_dict()
+
+    def delete_user_profiles(self, user_id):
+        session = sql.get_session()
+        with session.begin():
+            for profile_class in (ResetProfile, ActivationProfile):
+                q = session.query(profile_class)
+                q = q.filter_by(user_id=user_id)
+                q.delete(False)

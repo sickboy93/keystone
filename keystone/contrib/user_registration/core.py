@@ -19,10 +19,11 @@ import datetime
 import six
 import uuid
 
+from keystone import exception
+from keystone import notifications
 from keystone.common import dependency
 from keystone.common import extension
 from keystone.common import manager
-from keystone import exception
 from keystone.openstack.common import log
 
 from oslo.utils import timeutils
@@ -53,7 +54,7 @@ RESET_TOKEN_DURATION = 28800
 DEFAULT_ROLE_ID = ''
 DEFAULT_ROLE_NAME = 'owner'
 
-@dependency.requires('assignment_api')
+@dependency.requires('assignment_api', 'identity_api')
 @dependency.provider('registration_api')
 class Manager(manager.Manager):
     """Manager.
@@ -64,9 +65,30 @@ class Manager(manager.Manager):
     """
 
     def __init__(self):
+
+        self.event_callbacks = {
+            notifications.ACTIONS.deleted: {
+                'user': [self.delete_user_projects],
+            },
+        }
+
         super(Manager, self).__init__(
             'keystone.contrib.user_registration.backends.sql.Registration')
         # TODO(garcianavalon) set as configuration option in keystone.conf
+
+    def delete_user_projects(self, service, resource_type, operation,
+                             payload):
+        user_id = payload['resource_info']
+        # cloud_project_id = ''
+        # default_project_id = ''
+        # projects_to_delete = []
+        # for project_id in projects_to_delete:
+        #     self.assignment_api.delete_project(project_id)
+        #     LOG.info('Deleted project %s because user %s was deleted',
+        #         project_id, user_id)
+
+        # delete profiles
+        self.driver.delete_user_profiles(user_id)
 
     def request_password_reset(self, user_id):
         """ Prepares a reset profile for the user"""
@@ -209,6 +231,17 @@ class Driver(object):
         :param reset_token: provided in the registration process
         :type reset_token: string
         :returns: reset_profile
+
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def delete_user_profiles(self, user_id):
+        """Delete all user profiles in the database
+        
+        :param user_id: id of user that wants to activate
+        :type user_id: string
+        :returns: None
 
         """
         raise exception.NotImplemented()
