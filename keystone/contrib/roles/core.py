@@ -66,11 +66,32 @@ class RolesManager(manager.Manager):
             notifications.ACTIONS.deleted: {
                 'user': [self.delete_user_assignments],
                 'project': [self.delete_organization_assignments],
+                'consumer_oauth2':[self.delete_application_resources]
             },
         }
 
         super(RolesManager, self).__init__(
             'keystone.contrib.roles.backends.sql.Roles')
+
+    def delete_application_resources(self, service, resource_type, 
+                                     operation, payload):
+        app_id = payload['resource_info']
+        # Delete all assignments
+        user_assignments = self.driver.list_role_user_assignments(
+            application_id=app_id)
+        self._delete_user_assignments(user_assignments)
+        org_assignments = self.driver.list_role_organization_assignments(
+            application_id=app_id)
+        self._delete_organization_assignments(org_assignments)
+
+        # Delete all roles and permissions
+        roles = self.driver.list_roles(application_id=app_id)
+        for role in roles:
+            self.driver.delete_role(role['id'])
+
+        permissions = self.driver.list_roles(application_id=app_id)
+        for permission in permissions:
+            self.driver.delete_permission(permission['id'])
 
 
     def delete_user_assignments(self, service, resource_type, operation,
@@ -78,13 +99,7 @@ class RolesManager(manager.Manager):
         user_id = payload['resource_info']
         assignments = self.driver.list_role_user_assignments(
             user_id=user_id)
-        for assignment in assignments:
-            self.driver.remove_role_from_user(
-                role_id=assignment['role_id'], 
-                user_id=user_id,
-                organization_id=assignment['organization_id'],
-                application_id=assignment['application_id'],
-                check_ids=False)
+        self._delete_user_assignments(assignments)
 
 
     def delete_organization_assignments(self, service, resource_type, 
@@ -92,10 +107,24 @@ class RolesManager(manager.Manager):
         org_id = payload['resource_info']
         assignments = self.driver.list_role_organization_assignments(
             organization_id=org_id)
+        self._delete_organization_assignments(assignments)
+
+
+    def _delete_user_assignments(self, assignments):
+        for assignment in assignments:
+            self.driver.remove_role_from_user(
+                role_id=assignment['role_id'], 
+                user_id=assignment['user_id'],
+                organization_id=assignment['organization_id'],
+                application_id=assignment['application_id'],
+                check_ids=False)
+
+
+    def _delete_organization_assignments(self, assignments):
         for assignment in assignments:
             self.driver.remove_role_from_organization(
                 role_id=assignment['role_id'], 
-                organization_id=org_id,
+                organization_id=assignment['organization_id'],
                 application_id=assignment['application_id'],
                 check_ids=False)
 
