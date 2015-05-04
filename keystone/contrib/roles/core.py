@@ -61,17 +61,17 @@ class RolesManager(manager.Manager):
     """
 
     def __init__(self):
-        super(RolesManager, self).__init__(
-            'keystone.contrib.roles.backends.sql.Roles')
 
         self.event_callbacks = {
             notifications.ACTIONS.deleted: {
                 'user': [self.delete_user_assignments],
-            },
-            notifications.ACTIONS.deleted: {
                 'project': [self.delete_organization_assignments],
             },
         }
+
+        super(RolesManager, self).__init__(
+            'keystone.contrib.roles.backends.sql.Roles')
+
 
     def delete_user_assignments(self, service, resource_type, operation,
                                 payload):
@@ -79,10 +79,11 @@ class RolesManager(manager.Manager):
         assignments = self.driver.list_role_user_assignments(
             user_id=user_id)
         for assignment in assignments:
-            self.driver.remove_role_from_organization(
-                assignment.role_id, 
-                assignment.organization_id,
-                assignment.application_id)
+            self.driver.remove_role_from_user(
+                assignment['role_id'], 
+                user_id,
+                assignment['organization_id'],
+                assignment['application_id'])
 
 
     def delete_organization_assignments(self, service, resource_type, 
@@ -92,10 +93,9 @@ class RolesManager(manager.Manager):
             organization_id=org_id)
         for assignment in assignments:
             self.driver.remove_role_from_organization(
-                assignment.role_id, 
-                assignment.user_id, 
+                assignment['role_id'], 
                 org_id,
-                assignment.application_id)
+                assignment['application_id'])
 
 
     def get_authorized_organizations(self, user, 
