@@ -80,10 +80,11 @@ class RolesManager(manager.Manager):
             user_id=user_id)
         for assignment in assignments:
             self.driver.remove_role_from_user(
-                assignment['role_id'], 
-                user_id,
-                assignment['organization_id'],
-                assignment['application_id'])
+                role_id=assignment['role_id'], 
+                user_id=user_id,
+                organization_id=assignment['organization_id'],
+                application_id=assignment['application_id'],
+                check_ids=False)
 
 
     def delete_organization_assignments(self, service, resource_type, 
@@ -93,9 +94,10 @@ class RolesManager(manager.Manager):
             organization_id=org_id)
         for assignment in assignments:
             self.driver.remove_role_from_organization(
-                assignment['role_id'], 
-                org_id,
-                assignment['application_id'])
+                role_id=assignment['role_id'], 
+                organization_id=org_id,
+                application_id=assignment['application_id'],
+                check_ids=False)
 
 
     def get_authorized_organizations(self, user, 
@@ -367,7 +369,8 @@ class RolesDriver(object):
 
     @abc.abstractmethod
     def remove_role_from_user(self, role_id, user_id, 
-                              organization_id, application_id):
+                              organization_id, application_id,
+                              check_ids=True):
         """Revoke an user's role.
 
         :param role_id: id of role to remove user from
@@ -417,7 +420,8 @@ class RolesDriver(object):
 
     @abc.abstractmethod
     def remove_role_from_organization(self, role_id,  
-                                      organization_id, application_id):
+                                      organization_id, application_id,
+                                      check_ids=True):
         """Revoke an organization's role.
 
         :param role_id: id of role to remove organization from

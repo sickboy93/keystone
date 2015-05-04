@@ -149,7 +149,8 @@ class Roles(roles.RolesDriver):
         return [assignment.to_dict() for assignment in query]
 
 
-    def add_role_to_user(self, role_id, user_id, organization_id, application_id):
+    def add_role_to_user(self, role_id, user_id, organization_id, 
+                         application_id):
         session = sql.get_session()
         self.get_role(role_id)
         self.identity_api.get_user(user_id)
@@ -171,12 +172,14 @@ class Roles(roles.RolesDriver):
                                  application_id=application_id)) 
 
     def remove_role_from_user(self, role_id, user_id, 
-                              organization_id, application_id):
+                              organization_id, application_id,
+                              check_ids=True):
         session = sql.get_session()
-        self.get_role(role_id)
-        self.identity_api.get_user(user_id)
-        self.assignment_api.get_project(organization_id)
-        # self.oauth2_api.get_consumer(application_id)
+        if check_ids:
+            self.get_role(role_id)
+            self.identity_api.get_user(user_id)
+            self.assignment_api.get_project(organization_id)
+            # self.oauth2_api.get_consumer(application_id)
         query = session.query(RoleUser)
         query = query.filter_by(user_id=user_id)
         query = query.filter_by(role_id=role_id)
@@ -203,11 +206,13 @@ class Roles(roles.RolesDriver):
 
 
     def add_role_to_organization(self, role_id, 
-                                 organization_id, application_id):
+                                 organization_id, application_id,
+                                 check_ids=True):
         session = sql.get_session()
-        self.get_role(role_id)
-        self.assignment_api.get_project(organization_id)
-        # self.oauth2_api.get_consumer(application_id)
+        if check_ids:
+            self.get_role(role_id)
+            self.assignment_api.get_project(organization_id)
+            # self.oauth2_api.get_consumer(application_id)
         query = session.query(RoleOrganization)
         query = query.filter_by(role_id=role_id)
         query = query.filter_by(organization_id=organization_id)
