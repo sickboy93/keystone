@@ -72,6 +72,20 @@ class RoleUserAssignmentV3(BaseControllerV3):
     @controller.protected()
     def list_role_user_assignments(self, context):
         filters = context['query_string']
+
+        use_default_org = filters.pop('default_organization', False)
+        user_id = filters.get('user_id', False)
+        
+        if use_default_org and user_id:
+            user = self.identity_api.get_user(user_id)
+            organization_id = user.get('default_project_id', None)
+
+            if not organization_id:
+                raise exception.ProjectNotFound(
+                    message='This user has no default organization')
+
+            filters['organization_id'] = organization_id
+
         ref = self.roles_api.list_role_user_assignments(**filters)
         return RoleUserAssignmentV3.wrap_collection(context, ref)
 
