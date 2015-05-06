@@ -63,7 +63,7 @@ class UserRegistrationV3(controller.V3Controller):
 
         # Create the cloud organization and give the user the default role
         cloud_project = {
-            'name':user_ref.get('username', user_ref['name']) + ' cloud',
+            'name':user_ref['id'] + ' cloud',
             'domain_id':user_ref['domain_id'],
             'enabled': True, # migration!
             'id': user['cloud_project_id'], # migration!
