@@ -103,6 +103,8 @@ class Token(token.persistence.Driver):
 
         token_ref = TokenModel.from_dict(data_copy)
         token_ref.valid = True
+        # NOTE(garcianavalon) TOO big!!
+        token_ref['extra'] = None
         session = sql.get_session()
         with session.begin():
             session.add(token_ref)
