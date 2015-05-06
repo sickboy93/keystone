@@ -14,13 +14,14 @@
 
 from __future__ import absolute_import
 
-import six
 import abc
+import six
 
+from keystone import exception
+from keystone import notifications
 from keystone.common import dependency
 from keystone.common import extension
 from keystone.common import manager
-from keystone import exception
 from keystone.openstack.common import log
 
 from oauthlib import oauth2 as oauth2lib
@@ -106,6 +107,7 @@ class Manager(manager.Manager):
     how this dynamically calls the backend.
 
     """
+    _CONSUMER = 'consumer_oauth2'
 
     def __init__(self):
         super(Manager, self).__init__(
@@ -114,6 +116,11 @@ class Manager(manager.Manager):
     # TODO(garcianavalon) revoke tokens on consumer delete
     # TODO(garcianavalon) revoke Identity tokens issued by an access token on token revokation
     
+    
+    @notifications.deleted(_CONSUMER)
+    def delete_consumer(self, consumer_id):
+        return self.driver.delete_consumer(consumer_id)
+
 @dependency.requires('identity_api')
 @six.add_metaclass(abc.ABCMeta)
 class Driver(object):

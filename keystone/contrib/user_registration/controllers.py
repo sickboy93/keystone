@@ -67,6 +67,10 @@ class UserRegistrationV3(controller.V3Controller):
             'domain_id':user_ref['domain_id'],
             'enabled': True, # migration!
             'id': user['cloud_project_id'], # migration!
+            'description': 'This organization is intended to be used'
+                ' in the cloud environment. As long as you are a trial or'
+                ' community user this organization will be authorized'
+                ' as purchaser in the Cloud Application.'
         }
         cloud_project_ref = self._normalize_dict(cloud_project) # migration!
         cloud_project_ref = self._normalize_domain_id(context, 

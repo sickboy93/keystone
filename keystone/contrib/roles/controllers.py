@@ -14,6 +14,7 @@
 
 import uuid
 
+from keystone import exception
 from keystone.common import controller
 from keystone.common import dependency
 
@@ -63,7 +64,7 @@ class RoleCrudV3(BaseControllerV3):
     def delete_role(self, context, role_id):
         self.roles_api.delete_role(role_id)
 
-
+@dependency.requires('identity_api')
 class RoleUserAssignmentV3(BaseControllerV3):
     collection_name = 'role_assignments'
     member_name = 'role_assignment'
@@ -75,6 +76,20 @@ class RoleUserAssignmentV3(BaseControllerV3):
     @controller.protected()
     def list_role_user_assignments(self, context):
         filters = context['query_string']
+
+        use_default_org = filters.pop('default_organization', False)
+        user_id = filters.get('user_id', False)
+        
+        if use_default_org and user_id:
+            user = self.identity_api.get_user(user_id)
+            organization_id = user.get('default_project_id', None)
+
+            if not organization_id:
+                raise exception.ProjectNotFound(
+                    message='This user has no default organization')
+
+            filters['organization_id'] = organization_id
+
         ref = self.roles_api.list_role_user_assignments(**filters)
         return RoleUserAssignmentV3.wrap_collection(context, ref)
 
@@ -89,6 +104,31 @@ class RoleUserAssignmentV3(BaseControllerV3):
                             organization_id, application_id):
         self.roles_api.remove_role_from_user(role_id, user_id, 
                                              organization_id, application_id)
+
+
+    @controller.protected()
+    def add_role_to_user_default_org(self, context, role_id, user_id, 
+                                     application_id):
+        user = self.identity_api.get_user(user_id)
+        organization_id = user.get('default_project_id', None)
+        if organization_id:
+            self.roles_api.add_role_to_user(role_id, user_id, 
+                organization_id, application_id)
+        else:
+            raise exception.ProjectNotFound(
+                message='This user has no default organization')
+
+    @controller.protected()
+    def remove_role_from_user_default_org(self, context, role_id, user_id, 
+                                          application_id):
+        user = self.identity_api.get_user(user_id)
+        organization_id = user.get('default_project_id', None)
+        if organization_id:
+            self.roles_api.remove_role_from_user(role_id, user_id, 
+                organization_id, application_id)
+        else:
+            raise exception.ProjectNotFound(
+                message='This user has no default organization')
 
 
 class RoleOrganizationAssignmentV3(BaseControllerV3):

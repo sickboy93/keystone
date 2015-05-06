@@ -92,6 +92,19 @@ class RolesExtension(wsgi.V3ExtensionRouter):
                     build_parameter_relation(parameter_name='application_id'),
             })
 
+        self._add_resource(
+            mapper, user_assignment_controller,
+            path=self.PATH_PREFIX + '/users/{user_id}/applications/{application_id}/roles/{role_id}',
+            put_action='add_role_to_user_default_org',
+            delete_action='remove_role_from_user_default_org',
+            rel=build_resource_relation(resource_name='role_user'),
+            path_vars={
+                'role_id':build_parameter_relation(parameter_name='role_id'),
+                'user_id':build_parameter_relation(parameter_name='user_id'),
+                'application_id':
+                    build_parameter_relation(parameter_name='application_id'),
+            })
+
         # ROLES_ORGANIZATIONS
         self._add_resource(
             mapper, organization_assignment_controller,

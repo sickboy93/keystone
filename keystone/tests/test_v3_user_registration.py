@@ -26,20 +26,20 @@ from keystone.tests import test_v3
 
 CONF = config.CONF
 
+BASE_URL = '/OS-REGISTRATION'
+REGISTER_URL = BASE_URL + '/users'
+REQUEST_NEW_ACTIVATION_KEY_URL = BASE_URL + '/users/{user_id}/activate'
+PERFORM_ACTIVATION_URL = BASE_URL + '/activate/{activation_key}/users/{user_id}'
+REQUEST_RESET_URL = BASE_URL + '/users/{user_id}/reset_password'
+PERFORM_RESET_URL = BASE_URL + '/reset_password/{token_id}/users/{user_id}'
+
+PROJECTS_URL = '/projects/{project_id}'
+ROLES_URL = '/projects/{project_id}/users/{user_id}/roles'
+
 class RegistrationBaseTests(test_v3.RestfulTestCase):
 
     EXTENSION_NAME = 'user_registration'
     EXTENSION_TO_ADD = 'user_registration_extension'
-
-    BASE_URL = '/OS-REGISTRATION'
-    REGISTER_URL = BASE_URL + '/users'
-    REQUEST_NEW_ACTIVATION_KEY_URL = BASE_URL + '/users/{user_id}/activate'
-    PERFORM_ACTIVATION_URL = BASE_URL + '/activate/{activation_key}/users/{user_id}'
-    REQUEST_RESET_URL = BASE_URL + '/users/{user_id}/reset_password'
-    PERFORM_RESET_URL = BASE_URL + '/reset_password/{token_id}/users/{user_id}'
-
-    PROJECTS_URL = '/projects/{project_id}'
-    ROLES_URL = '/projects/{project_id}/users/{user_id}/roles'
 
     def setUp(self):
         super(RegistrationBaseTests, self).setUp()
@@ -65,45 +65,97 @@ class RegistrationBaseTests(test_v3.RestfulTestCase):
         user_ref = user_ref if user_ref else self.new_user_ref(
                                                     domain_id=self.domain_id)
 
-        response = self.post(self.REGISTER_URL, body={'user': user_ref})
+        response = self.post(REGISTER_URL, body={'user': user_ref})
         return response.result['user']
         
     def _activate_user(self, user_id, activation_key, expected_status=200):
-        response = self.patch(self.PERFORM_ACTIVATION_URL.format(user_id=user_id,
-                                                    activation_key=activation_key),
-                                expected_status=expected_status)
-        if expected_status == 200:
-            return response.result['user']
+        response = self.patch(
+            PERFORM_ACTIVATION_URL.format(user_id=user_id,
+                                          activation_key=activation_key),
+            expected_status=expected_status)
 
-    def _get_default_project(self, new_user):
-        response = self.get(self.PROJECTS_URL.format(
-                                        project_id=new_user['default_project_id']))
-        return response.result['project']
-
-    def _get_project_user_roles(self, user_id, project_id):
-        response = self.get(self.ROLES_URL.format(user_id=user_id,
-                                                project_id=project_id))
-        return response.result['roles']
-
-    def _request_password_reset(self, user):
-        response = self.get(self.REQUEST_RESET_URL.format(user_id=user['id']))
-
-        return response.result['reset_token']
-
-    def _reset_password(self, user, token, new_password, expected_status=200):
-        response = self.patch(self.PERFORM_RESET_URL.format(user_id=user['id'],
-                                                    token_id=token['id']),
-                        body={'user': {'password':new_password}},
-                        expected_status=expected_status)
         if expected_status != 200:
             return response.result
         return response.result['user']
 
-    def _request_new_activation_key(self, user):
-        response = self.get(self.REQUEST_NEW_ACTIVATION_KEY_URL.format(
-                                                        user_id=user['id']))
+    def _get_default_project(self, new_user):
+        response = self.get(
+            PROJECTS_URL.format(project_id=new_user['default_project_id']))
+        return response.result['project']
 
+    def _get_project_user_roles(self, user_id, project_id):
+        response = self.get(ROLES_URL.format(user_id=user_id,
+                                             project_id=project_id))
+        return response.result['roles']
+
+    def _request_password_reset(self, user, expected_status=200):
+        response = self.get(
+            REQUEST_RESET_URL.format(user_id=user['id']),
+            expected_status=expected_status)
+        if expected_status != 200:
+            return response.result
+        return response.result['reset_token']
+
+    def _reset_password(self, user, token, new_password, expected_status=200):
+        response = self.patch(PERFORM_RESET_URL.format(
+            user_id=user['id'],
+            token_id=token['id']),
+            body={'user': {'password':new_password}},
+            expected_status=expected_status)
+
+        if expected_status != 200:
+            return response.result
+        return response.result['user']
+
+    def _request_new_activation_key(self, user, expected_status=200):
+        response = self.get(
+            REQUEST_NEW_ACTIVATION_KEY_URL.format(user_id=user['id']),
+            expected_status=expected_status)
+
+        if expected_status != 200:
+            return response.result
         return response.result['activation_key']
+
+class UserDeletedTests(RegistrationBaseTests):
+    """Test all resources created for a user by this extension are
+    correctly removed.
+    """
+    def _delete_user(self, user_id):
+        return self.delete('/users/{0}'.format(user_id))
+
+    def test_delete_before_activation(self):
+        new_user_ref = self.new_user_ref(domain_id=self.domain_id)
+        new_user = self._register_new_user(new_user_ref)
+        response = self._delete_user(new_user['id'])
+
+        # custom_organizations
+
+        # check we can't activate the user anymore
+        active_user = self._activate_user(
+            user_id=new_user['id'],
+            activation_key=new_user['activation_key'],
+            expected_status=404)
+
+        # check we can't request a new activation key
+        new_activation_key = self._request_new_activation_key(
+            new_user,
+            expected_status=404)
+
+
+    def test_delete_after_activation(self):
+        new_user_ref = self.new_user_ref(domain_id=self.domain_id)
+        new_user = self._register_new_user(new_user_ref)
+        active_user = self._activate_user(
+            user_id=new_user['id'],
+            activation_key=new_user['activation_key'])
+        response = self._delete_user(new_user['id'])
+
+        # custom_organizations
+
+        # check we can't request a password reset
+        token = self._request_password_reset(
+            active_user,
+            expected_status=404)
 
 
 class RegistrationUseCaseTests(RegistrationBaseTests):

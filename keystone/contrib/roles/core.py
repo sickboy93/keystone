@@ -15,11 +15,11 @@
 import abc
 import six
 
-from keystone.common import dependency
 from keystone import exception
+from keystone import notifications
+from keystone.common import dependency
 from keystone.common import extension
 from keystone.common import manager
-
 from keystone.openstack.common import log
 
 
@@ -61,8 +61,73 @@ class RolesManager(manager.Manager):
     """
 
     def __init__(self):
+
+        self.event_callbacks = {
+            notifications.ACTIONS.deleted: {
+                'user': [self.delete_user_assignments],
+                'project': [self.delete_organization_assignments],
+                'consumer_oauth2':[self.delete_application_resources]
+            },
+        }
+
         super(RolesManager, self).__init__(
             'keystone.contrib.roles.backends.sql.Roles')
+
+    def delete_application_resources(self, service, resource_type, 
+                                     operation, payload):
+        app_id = payload['resource_info']
+        # Delete all assignments
+        user_assignments = self.driver.list_role_user_assignments(
+            application_id=app_id)
+        self._delete_user_assignments(user_assignments)
+        org_assignments = self.driver.list_role_organization_assignments(
+            application_id=app_id)
+        self._delete_organization_assignments(org_assignments)
+
+        # Delete all roles and permissions
+        roles = self.driver.list_roles(application_id=app_id)
+        for role in roles:
+            self.driver.delete_role(role['id'])
+
+        permissions = self.driver.list_roles(application_id=app_id)
+        for permission in permissions:
+            self.driver.delete_permission(permission['id'])
+
+
+    def delete_user_assignments(self, service, resource_type, operation,
+                                payload):
+        user_id = payload['resource_info']
+        assignments = self.driver.list_role_user_assignments(
+            user_id=user_id)
+        self._delete_user_assignments(assignments)
+
+
+    def delete_organization_assignments(self, service, resource_type, 
+                                        operation, payload):
+        org_id = payload['resource_info']
+        assignments = self.driver.list_role_organization_assignments(
+            organization_id=org_id)
+        self._delete_organization_assignments(assignments)
+
+
+    def _delete_user_assignments(self, assignments):
+        for assignment in assignments:
+            self.driver.remove_role_from_user(
+                role_id=assignment['role_id'], 
+                user_id=assignment['user_id'],
+                organization_id=assignment['organization_id'],
+                application_id=assignment['application_id'],
+                check_ids=False)
+
+
+    def _delete_organization_assignments(self, assignments):
+        for assignment in assignments:
+            self.driver.remove_role_from_organization(
+                role_id=assignment['role_id'], 
+                organization_id=assignment['organization_id'],
+                application_id=assignment['application_id'],
+                check_ids=False)
+
 
     def get_authorized_organizations(self, user, 
                                     application_id,
@@ -333,7 +398,8 @@ class RolesDriver(object):
 
     @abc.abstractmethod
     def remove_role_from_user(self, role_id, user_id, 
-                              organization_id, application_id):
+                              organization_id, application_id,
+                              check_ids=True):
         """Revoke an user's role.
 
         :param role_id: id of role to remove user from
@@ -383,7 +449,8 @@ class RolesDriver(object):
 
     @abc.abstractmethod
     def remove_role_from_organization(self, role_id,  
-                                      organization_id, application_id):
+                                      organization_id, application_id,
+                                      check_ids=True):
         """Revoke an organization's role.
 
         :param role_id: id of role to remove organization from

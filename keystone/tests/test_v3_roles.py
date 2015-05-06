@@ -35,6 +35,7 @@ class RolesBaseTests(test_v3.RestfulTestCase):
 
     USER_ASSIGNMENTS_URL = '/OS-ROLES/users/role_assignments'
     USER_ROLES_URL = '/OS-ROLES/users/{user_id}/organizations/{organization_id}/applications/{application_id}/roles/{role_id}'
+    USER_DEFAULT_ORG_ROLES_URL = '/OS-ROLES/users/{user_id}/applications/{application_id}/roles/{role_id}'
     
     ORGANIZATION_ASSIGNMENTS_URL = '/OS-ROLES/organizations/role_assignments'
     ORGANIZATION_ROLES_URL = '/OS-ROLES/organizations/{organization_id}/applications/{application_id}/roles/{role_id}'
@@ -161,6 +162,17 @@ class RolesBaseTests(test_v3.RestfulTestCase):
         url = self.USER_ROLES_URL.format(**url_args)
         return self.put(url, expected_status=expected_status)
 
+    def _add_role_to_user_default_org(self, role_id, user_id, 
+                                      application_id, 
+                                      expected_status=204):
+        url_args = {
+            'role_id': role_id,
+            'user_id': user_id,
+            'application_id': application_id,
+        }
+        url = self.USER_DEFAULT_ORG_ROLES_URL.format(**url_args)
+        return self.put(url, expected_status=expected_status)
+
     def _add_multiple_roles_to_user(self, number_of_roles, user_id, 
                                     organization_id, application_id):
         user_roles = []
@@ -183,6 +195,17 @@ class RolesBaseTests(test_v3.RestfulTestCase):
             'application_id': application_id,
         }
         url = self.USER_ROLES_URL.format(**url_args)
+        return self.delete(url, expected_status=expected_status)
+
+    def _remove_role_from_user_default_org(self, role_id, user_id, 
+                                           application_id,
+                                           expected_status=204):
+        url_args = {
+            'role_id': role_id,
+            'user_id': user_id,
+            'application_id': application_id,
+        }
+        url = self.USER_DEFAULT_ORG_ROLES_URL.format(**url_args)
         return self.delete(url, expected_status=expected_status)
 
     # ROLES-ORGANIZATIONS
@@ -578,6 +601,17 @@ class RoleUserAssignmentTests(RolesBaseTests):
                                         organization_id=organization['id'],
                                         application_id=application)
 
+    def test_add_role_to_user_default_org(self):
+        application = uuid.uuid4().hex
+        role_ref = self.new_fiware_role_ref(uuid.uuid4().hex,
+                                            application=application)
+        role = self._create_role(role_ref)
+        user, organization = self._create_user()
+        response = self._add_role_to_user_default_org(
+            role_id=role['id'],
+            user_id=user['id'],
+            application_id=application)
+
     def test_remove_role_from_user(self):
         application = uuid.uuid4().hex
         role_ref = self.new_fiware_role_ref(uuid.uuid4().hex,
@@ -632,7 +666,20 @@ class RoleUserAssignmentTests(RolesBaseTests):
                                         organization_id=organization['id'],
                                         application_id=application)
 
-
+    def test_remove_role_from_user_default_org(self):
+        application = uuid.uuid4().hex
+        role_ref = self.new_fiware_role_ref(uuid.uuid4().hex,
+                                            application=application)
+        role = self._create_role(role_ref)
+        user, organization = self._create_user()
+        response = self._add_role_to_user_default_org(
+            role_id=role['id'],
+            user_id=user['id'],
+            application_id=application)
+        response = self._remove_role_from_user_default_org(
+            role_id=role['id'],
+            user_id=user['id'],
+            application_id=application)
 class RoleOrganizationAssignmentTests(RolesBaseTests):
 
     def test_list_role_organization_assignments_no_filters(self):
