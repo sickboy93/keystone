@@ -71,6 +71,13 @@ class EndpointFilterCatalog(sql.Catalog):
             formatted_service = {}
             formatted_service['id'] = service['id']
             formatted_service['type'] = service['type']
+            for endpoint in service['endpoints']:
+                # NOTE(garcianavalon) change region_id for region
+                # like old catalog services!
+                region = endpoint.pop('region_id', None)
+                if region:
+                    endpoint['region'] = region
+
             formatted_service['endpoints'] = service['endpoints']
             catalog.append(formatted_service)
 
