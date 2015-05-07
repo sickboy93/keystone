@@ -110,7 +110,7 @@ class Token(token.persistence.Driver):
                 token_ref['extra']['token_data']['token']['catalog'] = {}
 		#LOG.warning('Deleting catalog from extra')
             if 'access' in token_ref['extra']['token_data']:
-		token_ref['extra']['token_data']['token']['serviceCatalog'] = {}
+		token_ref['extra']['token_data']['access']['token']['serviceCatalog'] = {}
 		#LOG.warning('Deleting serviceCatalog from extra')
 
 	session = sql.get_session()
