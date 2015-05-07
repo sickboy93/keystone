@@ -103,12 +103,17 @@ class Token(token.persistence.Driver):
 
         token_ref = TokenModel.from_dict(data_copy)
         token_ref.valid = True
+
         # NOTE(garcianavalon) TOO big!!
         if 'token_data' in token_ref['extra']:
             if 'token' in token_ref['extra']['token_data']:
                 token_ref['extra']['token_data']['token']['catalog'] = {}
-                
-        session = sql.get_session()
+		#LOG.warning('Deleting catalog from extra')
+            if 'access' in token_ref['extra']['token_data']:
+		token_ref['extra']['token_data']['token']['serviceCatalog'] = {}
+		#LOG.warning('Deleting serviceCatalog from extra')
+
+	session = sql.get_session()
         with session.begin():
             session.add(token_ref)
         return token_ref.to_dict()
