@@ -57,7 +57,7 @@ class AuthorizationCode(sql.ModelBase, sql.DictBase):
     expires_at = sql.Column(sql.String(64), nullable=False)
     scopes = sql.Column(sql.JsonBlob(), nullable=True)
     state = sql.Column(sql.String(64), nullable=True)
-    redirect_uri = sql.Column(sql.String(64), nullable=False)
+    redirect_uri = sql.Column(sql.String(256), nullable=False)
     valid = sql.Column(sql.Boolean(), default=True, nullable=False)
     extra = sql.Column(sql.JsonBlob(), nullable=True)
 
@@ -71,7 +71,7 @@ class ConsumerCredentials(sql.ModelBase, sql.DictBase):
     user_id = sql.Column(sql.String(64), index=True, nullable=False)
     client_id = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
                              nullable=False, index=True)
-    redirect_uri = sql.Column(sql.String(64), nullable=False)
+    redirect_uri = sql.Column(sql.String(256), nullable=False)
     response_type = sql.Column(VALID_RESPONSE_TYPES, nullable=False)
     state = sql.Column(sql.String(64), nullable=True)
     created_at = sql.Column(sql.DateTime(), default=None, nullable=False)
