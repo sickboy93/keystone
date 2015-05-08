@@ -107,13 +107,13 @@ class Token(token.persistence.Driver):
         # NOTE(garcianavalon) TOO big!!
         if 'token_data' in token_ref['extra']:
             if 'token' in token_ref['extra']['token_data']:
-                token_ref['extra']['token_data']['token']['catalog'] = {}
+                token_ref['extra']['token_data']['token'].pop('catalog', None)
             if 'access' in token_ref['extra']['token_data']:
-                token_ref['extra']['token_data']['access']['serviceCatalog'] = {}
+                token_ref['extra']['token_data']['access'].pop('serviceCatalog', None)
 
-        LOG.warning('TOKEN EXTRA: %s for token id %s', token_ref['extra'], token_ref['id'])
+        # LOG.warning('TOKEN EXTRA: %s for token id %s', token_ref['extra'], token_ref['id'])
 
-	session = sql.get_session()
+        session = sql.get_session()
         with session.begin():
             session.add(token_ref)
         return token_ref.to_dict()
