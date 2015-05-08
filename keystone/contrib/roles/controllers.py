@@ -286,7 +286,9 @@ class FiwareApiControllerV3(BaseControllerV3):
         return {
             'organizations': organizations
         }
-    #@controller.protected()
+    # NOTE(garcianavalon) because it shares the same name, it is protected by the
+    # same policy rule as validate_token form keystone
+    @controller.protected()
     def validate_token(self, context, token_id):
         """ Return a list of the roles and permissions of the user associated 
         with this token.
