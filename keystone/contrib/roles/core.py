@@ -85,12 +85,14 @@ class RolesManager(manager.Manager):
             organization_id)
 
         # delete all assignments if the role is not allowed anymore
-        delete_assignments = []
-        for app_id in application_roles:
-            user_assignments = self.driver.list_role_user_assignments(
-                organization_id=organization_id, application_id=application_id)
-            delete_assignments += [a for a in user_assignments
-                if a.role_id not in application_roles[app_id]]
+        user_assignments = self.driver.list_role_user_assignments(
+            organization_id=organization_id)
+
+        delete_assignments = [
+            a for a in user_assignments
+            if a['application_id'] not in application_roles
+            or a['role_id'] not in application_roles[a['application_id']]
+        ]
 
         self._delete_user_assignments(delete_assignments)
         
