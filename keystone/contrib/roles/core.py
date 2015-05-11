@@ -73,6 +73,29 @@ class RolesManager(manager.Manager):
         super(RolesManager, self).__init__(
             'keystone.contrib.roles.backends.sql.Roles')
 
+    def remove_role_from_organization(self, role_id,  
+                                      organization_id, application_id,
+                                      check_ids=True):
+
+        response = self.driver.remove_role_from_organization(
+            role_id, organization_id, application_id, check_ids=check_ids)
+
+        # get all roles allowed to assign
+        application_roles = self.list_roles_organization_allowed_to_assign(
+            organization_id)
+
+        # delete all assignments if the role is not allowed anymore
+        delete_assignments = []
+        for app_id in application_roles:
+            user_assignments = self.driver.list_role_user_assignments(
+                organization_id=organization_id, application_id=application_id)
+            delete_assignments += [a for a in user_assignments
+                if a.role_id not in application_roles[app_id]]
+
+        self._delete_user_assignments(delete_assignments)
+        
+        return response
+
     def delete_application_resources(self, service, resource_type, 
                                      operation, payload):
         app_id = payload['resource_info']
@@ -105,10 +128,14 @@ class RolesManager(manager.Manager):
     def delete_organization_assignments(self, service, resource_type, 
                                         operation, payload):
         org_id = payload['resource_info']
-        assignments = self.driver.list_role_organization_assignments(
+        org_assignments = self.driver.list_role_organization_assignments(
             organization_id=org_id)
-        self._delete_organization_assignments(assignments)
+        self._delete_organization_assignments(org_assignments)
 
+        # Delete all user assignments in this org
+        user_assignments = self.driver.list_role_user_assignments(
+            organization_id=org_id)
+        self._delete_user_assignments(user_assignments)
 
     def _delete_user_assignments(self, assignments):
         for assignment in assignments:
@@ -360,7 +387,7 @@ class RolesDriver(object):
     @abc.abstractmethod
     def list_role_user_assignments(self, user_id=None, organization_id=None, 
                               application_id=None):
-        """List all role to userassignments. Filtering by user, organization and/or 
+        """List all role to user assignments. Filtering by user, organization and/or 
         application
 
         :param user_id: user to filter by. Optional parameter

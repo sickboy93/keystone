@@ -227,11 +227,13 @@ class Roles(roles.RolesDriver):
                                          application_id=application_id)) 
 
     def remove_role_from_organization(self, role_id, organization_id, 
-                                      application_id):
+                                      application_id,
+                                      check_ids=True):
         session = sql.get_session()
-        self.get_role(role_id)
-        self.assignment_api.get_project(organization_id)
-        # self.oauth2_api.get_consumer(application_id)
+        if check_ids:
+            self.get_role(role_id)
+            self.assignment_api.get_project(organization_id)
+            # self.oauth2_api.get_consumer(application_id)
         query = session.query(RoleOrganization)
         query = query.filter_by(organization_id=organization_id)
         query = query.filter_by(role_id=role_id)
