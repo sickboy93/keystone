@@ -20,7 +20,7 @@ LOG = log.getLogger(__name__)
 
 class FiwareControllerV3(controller.V3Controller):
 
-    def validate_token(self, context, token_id):
+    def validate_oauth2_token(self, context, token_id):
         """ Redirect to the roles extension."""
         message = ("Recieved request to the legacy endpoint access-token/{token_id}\
             for token_id=%(token_id)s. Redirecting to the new endpoint.")

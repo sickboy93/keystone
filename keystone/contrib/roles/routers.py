@@ -228,7 +228,7 @@ class RolesExtension(wsgi.V3ExtensionRouter):
         self._add_resource(
             mapper, fiware_api_controller,
             path='/access-tokens/{token_id}',
-            get_action='validate_token',
+            get_action='validate_oauth2_token',
             rel=build_resource_relation(resource_name='roles'),
             path_vars={
                 'token_id':build_parameter_relation(parameter_name='token_id'),
