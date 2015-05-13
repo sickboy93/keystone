@@ -91,18 +91,20 @@ class Identity(identity.Driver):
         session = sql.get_session()
         with session.begin():
             query = session.query(User)
-            query.filter(User.name.like(slug + '%'))
-            coincidendes = len(query.all())
+            query = query.filter(User.id.like(slug+'%'))
+            ids = [u.id for u in query.all()]
 
-        if coincidendes == 0:
+        if len(ids) == 0:
             return slug
 
-        # add a number
-        slug += '-' + str(coincidendes)
+        # add a unique number
+        index = len(ids)
+        base = slug
+        while slug in ids:
+            index += 1
+            slug = base + '-' + str(index)
 
-        # TODO(garcianavalon) check it actually is unique!
         return slug
-
 
     @property
     def is_sql(self):
