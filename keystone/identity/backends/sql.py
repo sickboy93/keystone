@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from slugify import slugify
+
 from keystone.common import sql
 from keystone.common import utils
 from keystone import config
@@ -83,6 +85,24 @@ class Identity(identity.Driver):
 
     def default_assignment_driver(self):
         return "keystone.assignment.backends.sql.Assignment"
+
+    def generate_slug(self, name):
+        slug = slugify(name)
+        session = sql.get_session()
+        with session.begin():
+            query = session.query(User)
+            query.filter(User.name.like(slug + '%'))
+            coincidendes = len(query.all())
+
+        if coincidendes == 0:
+            return slug
+
+        # add a number
+        slug += '-' + str(coincidendes)
+
+        # TODO(garcianavalon) check it actually is unique!
+        return slug
+
 
     @property
     def is_sql(self):

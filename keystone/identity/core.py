@@ -568,7 +568,10 @@ class Manager(manager.Manager):
         # Generate a local ID - in the future this might become a function of
         # the underlying driver so that it could conform to rules set down by
         # that particular driver type.
-        user['id'] = uuid.uuid4().hex
+        # NOTE(garcianvalon) slugify here!
+        name = user.get('username', user['name'])
+        user['id'] = self.driver.generate_slug(name)
+        # user['id'] = uuid.uuid4().hex
         ref = driver.create_user(user['id'], user)
         return self._set_domain_id_and_mapping(
             ref, domain_id, driver, mapping.EntityType.USER)
