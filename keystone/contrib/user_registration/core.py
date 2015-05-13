@@ -142,7 +142,7 @@ class Manager(manager.Manager):
     def new_activation_key(self, user_id):
         # get the profile
         profile_ref = self.driver.get_activation_profile(user_id)
-
+        profile_ref['expires_at'] = self._calculate_expiry_date(ACTIVATION_KEY_DURATION)
         # save and return
         return self.driver.store_new_activation_key(profile_ref['id'], 
                                                     uuid.uuid4().hex)
