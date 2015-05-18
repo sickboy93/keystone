@@ -140,12 +140,11 @@ class Manager(manager.Manager):
         return default_role
 
     def new_activation_key(self, user_id):
-        # get the profile
         profile_ref = self.driver.get_activation_profile(user_id)
         profile_ref['expires_at'] = self._calculate_expiry_date(ACTIVATION_KEY_DURATION)
-        # save and return
-        return self.driver.store_new_activation_key(profile_ref['id'], 
-                                                    uuid.uuid4().hex)
+        profile_ref['activation_key'] = uuid.uuid4().hex
+        return self.driver.store_new_activation_key(
+            profile_ref['id'], profile_ref)
 
     def _assert_expired(self, ref):
         current_time = timeutils.normalize_time(timeutils.utcnow())
@@ -186,13 +185,13 @@ class Driver(object):
         raise exception.NotImplemented()
 
     @abc.abstractmethod
-    def store_new_activation_key(self, profile_id, activation_key):
-        """Create an activation_profile for a newly registered user
+    def store_new_activation_key(self, profile_id, profile_ref):
+        """Update key and expires_at of an activation profile
 
         :param profile_id: profile_id
         :type profile_id: string
-        :param activation_key: a new key
-        :type activation_key: string
+        :param profile_ref: the new data to store
+        :type profile_ref: dict
         :returns: activation_profile
 
         """
