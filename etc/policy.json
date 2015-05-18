@@ -6,7 +6,7 @@
     "organization_owner": "role:owner and project_id:%(project_id)s",
     "admin_or_owner": "rule:admin_required or rule:owner or rule:organization_owner",
     "member_or_admin_or_owner": "role:member or role:owner or rule:admin_required",
-    "self_user": "user_id:target.user.id", 
+    "self_user": "user_id:%(target.user.id)s", 
 
     "default": "rule:admin_required",
 
