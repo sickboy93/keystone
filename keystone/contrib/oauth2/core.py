@@ -119,7 +119,37 @@ class Manager(manager.Manager):
     
     @notifications.deleted(_CONSUMER)
     def delete_consumer(self, consumer_id):
-        return self.driver.delete_consumer(consumer_id)
+        ret_val = self.driver.delete_consumer(consumer_id)
+        
+        # delete all the stored credentials
+        self.driver.delete_consumer_credentials(consumer_id)
+
+        # and the authorization codes
+        self.driver.delete_authorization_codes(consumer_id)
+
+        # and the issued tokens
+        self.driver.delete_access_tokens(consumer_id)
+
+        return ret_val
+
+    @notifications.updated(_CONSUMER)
+    def update_consumer(self, consumer_id, consumer_ref):
+        ret_val = self.driver.update_consumer(consumer_id, consumer_ref)
+        # TODO(garcianavalon) also delete on scopes or grant_type changes
+        if 'redirect_uris' not in consumer_ref:
+            return ret_val
+
+        # delete all the stored credentials
+        self.driver.delete_consumer_credentials(consumer_id)
+
+        # and the authorization codes
+        self.driver.delete_authorization_codes(consumer_id)
+
+        # and the issued tokens
+        self.driver.delete_access_tokens(consumer_id)
+
+        return ret_val
+
 
 @dependency.requires('identity_api')
 @six.add_metaclass(abc.ABCMeta)
@@ -134,19 +164,7 @@ class Driver(object):
         :returns: List of registered consumers
 
         """
-        raise exception.NotImplemented()  
-
-    # NOTE(garcianavalon) removed because owner field is removed
-    # @abc.abstractmethod
-    # def list_consumers_for_user(self, user_id):
-    #     """List all registered consumers owned by the user
-        
-    #     :param user_id: user id
-    #     :type user_id: string
-    #     :returns: List of consumers
-
-    #     """
-    #     raise exception.NotImplemented()  
+        raise exception.NotImplemented()
 
     @abc.abstractmethod
     def create_consumer(self, consumer):
@@ -162,8 +180,8 @@ class Driver(object):
     @abc.abstractmethod
     def get_consumer(self, consumer_id):
         """Get consumer details, except the private ones
-        like secret
-        
+        like secret.
+
         :param consumer_id: id of consumer
         :type consumer_id: string
         :returns: consumer
@@ -174,7 +192,7 @@ class Driver(object):
     @abc.abstractmethod
     def update_consumer(self, consumer_id, consumer):
         """Update consumer details
-        
+
         :param consumer_id: id of consumer to update
         :type consumer_id: string
         :param consumer: new consumer data
@@ -209,7 +227,8 @@ class Driver(object):
 
     @abc.abstractmethod
     def get_authorization_code(self, code):
-        """Get an authorization_code. Should never be exposed by the APi, its called from the oauth2 flow through the validator
+        """Get an authorization_code. Should never be exposed by the API, its
+        called from the oauth2 flow through the validator
 
         :param code: the code
         :type code: string
@@ -220,7 +239,8 @@ class Driver(object):
 
     @abc.abstractmethod
     def store_authorization_code(self, authorization_code):
-        """Stores an authorization_code. This should never be exposed by the API, its called from the oauth2 flow through the validator
+        """Stores an authorization_code. This should never be exposed by the
+        API, its called from the oauth2 flow through the validator
 
         :param authorization_code: All the requiered info
         :type authorization_code: dict
@@ -231,12 +251,23 @@ class Driver(object):
 
     @abc.abstractmethod
     def invalidate_authorization_code(self, code):
-        """Invalidate an authorization_code. 
-        This method is called from the oauth2 flow through the validator but
+        """Invalidate an authorization_code.
+        This method is called from the oauth2 flow through the validator but it
         is safe to expose it in the REST API if the use case is needed.
 
         :param code: the code
         :type code: string
+        :returns: Nothing
+
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def delete_authorization_codes(self, client_id):
+        """Deletes all the authorization_codes issued for a consumer.
+
+        :param client_id: client_id
+        :type client_id: string
         :returns: Nothing
 
         """
@@ -268,6 +299,17 @@ class Driver(object):
         """
         raise exception.NotImplemented()
 
+    @abc.abstractmethod
+    def delete_consumer_credentials(self, client_id):
+        """Deletes all the consumer credentials stored from authorization requests
+
+        :param client_id: The id of the consumer
+        :type client_id: string
+        :returns: Nothing
+
+        """
+        raise exception.NotImplemented()
+
     # ACCESS TOKEN
     @abc.abstractmethod
     def list_access_tokens(self, user_id=None):
@@ -282,8 +324,8 @@ class Driver(object):
 
     @abc.abstractmethod
     def get_access_token(self, access_token_id, user_id=None):
-        """Get an already existent access_token. If exposed by the Identity API, use
-        the user_id check.
+        """Get an already existent access_token. If exposed by the Identity
+         API, use the user_id check.
 
         :param access_token_id: the access_token_id (the string itself)
         :type access_token_id: string
@@ -310,11 +352,22 @@ class Driver(object):
 
     @abc.abstractmethod
     def store_access_token(self, access_token):
-        """Stores an access_token created by the validator. Should never be exposed 
-        by the Identity API.
+        """Stores an access_token created by the validator. Should never be
+         exposed by the Identity API.
 
         :param access_token: All the requiered info
         :type access_token: dict
+        :returns: Nothing
+
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def delete_access_tokens(self, client_id):
+        """Deletes all the access tokens issued for a consumer.
+
+        :param client_id: The id of the consumer
+        :type client_id: string
         :returns: Nothing
 
         """

@@ -110,13 +110,6 @@ class OAuth2(oauth2.Driver):
         cons = session.query(Consumer)
         return [consumer.to_dict() for consumer in cons]
 
-    # NOTE(garcianavalon) removed because owner field is removed
-    # def list_consumers_for_user(self, user_id):
-    #     session = sql.get_session()
-    #     self.identity_api.get_user(user_id)
-    #     cons = session.query(Consumer).filter_by(owner=user_id)
-    #     return [consumer.to_dict() for consumer in cons]
-
     def create_consumer(self, consumer):
         consumer['secret'] = uuid.uuid4().hex
         if not consumer.get('description'):
@@ -191,6 +184,13 @@ class OAuth2(oauth2.Driver):
             authorization_code_ref = self._get_authorization_code(session, code)
             setattr(authorization_code_ref, 'valid', False)
 
+    def delete_authorization_codes(self, client_id):
+        session = sql.get_session()
+        with session.begin():
+            query = session.query(AuthorizationCode).filter_by(consumer_id=client_id)
+            for code in query.all():
+                session.delete(code)
+
     # CONSUMER CREDENTIALS
     def store_consumer_credentials(self, credentials):
         if not credentials.get('state'):
@@ -223,6 +223,13 @@ class OAuth2(oauth2.Driver):
         if credentials_ref is None:
             raise exception.NotFound(_('Credentials not found'))
         return credentials_ref.to_dict()
+
+    def delete_consumer_credentials(self, client_id):
+        session = sql.get_session()
+        with session.begin():
+            query = session.query(ConsumerCredentials).filter_by(client_id=client_id)
+            for credentials in query.all():
+                session.delete(credentials)
 
     # ACCESS TOKENS
     def list_access_tokens(self, user_id=None):
@@ -263,3 +270,10 @@ class OAuth2(oauth2.Driver):
             access_token_ref = AccessToken.from_dict(access_token)
             session.add(access_token_ref)
         return access_token_ref.to_dict()
+
+    def delete_access_tokens(self, client_id):
+        session = sql.get_session()
+        with session.begin():
+            query = session.query(AccessToken).filter_by(consumer_id=client_id)
+            for token in query.all():
+                session.delete(token)
