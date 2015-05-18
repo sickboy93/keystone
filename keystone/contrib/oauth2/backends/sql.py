@@ -56,7 +56,7 @@ class AuthorizationCode(sql.ModelBase, sql.DictBase):
     # TODO(garcianavalon) datetime type or similar?
     expires_at = sql.Column(sql.String(64), nullable=False)
     scopes = sql.Column(sql.JsonBlob(), nullable=True)
-    state = sql.Column(sql.String(64), nullable=True)
+    state = sql.Column(sql.String(256), nullable=True)
     redirect_uri = sql.Column(sql.String(256), nullable=False)
     valid = sql.Column(sql.Boolean(), default=True, nullable=False)
     extra = sql.Column(sql.JsonBlob(), nullable=True)
@@ -73,7 +73,7 @@ class ConsumerCredentials(sql.ModelBase, sql.DictBase):
                              nullable=False, index=True)
     redirect_uri = sql.Column(sql.String(256), nullable=False)
     response_type = sql.Column(VALID_RESPONSE_TYPES, nullable=False)
-    state = sql.Column(sql.String(64), nullable=True)
+    state = sql.Column(sql.String(256), nullable=True)
     created_at = sql.Column(sql.DateTime(), default=None, nullable=False)
     extra = sql.Column(sql.JsonBlob(), nullable=True)
     
