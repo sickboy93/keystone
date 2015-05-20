@@ -16,12 +16,15 @@ import subprocess
 import uuid
 
 from oslo.utils import timeutils
+from oslo.utils import importutils
 import saml2
 from saml2 import md
 from saml2 import saml
 from saml2 import samlp
 from saml2 import sigver
-import xmldsig
+xmldsig = importutils.try_import("saml2.xmldsig")
+if not xmldsig:
+    xmldsig = importutils.try_import("xmldsig")
 
 from keystone.common import config
 from keystone import exception

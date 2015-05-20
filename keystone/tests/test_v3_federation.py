@@ -18,11 +18,14 @@ import uuid
 from lxml import etree
 import mock
 from oslo.serialization import jsonutils
+from oslo.utils import importutils
 from oslotest import mockpatch
 import saml2
 from saml2 import saml
 from saml2 import sigver
-import xmldsig
+xmldsig = importutils.try_import("saml2.xmldsig")
+if not xmldsig:
+    xmldsig = importutils.try_import("xmldsig")
 
 from keystone.auth import controllers as auth_controllers
 from keystone.common import dependency
