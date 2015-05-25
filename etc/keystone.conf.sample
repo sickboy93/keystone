@@ -579,6 +579,7 @@
 
 # Catalog backend driver. (string value)
 #driver=keystone.catalog.backends.sql.Catalog
+driver = keystone.contrib.endpoint_filter.backends.catalog_sql.EndpointFilterCatalog
 
 # Toggle for catalog caching. This has no effect unless global
 # caching is enabled. (boolean value)

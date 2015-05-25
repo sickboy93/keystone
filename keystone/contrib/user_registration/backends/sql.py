@@ -78,11 +78,12 @@ class Registration(user_registration.Driver):
             raise exception.NotFound(_('No Profile found for user: %s' %user_id))
         return profile_ref.to_dict()
 
-    def store_new_activation_key(self, profile_id, new_key):
+    def store_new_activation_key(self, profile_id, new_ref):
         session = sql.get_session()
         with session.begin():
             profile_ref = session.query(ActivationProfile).get(profile_id)
-            profile_ref.activation_key = new_key
+            profile_ref.activation_key = new_ref['activation_key']
+            profile_ref.expires_at = new_ref['expires_at']
         return profile_ref.to_dict()
 
     def delete_user_profiles(self, user_id):

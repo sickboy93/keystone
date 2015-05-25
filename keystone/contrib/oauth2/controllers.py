@@ -272,8 +272,9 @@ class OAuth2ControllerV3(controller.V3Controller):
         try:
             headers, body, status = server.create_authorization_response(
                 uri, http_method, body, headers, scopes, credentials)
-            # headers = {'Location': 'https://foo.com/welcome_back?code=somerandomstring&state=xyz  '}, this might change to include suggested headers related
-            # to cache best practices etc.
+            # headers = {'Location': 'https://foo.com/welcome_back?code=somera
+            # ndomstring&state=xyz  '}, this might change to include suggested
+            # headers related to cache best practices etc.
             # body = '', this might be set in future custom grant types
             # status = 302, suggested HTTP status code
 

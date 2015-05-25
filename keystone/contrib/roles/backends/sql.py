@@ -32,13 +32,20 @@ class Role(sql.ModelBase, sql.ModelDictMixin):
 class Permission(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'permission_fiware'
     __table_args__ = (sql.UniqueConstraint('name', 'application_id'), {'extend_existing': True})
-    attributes = ['id', 'name', 'is_internal', 'application_id']
-                    
+    attributes = ['id', 'name', 'is_internal', 'application_id', 'action'
+                  'resource', 'xacml']
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
     name = sql.Column(sql.String(64), nullable=False)
     is_internal = sql.Column(sql.Boolean(), default=False, nullable=False)
-    application_id = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
-                             nullable=False, index=True)
+    application_id = sql.Column(
+        sql.String(64),
+        sql.ForeignKey('consumer_oauth2.id'),
+        nullable=False,
+        index=True)
+    action = sql.Column(sql.String(10), nullable=True)
+    resource = sql.Column(sql.String(256), nullable=True)
+    xacml = sql.Column(sql.Text(), nullable=True)
+
 
 class RolePermission(sql.ModelBase, sql.DictBase):
     """Role\'s permissions join table."""

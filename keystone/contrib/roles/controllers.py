@@ -287,7 +287,7 @@ class FiwareApiControllerV3(BaseControllerV3):
             'organizations': organizations
         }
     
-    @controller.protected()
+    # @controller.protected()
     def validate_oauth2_token(self, context, token_id):
         """ Return a list of the roles and permissions of the user associated 
         with this token.
