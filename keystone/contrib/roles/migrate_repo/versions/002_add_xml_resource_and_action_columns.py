@@ -22,11 +22,11 @@ def upgrade(migrate_engine):
 
     action = sql.Column('action', sql.String(10), nullable=True)
     resource = sql.Column('resource', sql.String(256), nullable=True)
-    xacml = sql.Column('xacml', sql.Text(), nullable=True)
+    xml = sql.Column('xml', sql.Text(), nullable=True)
 
     action.create(permissions_table, populate_default=True)
     resource.create(permissions_table, populate_default=True)
-    xacml.create(permissions_table, populate_default=True)
+    xml.create(permissions_table, populate_default=True)
 
 def downgrade(migrate_engine):
     meta = sql.MetaData()
@@ -34,5 +34,5 @@ def downgrade(migrate_engine):
     permissions_table = sql.Table('permission_fiware', meta, autoload=True)
     permissions_table.c.action.drop()
     permissions_table.c.resource.drop()
-    permissions_table.c.xacml.drop()
+    permissions_table.c.xml.drop()
 
