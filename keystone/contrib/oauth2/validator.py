@@ -166,8 +166,10 @@ class OAuth2Validator(RequestValidator):
         # separate them and only allow one grant type (registering
         # each client one time for each grant or allowing components)
         # or update the tools to allow to create clients with 
-        # multiple grants 
-        return grant_type in ['password', 'authorization_code']
+        # multiple grants
+
+        # TODO(garcianavalon) link with SQL backend soported grant_types
+        return grant_type in ['password', 'authorization_code', 'client_credentials']
 
     def save_bearer_token(self, token, request, *args, **kwargs):
         # Remember to associate it with request.scopes, request.user and

@@ -68,10 +68,10 @@ class Server(oauth2lib.AuthorizationEndpoint, oauth2lib.TokenEndpoint,
                        token-, resource-, and revocation-endpoint constructors.
         """
         auth_grant = oauth2lib.AuthorizationCodeGrant(request_validator)
-        #implicit_grant = ImplicitGrant(request_validator)
+        implicit_grant = oauth2lib.ImplicitGrant(request_validator)
         password_grant = oauth2lib.ResourceOwnerPasswordCredentialsGrant(
             request_validator)
-        #credentials_grant = ClientCredentialsGrant(request_validator)
+        credentials_grant = oauth2lib.ClientCredentialsGrant(request_validator)
         refresh_grant = oauth2lib.RefreshTokenGrant(request_validator)
         bearer = oauth2lib.BearerToken(request_validator, token_generator,
                              token_expires_in, refresh_token_generator)
@@ -80,7 +80,7 @@ class Server(oauth2lib.AuthorizationEndpoint, oauth2lib.TokenEndpoint,
             default_response_type='code',
             response_types={
                'code': auth_grant,
-               #'token': implicit_grant,
+               'token': implicit_grant,
             },
             default_token_type=bearer)
         oauth2lib.TokenEndpoint.__init__(
@@ -89,7 +89,7 @@ class Server(oauth2lib.AuthorizationEndpoint, oauth2lib.TokenEndpoint,
             grant_types={
                'authorization_code': auth_grant,
                'password': password_grant,
-               #'client_credentials': credentials_grant,
+               'client_credentials': credentials_grant,
                'refresh_token': refresh_grant,
             },
             default_token_type=bearer)
