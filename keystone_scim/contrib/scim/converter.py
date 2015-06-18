@@ -150,6 +150,7 @@ def organization_key2scim(ref, schema=True):
         'name': ref.get('name', None),
         'description': ref.get('description', None),
         'active': ref.get('enabled', None),
+        'is_default': ref.get('is_default', None),
         _EXT_SCHEMA: {
             'domain_id': ref.get('domain_id', None)
         }
@@ -159,7 +160,7 @@ def organization_key2scim(ref, schema=True):
 def listorganizations_key2scim(ref, page_info={}):
     res = {
         'schemas': ['urn:scim:schemas:core:1.0', _EXT_SCHEMA],
-        'Resources': map(functools.partial(organization_key2scim, schema=False), ref)
+        'Resources': map(functools.partial(organization_key2scim, schema=True), ref)
     }
     res.update(page_info)
     return res
@@ -173,5 +174,6 @@ def organization_scim2key(scim):
         'id': scim.get('id', None),
         'enabled': scim.get('active', None),
         'name': scim.get('name', None),
-        'description': scim.get('description', None)
+        'description': scim.get('description', None),
+        'is_default': scim.get('is_default', None)
     }

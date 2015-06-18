@@ -62,15 +62,27 @@ def get_scim_page_info(context, hints):
         page_info["itemsPerPage"] = hints.scim_limit
     return page_info
 
-
+@dependency.requires('assignment_api','identity_api')
 class ScimInfoController(wsgi.Application):
 
     def __init__(self):
         super(ScimInfoController, self).__init__()
 
+    def get_organizations(self):
+        orgs = self.assignment_api.list_projects()
+        filtered_orgs = [i for i in orgs if not i.get('is_default', False)
+                         and not ' cloud' in i.get('name', '')]
+        return len(filtered_orgs)
+
     @controller.protected()
     def scim_get_service_provider_configs(self, context):
-        return schemas.SERVICE_PROVIDER_CONFIGS
+        schema = schemas.SERVICE_PROVIDER_CONFIGS
+        users = len(self.identity_api.list_users())
+        orgs = self.get_organizations()
+        schema['totalUsers']= users
+        schema['totalOrganizations']= orgs
+        schema['totalResources']= users + orgs
+        return schema
 
     @controller.protected()
     def scim_get_schemas(self, context):
@@ -249,15 +261,7 @@ class ScimOrganizationV3Controller(ProjectV3):
     @controller.filterprotected('domain_id', 'enabled', 'name')
     def list_organizations(self, context, filters):
         hints = pagination(context, ProjectV3.build_driver_hints(context, filters))
-        if 'J' in versionutils.deprecated._RELEASES:
-            refs = self.assignment_api.list_project(
-                domain_scope=self._get_domain_id_for_list_request(context),
-                hints=hints)
-        else:
-            refs = self.assignment_api.list_project(
-                domain_scope=self._get_domain_id_for_request(context),
-                hints=hints)
-        # refs = self.assignment_api.list_projects(hints=pagination(context, hints))
+        refs = self.assignment_api.list_projects(hints=pagination(context, hints))
         scim_page_info = get_scim_page_info(context, hints)
         return conv.listorganizations_key2scim(refs, scim_page_info)
 
@@ -270,7 +274,7 @@ class ScimOrganizationV3Controller(ProjectV3):
         scim = self._denormalize(kwargs)
         organization = conv.organization_scim2key(scim)
         ref = super(ScimOrganizationV3Controller, self).create_project(
-            context, project=user)
+            context, project=organization)
         return conv.organization_key2scim(ref.get('project', None))
 
     def patch_organization(self, context, organization_id, **kwargs):
@@ -278,7 +282,7 @@ class ScimOrganizationV3Controller(ProjectV3):
         organization = conv.organization_scim2key(scim)
         ref = super(ScimOrganizationV3Controller, self).update_project(
             context, project_id=organization_id, project=organization)
-        return conv.user_key2scim(ref.get('user', None))
+        return conv.user_key2scim(ref.get('project', None))
 
     def put_organization(self, context, organization_id, **kwargs):
         return self.patch_organization(context, organization_id, **kwargs)

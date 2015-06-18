@@ -20,7 +20,6 @@
 
 from keystone.common import extension
 
-
 EXTENSION_DATA = {
     'name': 'OpenStack SCIM API',
     'namespace': 'https://github.com/telefonicaid/fiware-keystone-scim',
