@@ -55,7 +55,7 @@ class TestUserScimConverter(tests.BaseTestCase):
             'enabled': True
         }
 
-        self.assertEqual(None, conv.user_scim2key(scim))
+        self.assertEqual(keystone, conv.user_scim2key(scim))
 
     def test_user_scim2keystone_no_mandatory_fields(self):
         scim = {
@@ -309,7 +309,7 @@ class TestOrganizationScimConverter(tests.BaseTestCase):
                         'urn:scim:schemas:extension:keystone:1.0'],
             'id': '19041ee7679649879ada04417753ad4d',
             'name': 'aliceOrg',
-            'description': 'Alice Smith organization',
+            'description': 'Alice Smith Organization',
             'active': True,
             'urn:scim:schemas:extension:keystone:1.0': {
                 'domain_id': '91d79dc2211d43a7985ebc27cdd146df'
@@ -319,7 +319,7 @@ class TestOrganizationScimConverter(tests.BaseTestCase):
         keystone = {
             'id': '19041ee7679649879ada04417753ad4d',
             'domain_id': '91d79dc2211d43a7985ebc27cdd146df',
-            'name': 'alice',
+            'name': 'aliceOrg',
             'description': 'Alice Smith Organization',
             'enabled': True
         }
@@ -357,6 +357,7 @@ class TestOrganizationScimConverter(tests.BaseTestCase):
                         'urn:scim:schemas:extension:keystone:1.0'],
             'id': '19041ee7679649879ada04417753ad4d',
             'name': 'aliceOrg',
+            'description': 'Alice Smith Organization',
             'active': True,
             'urn:scim:schemas:extension:keystone:1.0': {
                 'domain_id': '91d79dc2211d43a7985ebc27cdd146df'
@@ -369,7 +370,7 @@ class TestOrganizationScimConverter(tests.BaseTestCase):
         keystone = [{
             'id': '19041ee7679649879ada04417753ad4d',
             'domain_id': '91d79dc2211d43a7985ebc27cdd146df',
-            'description': 'Alice Organization'
+            'description': 'Alice Organization',
             'name': 'aliceOrg',
             'enabled': True
         }]
@@ -380,7 +381,7 @@ class TestOrganizationScimConverter(tests.BaseTestCase):
             'Resources': [{
                 'id': '19041ee7679649879ada04417753ad4d',
                 'name': 'aliceOrg',
-                'description': 'Alice Organization'
+                'description': 'Alice Organization',
                 'active': True,
                 'urn:scim:schemas:extension:keystone:1.0': {
                     'domain_id': '91d79dc2211d43a7985ebc27cdd146df'

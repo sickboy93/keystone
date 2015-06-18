@@ -33,6 +33,7 @@ class ScimRouter(wsgi.ExtensionRouter):
         role_controller = controllers.ScimRoleV3Controller()
         group_controller = controllers.ScimGroupV3Controller()
         scim_info_controller = controllers.ScimInfoController()
+        org_controller = controllers.ScimOrganizationV3Controller()
 
         # Users
 
@@ -141,3 +142,35 @@ class ScimRouter(wsgi.ExtensionRouter):
                        controller=scim_info_controller,
                        action='scim_get_schemas',
                        conditions=dict(method=['GET']))
+
+        # Organizations
+
+        mapper.connect(self.PATH_PREFIX + '/Organizations',
+                       controller=org_controller,
+                       action='list_organizations',
+                       conditions=dict(method=['GET']))
+
+        mapper.connect(self.PATH_PREFIX + '/Organizations',
+                       controller=org_controller,
+                       action='create_organization',
+                       conditions=dict(method=['POST']))
+
+        mapper.connect(self.PATH_PREFIX + '/Organizations/{organization_id}',
+                       controller=org_controller,
+                       action='get_organization',
+                       conditions=dict(method=['GET']))
+
+        mapper.connect(self.PATH_PREFIX + '/Organizations/{organization_id}',
+                       controller=org_controller,
+                       action='patch_organization',
+                       conditions=dict(method=['PATCH']))
+
+        mapper.connect(self.PATH_PREFIX + '/Organizations/{organization_id}',
+                       controller=org_controller,
+                       action='put_organization',
+                       conditions=dict(method=['PUT']))
+
+        mapper.connect(self.PATH_PREFIX + '/Organizations/{organization_id}',
+                       controller=org_controller,
+                       action='delete_organization',
+                       conditions=dict(method=['DELETE']))

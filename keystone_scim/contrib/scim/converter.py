@@ -139,3 +139,39 @@ def listgroups_key2scim(ref, page_info={}):
     }
     res.update(page_info)
     return res
+
+
+@_remove_dict_nones
+def organization_key2scim(ref, schema=True):
+    return {
+        'schemas': ['urn:scim:schemas:core:1.0', _EXT_SCHEMA] if schema
+        else None,
+        'id': ref.get('id', None),
+        'name': ref.get('name', None),
+        'description': ref.get('description', None),
+        'active': ref.get('enabled', None),
+        _EXT_SCHEMA: {
+            'domain_id': ref.get('domain_id', None)
+        }
+    }
+
+
+def listorganizations_key2scim(ref, page_info={}):
+    res = {
+        'schemas': ['urn:scim:schemas:core:1.0', _EXT_SCHEMA],
+        'Resources': map(functools.partial(organization_key2scim, schema=False), ref)
+    }
+    res.update(page_info)
+    return res
+
+
+@_remove_dict_nones
+def organization_scim2key(scim):
+    return {
+        'domain_id': scim.get(_EXT_SCHEMA, {})
+            .get('domain_id', None),
+        'id': scim.get('id', None),
+        'enabled': scim.get('active', None),
+        'name': scim.get('name', None),
+        'description': scim.get('description', None)
+    }

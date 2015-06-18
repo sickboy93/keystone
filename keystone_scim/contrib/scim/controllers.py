@@ -26,6 +26,7 @@ from keystone.common import dependency
 from keystone.common import driver_hints
 from keystone.common import wsgi
 from keystone.identity.controllers import UserV3, GroupV3
+from keystone.assignment.controllers import ProjectV3
 from keystone.openstack.common import log
 from keystone.openstack.common import versionutils
 import converter as conv
@@ -49,6 +50,7 @@ def pagination(context, hints=None):
     except KeyError:
         pass
     return hints
+
 
 def get_scim_page_info(context, hints):
     page_info = {
@@ -230,6 +232,61 @@ class ScimGroupV3Controller(GroupV3):
     def delete_group(self, context, group_id):
         return super(ScimGroupV3Controller, self).delete_group(
             context, group_id=group_id)
+    def _denormalize(self, data):
+        data['urn:scim:schemas:extension:keystone:1.0'] = data.pop(
+            'urn_scim_schemas_extension_keystone_1.0', {})
+        return data
+
+
+class ScimOrganizationV3Controller(ProjectV3):
+
+    collection_name = 'organizations'
+    member_name = 'organization'
+
+    def __init__(self):
+        super(ScimOrganizationV3Controller, self).__init__()
+
+    @controller.filterprotected('domain_id', 'enabled', 'name')
+    def list_organizations(self, context, filters):
+        hints = pagination(context, ProjectV3.build_driver_hints(context, filters))
+        if 'J' in versionutils.deprecated._RELEASES:
+            refs = self.assignment_api.list_project(
+                domain_scope=self._get_domain_id_for_list_request(context),
+                hints=hints)
+        else:
+            refs = self.assignment_api.list_project(
+                domain_scope=self._get_domain_id_for_request(context),
+                hints=hints)
+        # refs = self.assignment_api.list_projects(hints=pagination(context, hints))
+        scim_page_info = get_scim_page_info(context, hints)
+        return conv.listorganizations_key2scim(refs, scim_page_info)
+
+    def get_organization(self, context, organization_id):
+        ref = super(ScimOrganizationV3Controller, self).get_project(
+            context, project_id=organization_id)
+        return conv.organization_key2scim(ref['project'])
+
+    def create_organization(self, context, **kwargs):
+        scim = self._denormalize(kwargs)
+        organization = conv.organization_scim2key(scim)
+        ref = super(ScimOrganizationV3Controller, self).create_project(
+            context, project=user)
+        return conv.organization_key2scim(ref.get('project', None))
+
+    def patch_organization(self, context, organization_id, **kwargs):
+        scim = self._denormalize(kwargs)
+        organization = conv.organization_scim2key(scim)
+        ref = super(ScimOrganizationV3Controller, self).update_project(
+            context, project_id=organization_id, project=organization)
+        return conv.user_key2scim(ref.get('user', None))
+
+    def put_organization(self, context, organization_id, **kwargs):
+        return self.patch_organization(context, organization_id, **kwargs)
+
+    def delete_organization(self, context, organization_id):
+        return super(ScimOrganizationV3Controller, self).delete_project(
+            context, project_id=organization_id)
+
     def _denormalize(self, data):
         data['urn:scim:schemas:extension:keystone:1.0'] = data.pop(
             'urn_scim_schemas_extension_keystone_1.0', {})
