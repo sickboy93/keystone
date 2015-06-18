@@ -104,7 +104,7 @@
 
     "identity:create_consumer": "rule:member_or_admin_or_owner",
     "identity:get_consumer": "rule:member_or_admin_or_owner",
-    "identity:list_consumers": "rule:member_or_admin_or_owner",
+    "identity:list_consumers": "rule:admin_required",
     "identity:delete_consumer": "rule:member_or_admin_or_owner",
     "identity:update_consumer": "rule:member_or_admin_or_owner",
 
