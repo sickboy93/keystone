@@ -67,7 +67,7 @@ class ConsumerCrudV3(controller.V3Controller):
 
     @controller.protected()
     def get_consumer(self, context, consumer_id):
-        consumer_ref = self.oauth2_api.get_consumer(consumer_id)
+        consumer_ref = self.oauth2_api.get_consumer_with_secret(consumer_id)
         return ConsumerCrudV3.wrap_member(context, consumer_ref)
 
     @controller.protected() 
