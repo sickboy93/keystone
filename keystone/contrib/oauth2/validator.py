@@ -118,7 +118,7 @@ class OAuth2Validator(RequestValidator):
         if authmethod.lower() == 'basic':
             auth = auth.decode('base64')
             client_id, secret = auth.split(':', 1)
-            client_dict = self.oauth2_api.get_consumer(client_id)
+            client_dict = self.oauth2_api.get_consumer_with_secret(client_id)
             if client_dict['secret'] == secret:
                 # TODO(garcianavalon) this can be done in a cleaner way 
                 #if we change the consumer model attribute to client_id
