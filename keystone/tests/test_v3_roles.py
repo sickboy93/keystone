@@ -1489,3 +1489,12 @@ class ExtendedPermissionsConsumerCRUDTests(test_v3_oauth2.ConsumerCRUDTests):
     CONSUMER_URL = PATH_PREFIX + '/consumers'
     USERS_URL = '/users/{user_id}'
     ACCESS_TOKENS_URL = PATH_PREFIX + '/access_tokens'
+
+    def setUp(self):
+        super(ExtendedPermissionsConsumerCRUDTests, self).setUp()
+
+        # Now that the app has been served, we can query CONF values
+        self.base_url = 'http://localhost/v3'
+        # NOTE(garcianavalon) I've put this line for dependency injection to work, 
+        # but I don't know if its the right way to do it...
+        self.manager = core.RolesManager()

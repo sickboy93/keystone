@@ -52,7 +52,8 @@ class OAuth2BaseTests(test_v3.RestfulTestCase):
 
         # Now that the app has been served, we can query CONF values
         self.base_url = 'http://localhost/v3'
-        # TODO(garcianavalon) I've put this line for dependency injection to work, but I don't know if its the right way to do it...
+        # NOTE(garcianavalon) I've put this line for dependency injection to work, 
+        # but I don't know if its the right way to do it...
         self.manager = core.Manager()
 
     def _create_consumer(self, name=None, description=None,
