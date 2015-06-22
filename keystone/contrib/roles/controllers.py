@@ -15,7 +15,7 @@
 from keystone import exception
 from keystone.common import controller
 from keystone.common import dependency
-from keystone.contrib.oauth2 import controllers as oauth2_controllers
+from keystone.i18n import _
 
 @dependency.requires('roles_api')
 class BaseControllerV3(controller.V3Controller):
@@ -323,8 +323,57 @@ class FiwareApiControllerV3(BaseControllerV3):
         }
         return response_body
 
-class ExtendedPermissionConsumerCrudV3(oauth2_controllers.ConsumerCrudV3):
+@dependency.requires('oauth2_api')
+class ExtendedPermissionsConsumerCrudV3(BaseControllerV3):
     """This class is ment to extend the basic consumer with callbacks that use
     the internal permission from this extensions.
     """
-    
+
+    collection_name = 'consumers'
+    member_name = 'consumer'
+
+    def _check_allowed_to_manage_consumer(self, context, protection, consumer_id=None):
+        """Add a flag for the policy engine if the user is allowed to manage
+        the requested application. 
+
+        """
+        ref = {}
+        user_id = context['environment']['KEYSTONE_AUTH_CONTEXT']['user_id']
+        allowed_consumers = self.roles_api.list_applications_user_allowed_to_manage(
+            user_id=user_id, organization_id=None)
+        ref['is_allowed_to_manage'] = consumer_id in allowed_consumers
+
+        self.check_protection(context, protection, ref)
+
+    @controller.protected()
+    def list_consumers(self, context):
+        ref = self.oauth2_api.list_consumers()
+        return ExtendedPermissionsConsumerCrudV3.wrap_collection(context, ref)
+
+    @controller.protected()
+    def create_consumer(self, context, consumer):
+        ref = self._assign_unique_id(self._normalize_dict(consumer))
+        consumer_ref = self.oauth2_api.create_consumer(ref)
+        return ExtendedPermissionsConsumerCrudV3.wrap_member(context, consumer_ref)
+
+    @controller.protected(callback=_check_allowed_to_manage_consumer)
+    def get_consumer(self, context, consumer_id):
+        consumer_ref = self.oauth2_api.get_consumer_with_secret(consumer_id)
+        return ExtendedPermissionsConsumerCrudV3.wrap_member(context, consumer_ref)
+
+    @controller.protected() 
+    def update_consumer(self, context, consumer_id, consumer):
+        self._require_matching_id(consumer_id, consumer)
+        ref = self._normalize_dict(consumer)
+        self._validate_consumer_ref(ref)
+        ref = self.oauth2_api.update_consumer(consumer_id, ref)
+        return ExtendedPermissionsConsumerCrudV3.wrap_member(context, ref)
+
+    def _validate_consumer_ref(self, consumer):
+        if 'secret' in consumer:
+            msg = _('Cannot change consumer secret')
+            raise exception.ValidationError(message=msg)
+
+    @controller.protected()
+    def delete_consumer(self, context, consumer_id):
+        self.oauth2_api.delete_consumer(consumer_id)

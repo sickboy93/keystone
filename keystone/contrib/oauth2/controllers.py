@@ -29,7 +29,7 @@ from keystone.openstack.common import log
 
 LOG = log.getLogger(__name__)
 
-@dependency.requires('oauth2_api', 'roles_api') 
+@dependency.requires('oauth2_api')
 class ConsumerCrudV3(controller.V3Controller):
 
     collection_name = 'consumers'
@@ -42,21 +42,6 @@ class ConsumerCrudV3(controller.V3Controller):
         path = '/OS-OAUTH2/' + cls.collection_name
         return super(ConsumerCrudV3, cls).base_url(context, path=path)
 
-    def _check_allowed_to_manage_consumer(self, context, protection, consumer_id=None):
-        """Add a flag for the policy engine if the user is allowed to manage
-        the requested application. 
-
-        """
-        ref = {}
-        #import pdb; pdb.set_trace()
-        user_id = context['environment']['KEYSTONE_AUTH_CONTEXT']['user_id']
-        #allowed_consumers = self.roles_api.list_applications_user_allowed_to_manage(
-        #    user_id, organization_id=None)
-        ref['is_allowed_to_manage'] = True#consumer_id in allowed_consumers
-
-        self.check_protection(context, protection, ref)
-
-
     @controller.protected()
     def list_consumers(self, context):
         ref = self.oauth2_api.list_consumers()
@@ -68,7 +53,7 @@ class ConsumerCrudV3(controller.V3Controller):
         consumer_ref = self.oauth2_api.create_consumer(ref)
         return ConsumerCrudV3.wrap_member(context, consumer_ref)
 
-    @controller.protected(callback=_check_allowed_to_manage_consumer)
+    @controller.protected()
     def get_consumer(self, context, consumer_id):
         consumer_ref = self.oauth2_api.get_consumer_with_secret(consumer_id)
         return ConsumerCrudV3.wrap_member(context, consumer_ref)
