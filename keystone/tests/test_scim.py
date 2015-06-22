@@ -48,34 +48,36 @@ class BaseCRUDTests(object):
     def modify(self, entity):
         raise NotImplementedError
 
-    # def test_create(self):
-    #     name = uuid.uuid4().hex
-    #     entity = self.build_entity(name, self.domain_id)
-    #     resp = self.post(self.URL, body=entity).result
-
-    #     self.assertIsNotNone(resp['id'])
-
-    #     expected_entity = self.proto_entity(name, self.domain_id,
-    #                                         ref_id=resp['id'])
-
-    #     self.assertEqual(expected_entity, resp)
-
-    def test_list(self):
+    def test_create(self):
         name = uuid.uuid4().hex
         entity = self.build_entity(name, self.domain_id)
-        self.post(self.URL, body=entity)
+        import pdb
+        pdb.set_trace()
+        resp = self.post(self.URL, body=entity).result
 
-        URL = ('%(base)s?domain_id=%(domain_id)s' %
-               {'base': self.URL, 'domain_id': self.domain_id})
-        entities = self.get(URL).result
-        matching_listed = [u for u in entities['Resources']
-                           if u.get(self.NAME, '') == name]
-
-        self.assertEqual(1, len(matching_listed))
+        self.assertIsNotNone(resp['id'])
 
         expected_entity = self.proto_entity(name, self.domain_id,
-            ref_id=matching_listed[0]['id'], remove=['schemas'])
-        self.assertEqual(expected_entity, matching_listed[0])
+                                            ref_id=resp['id'])
+
+        self.assertEqual(expected_entity, resp)
+
+    # def test_list(self):
+    #     name = uuid.uuid4().hex
+    #     entity = self.build_entity(name, self.domain_id)
+    #     self.post(self.URL, body=entity)
+
+    #     URL = ('%(base)s?domain_id=%(domain_id)s' %
+    #            {'base': self.URL, 'domain_id': self.domain_id})
+    #     entities = self.get(URL).result
+    #     matching_listed = [u for u in entities['Resources']
+    #                        if u.get(self.NAME, '') == name]
+
+    #     self.assertEqual(1, len(matching_listed))
+
+    #     expected_entity = self.proto_entity(name, self.domain_id,
+    #         ref_id=matching_listed[0]['id'], remove=['schemas'])
+    #     self.assertEqual(expected_entity, matching_listed[0])
 
     # def test_list_pagination(self):
     #     entities = []
@@ -90,7 +92,7 @@ class BaseCRUDTests(object):
     #     res_entities = self.get(URL).result
     #     self.assertEqual(count, len(res_entities['Resources']))
     #     self.assertEqual(count, int(res_entities['itemsPerPage']))
-    #     self.assertTrue( count < int(res_entities['totalResults']) )
+    #     self.assertTrue(count < int(res_entities['totalResults']) )
 
     # def test_get(self):
     #     name = uuid.uuid4().hex
@@ -233,14 +235,13 @@ class GroupsTests(test_v3.RestfulTestCase, BaseCRUDTests):
         modified_entity['displayName'] = uuid.uuid4().hex
         return modified_entity
 
-
-class OrganizationTests(test_v3.RestfulTestCase, BaseCRUDTests):
+class OrganizationsTests(test_v3.RestfulTestCase, BaseCRUDTests):
 
     URL = '/OS-SCIM/Organization'
     NAME = 'name'
 
     def setUp(self):
-        super(OrganizationTests, self).setUp()
+        super(OrganizationsTests, self).setUp()
         self.base_url = 'http://localhost/v3'
         self.controller = controllers.ScimOrganizationV3Controller()
 
@@ -250,6 +251,7 @@ class OrganizationTests(test_v3.RestfulTestCase, BaseCRUDTests):
                         'urn:scim:schemas:extension:keystone:1.0'],
             'name': name,
             'id': ref_id,
+            'description': name,
             'urn:scim:schemas:extension:keystone:1.0': {
                 'domain_id': domain
             }

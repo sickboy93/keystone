@@ -304,6 +304,7 @@ class TestGroupScimConverter(tests.BaseTestCase):
 class TestOrganizationScimConverter(tests.BaseTestCase):
 
     def test_organization_scim2keystone(self):
+
         scim = {
             'schemas': ['urn:scim:schemas:core:1.0',
                         'urn:scim:schemas:extension:keystone:1.0'],
@@ -311,6 +312,7 @@ class TestOrganizationScimConverter(tests.BaseTestCase):
             'name': 'aliceOrg',
             'description': 'Alice Smith Organization',
             'active': True,
+            'is_default': True,
             'urn:scim:schemas:extension:keystone:1.0': {
                 'domain_id': '91d79dc2211d43a7985ebc27cdd146df'
             }
@@ -321,7 +323,8 @@ class TestOrganizationScimConverter(tests.BaseTestCase):
             'domain_id': '91d79dc2211d43a7985ebc27cdd146df',
             'name': 'aliceOrg',
             'description': 'Alice Smith Organization',
-            'enabled': True
+            'is_default': True,
+            'enabled': True,
         }
 
         self.assertEqual(keystone, conv.organization_scim2key(scim))
@@ -349,7 +352,8 @@ class TestOrganizationScimConverter(tests.BaseTestCase):
             'domain_id': '91d79dc2211d43a7985ebc27cdd146df',
             'name': 'aliceOrg',
             'description': 'Alice Smith Organization',
-            'enabled': True
+            'enabled': True,
+            'is_default': True
         }
 
         scim = {
@@ -359,6 +363,7 @@ class TestOrganizationScimConverter(tests.BaseTestCase):
             'name': 'aliceOrg',
             'description': 'Alice Smith Organization',
             'active': True,
+            'is_default': True,
             'urn:scim:schemas:extension:keystone:1.0': {
                 'domain_id': '91d79dc2211d43a7985ebc27cdd146df'
             }
@@ -372,7 +377,8 @@ class TestOrganizationScimConverter(tests.BaseTestCase):
             'domain_id': '91d79dc2211d43a7985ebc27cdd146df',
             'description': 'Alice Organization',
             'name': 'aliceOrg',
-            'enabled': True
+            'enabled': True,
+            'is_default': True
         }]
 
         scim = {
@@ -383,12 +389,12 @@ class TestOrganizationScimConverter(tests.BaseTestCase):
                 'name': 'aliceOrg',
                 'description': 'Alice Organization',
                 'active': True,
+                'is_default': True,
                 'urn:scim:schemas:extension:keystone:1.0': {
                     'domain_id': '91d79dc2211d43a7985ebc27cdd146df'
                 }
             }]
         }
-
         self.assertEqual(scim, conv.listorganizations_key2scim(keystone))
 
     def test_organization_key2scim_no_mandatory_fields(self):
@@ -416,6 +422,7 @@ class TestOrganizationScimConverter(tests.BaseTestCase):
             },
             'description': u'alice org',
             'active': True,
+            'is_default': True,
             'id': u'19041ee7679649879ada04417753ad4d',
             'schemas': [u'urn:scim:schemas:core:1.0',
                         u'urn:scim:schemas:extension:keystone:1.0']}
@@ -425,7 +432,8 @@ class TestOrganizationScimConverter(tests.BaseTestCase):
             'domain_id': '91d79dc2211d43a7985ebc27cdd146df',
             'description': 'alice org',
             'name': 'alice',
-            'enabled': True
+            'enabled': True,
+            'is_default': True
         }
 
         self.assertEqual(scim, conv.organization_key2scim(keystone))

@@ -160,7 +160,7 @@ def organization_key2scim(ref, schema=True):
 def listorganizations_key2scim(ref, page_info={}):
     res = {
         'schemas': ['urn:scim:schemas:core:1.0', _EXT_SCHEMA],
-        'Resources': map(functools.partial(organization_key2scim, schema=True), ref)
+        'Resources': map(functools.partial(organization_key2scim, schema=False), ref)
     }
     res.update(page_info)
     return res

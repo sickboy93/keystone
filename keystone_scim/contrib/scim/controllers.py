@@ -79,9 +79,9 @@ class ScimInfoController(wsgi.Application):
         schema = schemas.SERVICE_PROVIDER_CONFIGS
         users = len(self.identity_api.list_users())
         orgs = self.get_organizations()
-        schema['totalUsers']= users
-        schema['totalOrganizations']= orgs
-        schema['totalResources']= users + orgs
+        schema['totalUsers'] = users
+        schema['totalOrganizations'] = orgs
+        schema['totalResources'] = users + orgs
         return schema
 
     @controller.protected()
@@ -271,6 +271,8 @@ class ScimOrganizationV3Controller(ProjectV3):
         return conv.organization_key2scim(ref['project'])
 
     def create_organization(self, context, **kwargs):
+        import pdb
+        pdb.set_trace()
         scim = self._denormalize(kwargs)
         organization = conv.organization_scim2key(scim)
         ref = super(ScimOrganizationV3Controller, self).create_project(

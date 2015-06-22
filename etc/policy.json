@@ -214,6 +214,6 @@
     "identity:scim_update_role":"rule:admin_required",
     "identity:scim_delete_role":"rule:admin_required",
     "identity:scim_get_service_provider_configs":"",
-    "identity:scim_get_schemas":"",
+    "identity:scim_get_schemas":""
 
 }
