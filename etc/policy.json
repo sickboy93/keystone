@@ -6,6 +6,8 @@
     "admin_or_owner": "rule:admin_required or rule:owner",
     "member_or_admin_or_owner": "role:member or role:owner or rule:admin_required",
     "self_user": "user_id:%(target.user.id)s", 
+    "allowed_to_manage": "is_allowed_to_manage:1",
+    "admin_or_allowed": "rule:allowed_to_manage or rule:admin_required",
 
     "default": "rule:admin_required",
 
@@ -103,7 +105,7 @@
     "identity:delete_trust": "",
 
     "identity:create_consumer": "rule:member_or_admin_or_owner",
-    "identity:get_consumer": "rule:member_or_admin_or_owner",
+    "identity:get_consumer": "rule:admin_or_allowed",
     "identity:list_consumers": "rule:admin_required",
     "identity:delete_consumer": "rule:member_or_admin_or_owner",
     "identity:update_consumer": "rule:member_or_admin_or_owner",

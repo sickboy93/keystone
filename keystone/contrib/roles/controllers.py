@@ -342,7 +342,6 @@ class ExtendedPermissionsConsumerCrudV3(BaseControllerV3):
         allowed_consumers = self.roles_api.list_applications_user_allowed_to_manage(
             user_id=user_id, organization_id=None)
         ref['is_allowed_to_manage'] = consumer_id in allowed_consumers
-
         self.check_protection(context, protection, ref)
 
     @controller.protected()
