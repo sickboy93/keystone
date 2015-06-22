@@ -29,7 +29,7 @@ from keystone.openstack.common import log
 
 LOG = log.getLogger(__name__)
 
-@dependency.requires('oauth2_api') 
+@dependency.requires('oauth2_api', 'roles_api') 
 class ConsumerCrudV3(controller.V3Controller):
 
     collection_name = 'consumers'
@@ -42,30 +42,33 @@ class ConsumerCrudV3(controller.V3Controller):
         path = '/OS-OAUTH2/' + cls.collection_name
         return super(ConsumerCrudV3, cls).base_url(context, path=path)
 
+    def _check_allowed_to_manage_consumer(self, context, protection, consumer_id=None):
+        """Add a flag for the policy engine if the user is allowed to manage
+        the requested application. 
+
+        """
+        ref = {}
+        #import pdb; pdb.set_trace()
+        user_id = context['environment']['KEYSTONE_AUTH_CONTEXT']['user_id']
+        #allowed_consumers = self.roles_api.list_applications_user_allowed_to_manage(
+        #    user_id, organization_id=None)
+        ref['is_allowed_to_manage'] = True#consumer_id in allowed_consumers
+
+        self.check_protection(context, protection, ref)
+
+
     @controller.protected()
     def list_consumers(self, context):
         ref = self.oauth2_api.list_consumers()
         return ConsumerCrudV3.wrap_collection(context, ref)
 
-    # NOTE(garcianavalon) removed because owner field is removed
-    # @controller.protected()
-    # def list_consumers_for_user(self, context, user_id):
-    #     ref = self.oauth2_api.list_consumers_for_user(user_id)
-    #     return ConsumerCrudV3.wrap_collection(context, ref)
-
     @controller.protected()
     def create_consumer(self, context, consumer):
-        # NOTE(garcianavalon) removed because owner field is removed
-        # user_token = token_model.KeystoneToken(
-        #                     token_id=context['token_id'],
-        #                     token_data=self.token_provider_api.validate_token(
-        #                         context['token_id']))
-        # consumer['owner'] = user_token.user_id
         ref = self._assign_unique_id(self._normalize_dict(consumer))
         consumer_ref = self.oauth2_api.create_consumer(ref)
         return ConsumerCrudV3.wrap_member(context, consumer_ref)
 
-    @controller.protected()
+    @controller.protected(callback=_check_allowed_to_manage_consumer)
     def get_consumer(self, context, consumer_id):
         consumer_ref = self.oauth2_api.get_consumer_with_secret(consumer_id)
         return ConsumerCrudV3.wrap_member(context, consumer_ref)

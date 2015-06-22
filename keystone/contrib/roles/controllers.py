@@ -15,7 +15,7 @@
 from keystone import exception
 from keystone.common import controller
 from keystone.common import dependency
-
+from keystone.contrib.oauth2 import controllers as oauth2_controllers
 
 @dependency.requires('roles_api')
 class BaseControllerV3(controller.V3Controller):
@@ -322,3 +322,9 @@ class FiwareApiControllerV3(BaseControllerV3):
             'app_id': application_id
         }
         return response_body
+
+class ExtendedPermissionConsumerCrudV3(oauth2_controllers.ConsumerCrudV3):
+    """This class is ment to extend the basic consumer with callbacks that use
+    the internal permission from this extensions.
+    """
+    
