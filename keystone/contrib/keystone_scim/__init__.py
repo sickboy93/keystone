@@ -18,4 +18,4 @@
 # specific language governing permissions and limitations
 # under the License.
 
-from keystone_scim.contrib.scim.core import *
+from keystone.contrib.keystone_scim.core import *

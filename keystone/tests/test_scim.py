@@ -21,7 +21,7 @@
 import uuid
 
 from keystone import config
-from keystone_scim.contrib.scim import controllers
+from keystone.contrib.keystone_scim import controllers
 from keystone.tests import test_v3
 import keystone.tests.core as core
 import os

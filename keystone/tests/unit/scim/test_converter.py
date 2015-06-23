@@ -21,7 +21,7 @@
 """Unit tests for SCIM converter."""
 
 from keystone import tests
-import keystone_scim.contrib.scim.converter as conv
+import keystone.contrib.keystone_scim.converter as conv
 
 
 class TestUserScimConverter(tests.BaseTestCase):
