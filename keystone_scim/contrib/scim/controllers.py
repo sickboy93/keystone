@@ -271,8 +271,6 @@ class ScimOrganizationV3Controller(ProjectV3):
         return conv.organization_key2scim(ref['project'])
 
     def create_organization(self, context, **kwargs):
-        import pdb
-        pdb.set_trace()
         scim = self._denormalize(kwargs)
         organization = conv.organization_scim2key(scim)
         ref = super(ScimOrganizationV3Controller, self).create_project(
