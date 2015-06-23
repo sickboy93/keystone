@@ -19,6 +19,7 @@
 # under the License.
 
 import uuid
+import random
 
 from keystone import config
 from keystone.contrib.keystone_scim import controllers
@@ -269,3 +270,33 @@ class OrganizationsTests(test_v3.RestfulTestCase, BaseCRUDTests):
         modified_entity = entity.copy()
         modified_entity['name'] = uuid.uuid4().hex
         return modified_entity
+
+class InfoTests(test_v3.RestfulTestCase):
+    URL = '/OS-SCIM/ServiceProviderConfigs'
+
+    def setUp(self):
+        super(InfoTests, self).setUp()
+        self.base_url = 'http://localhost/v3'
+        self.controller = controllers.ScimInfoController()
+
+    def build_entity(self, users=None, userOrgs=None, cloudOrgs=None):
+        proto = {
+            "schemas": ["urn:scim:schemas:core:2.0:ServiceProviderConfig"],
+            "documentationUrl": "https://tools.ietf.org/html/draft-ietf-scim-core-schema-02",
+            "totalUsers": users,
+            "totalUserOrganizations": userOrgs,
+            "totalCloudOrganizations": cloudOrgs,
+            "totalResources": users+userOrgs+cloudOrgs
+        }
+        return dict((key, value)
+                    for key, value in proto.iteritems()
+                    if value is not None)
+
+    def test_call(self):
+        users = 2
+        userOrgs = 2
+        cloudOrgs = 2
+        entity = self.build_entity(users, userOrgs, cloudOrgs)
+        resp = self.get(self.URL)
+        resp = resp.result
+        self.assertEqual(entity, resp)

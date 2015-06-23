@@ -26,7 +26,8 @@ SERVICE_PROVIDER_CONFIGS = {
     "schemas": ["urn:scim:schemas:core:2.0:ServiceProviderConfig"],
     "documentationUrl": "https://tools.ietf.org/html/draft-ietf-scim-core-schema-02",
     "totalUsers": "",
-    "totalOrganizations": "",
+    "totalUserOrganizations": "",
+    "totalCloudOrganizations": "",
     "totalResources": ""
 }
     # 'documentationUrl': 'https://github.com/telefonicaid/fiware-keystone-scim/blob/master/README.md',

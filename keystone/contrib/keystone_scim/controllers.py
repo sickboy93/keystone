@@ -68,20 +68,25 @@ class ScimInfoController(wsgi.Application):
     def __init__(self):
         super(ScimInfoController, self).__init__()
 
-    def get_organizations(self):
+    def get_count(self):
         orgs = self.assignment_api.list_projects()
-        filtered_orgs = [i for i in orgs if not i.get('is_default', False)
-                         and not ' cloud' in i.get('name', '')]
-        return len(filtered_orgs)
+        users = self.identity_api.list_users()
+        cloud_projects = [getattr(user, 'cloud_project_id', None) for user in users]
+        filtered_orgs = [i for i in orgs if not getattr(i, 'is_default', False)
+                         and i.get('id') not in cloud_projects]
+        orgs_len = len(filtered_orgs)
+        cloud_len = len(cloud_projects)
+        users_len = len(users)
+        return orgs_len, cloud_len, users_len
 
     @controller.protected()
     def scim_get_service_provider_configs(self, context):
         schema = schemas.SERVICE_PROVIDER_CONFIGS
-        users = len(self.identity_api.list_users())
-        orgs = self.get_organizations()
+        orgs, cloud, users = self.get_count()
         schema['totalUsers'] = users
-        schema['totalOrganizations'] = orgs
-        schema['totalResources'] = users + orgs
+        schema['totalUserOrganizations'] = orgs
+        schema['totalCloudOrganizations'] = cloud
+        schema['totalResources'] = users + orgs + cloud
         return schema
 
     @controller.protected()
