@@ -201,13 +201,17 @@ class OAuth2Validator(RequestValidator):
         # TODO(garcinanavalon) create a custom TokenCreator instead of
         # hacking the dictionary
 
+        if getattr(request, 'client', None):
+            consumer_id = request.client.client_id
+        else:
+            consumer_id = request.client_id
         access_token = {
             'id':token['access_token'],
-            'consumer_id':request.client.client_id,
+            'consumer_id':consumer_id,
             'authorizing_user_id':request.user,
             'scopes': request.scopes,
             'expires_at':token['expires_in'],
-            'refresh_token': token['refresh_token']
+            'refresh_token': token.get('refresh_token', None),
         }
         self.oauth2_api.store_access_token(access_token)
 

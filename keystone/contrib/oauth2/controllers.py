@@ -241,6 +241,7 @@ class OAuth2ControllerV3(controller.V3Controller):
         body = user_auth
         uri = self.base_url(context, context['path'])
         http_method = 'POST'
+
         # Fetch authorized scopes from the request
         scopes = body.get('scopes')
         if not scopes:
@@ -256,7 +257,7 @@ class OAuth2ControllerV3(controller.V3Controller):
                                                             user_id)
 
         try:
-
+            
             headers, body, status = server.create_authorization_response(
                 uri, http_method, body, headers, scopes, credentials)
             # headers = {'Location': 'https://foo.com/welcome_back?code=somera
