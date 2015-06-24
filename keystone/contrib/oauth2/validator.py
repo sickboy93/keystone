@@ -83,9 +83,18 @@ class OAuth2Validator(RequestValidator):
     def validate_response_type(self, client_id, response_type, client, request, *args, **kwargs):
         # Clients should only be allowed to use one type of response type, the
         # one associated with their one allowed grant type.
-        client_dict = self.oauth2_api.get_consumer(client_id)
-        allowed_response_type = client_dict['response_type']
-        return allowed_response_type == response_type
+
+        # FIXME(garcianavalon) we need to support multiple grant types
+        # for the same consumers right now. In the future we should
+        # separate them and only allow one grant type (registering
+        # each client one time for each grant or allowing components)
+        # or update the tools to allow to create clients with 
+        # multiple grants
+
+        # client_dict = self.oauth2_api.get_consumer(client_id)
+        # allowed_response_type = client_dict['response_type']
+        # return allowed_response_type == response_type
+        return True
 
     # Post-authorization
     def save_authorization_code(self, client_id, code, request, *args, **kwargs):

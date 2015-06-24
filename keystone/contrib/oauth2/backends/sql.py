@@ -21,7 +21,7 @@ from keystone.i18n import _
 from oslo.utils import timeutils
 
 # TODO(garcianavalon) configuration options
-VALID_RESPONSE_TYPES = sql.Enum('code')
+VALID_RESPONSE_TYPES = sql.Enum('code', 'token')
 VALID_CLIENT_TYPES = sql.Enum('confidential')
 VALID_GRANT_TYPES = sql.Enum('authorization_code')
 

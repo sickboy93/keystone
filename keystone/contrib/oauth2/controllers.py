@@ -177,7 +177,6 @@ class OAuth2ControllerV3(controller.V3Controller):
             # get the user id to identify the credentials in later stages
             credentials['user_id'] = self._extract_user_id_from_token(
                                                     context['token_id'])
-            
             credentials_ref = self._assign_unique_id(self._normalize_dict(credentials))
             self.oauth2_api.store_consumer_credentials(credentials_ref)
 
@@ -242,7 +241,6 @@ class OAuth2ControllerV3(controller.V3Controller):
         body = user_auth
         uri = self.base_url(context, context['path'])
         http_method = 'POST'
-
         # Fetch authorized scopes from the request
         scopes = body.get('scopes')
         if not scopes:
@@ -258,6 +256,7 @@ class OAuth2ControllerV3(controller.V3Controller):
                                                             user_id)
 
         try:
+
             headers, body, status = server.create_authorization_response(
                 uri, http_method, body, headers, scopes, credentials)
             # headers = {'Location': 'https://foo.com/welcome_back?code=somera
