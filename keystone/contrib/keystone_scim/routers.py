@@ -35,98 +35,194 @@ class ScimRouter(wsgi.ExtensionRouter):
         scim_info_controller = controllers.ScimInfoController()
         org_controller = controllers.ScimOrganizationV3Controller()
 
-        # Users
+        # Users v1.1
 
-        mapper.connect(self.PATH_PREFIX + '/Users',
+        mapper.connect(self.PATH_PREFIX + '/v1-1/Users',
                        controller=user_controller,
                        action='list_users',
                        conditions=dict(method=['GET']))
 
-        mapper.connect(self.PATH_PREFIX + '/Users',
+        mapper.connect(self.PATH_PREFIX + '/v1-1/Users',
                        controller=user_controller,
                        action='create_user',
                        conditions=dict(method=['POST']))
 
-        mapper.connect(self.PATH_PREFIX + '/Users/{user_id}',
+        mapper.connect(self.PATH_PREFIX + '/v1-1/Users/{user_id}',
                        controller=user_controller,
                        action='get_user',
                        conditions=dict(method=['GET']))
 
-        mapper.connect(self.PATH_PREFIX + '/Users/{user_id}',
+        mapper.connect(self.PATH_PREFIX + '/v1-1/Users/{user_id}',
                        controller=user_controller,
                        action='patch_user',
                        conditions=dict(method=['PATCH']))
 
-        mapper.connect(self.PATH_PREFIX + '/Users/{user_id}',
+        mapper.connect(self.PATH_PREFIX + '/v1-1/Users/{user_id}',
                        controller=user_controller,
                        action='put_user',
                        conditions=dict(method=['PUT']))
 
-        mapper.connect(self.PATH_PREFIX + '/Users/{user_id}',
+        mapper.connect(self.PATH_PREFIX + '/v1-1/Users/{user_id}',
                        controller=user_controller,
                        action='delete_user',
                        conditions=dict(method=['DELETE']))
 
-        # Roles
+        # Users /v2
 
-        mapper.connect(self.PATH_PREFIX + '/Roles',
+        mapper.connect(self.PATH_PREFIX + '/v2/Users',
+                       controller=user_controller,
+                       action='list_users',
+                       conditions=dict(method=['GET']))
+
+        mapper.connect(self.PATH_PREFIX + '/v2/Users',
+                       controller=user_controller,
+                       action='create_user',
+                       conditions=dict(method=['POST']))
+
+        mapper.connect(self.PATH_PREFIX + '/v2/Users/{user_id}',
+                       controller=user_controller,
+                       action='get_user',
+                       conditions=dict(method=['GET']))
+
+        mapper.connect(self.PATH_PREFIX + '/v2/Users/{user_id}',
+                       controller=user_controller,
+                       action='patch_user',
+                       conditions=dict(method=['PATCH']))
+
+        mapper.connect(self.PATH_PREFIX + '/v2/Users/{user_id}',
+                       controller=user_controller,
+                       action='put_user',
+                       conditions=dict(method=['PUT']))
+
+        mapper.connect(self.PATH_PREFIX + '/v2/Users/{user_id}',
+                       controller=user_controller,
+                       action='delete_user',
+                       conditions=dict(method=['DELETE']))
+
+
+        # Roles v1.1
+
+        mapper.connect(self.PATH_PREFIX + '/v1-1/Roles',
                        controller=role_controller,
                        action='scim_list_roles',
                        conditions=dict(method=['GET']))
 
-        mapper.connect(self.PATH_PREFIX + '/Roles',
+        mapper.connect(self.PATH_PREFIX + '/v1-1/Roles',
                        controller=role_controller,
                        action='scim_create_role',
                        conditions=dict(method=['POST']))
 
-        mapper.connect(self.PATH_PREFIX + '/Roles/{role_id}',
+        mapper.connect(self.PATH_PREFIX + '/v1-1/Roles/{role_id}',
                        controller=role_controller,
                        action='scim_get_role',
                        conditions=dict(method=['GET']))
 
-        mapper.connect(self.PATH_PREFIX + '/Roles/{role_id}',
+        mapper.connect(self.PATH_PREFIX + '/v1-1/Roles/{role_id}',
                        controller=role_controller,
                        action='scim_patch_role',
                        conditions=dict(method=['PATCH']))
 
-        mapper.connect(self.PATH_PREFIX + '/Roles/{role_id}',
+        mapper.connect(self.PATH_PREFIX + '/v1-1/Roles/{role_id}',
                        controller=role_controller,
                        action='scim_put_role',
                        conditions=dict(method=['PUT']))
 
-        mapper.connect(self.PATH_PREFIX + '/Roles/{role_id}',
+        mapper.connect(self.PATH_PREFIX + '/v1-1/Roles/{role_id}',
                        controller=role_controller,
                        action='scim_delete_role',
                        conditions=dict(method=['DELETE']))
 
-        # Groups
+        # Roles /v2
 
-        mapper.connect(self.PATH_PREFIX + '/Groups',
+        mapper.connect(self.PATH_PREFIX + '/v2/Roles',
+                       controller=role_controller,
+                       action='scim_list_roles',
+                       conditions=dict(method=['GET']))
+
+        mapper.connect(self.PATH_PREFIX + '/v2/Roles',
+                       controller=role_controller,
+                       action='scim_create_role',
+                       conditions=dict(method=['POST']))
+
+        mapper.connect(self.PATH_PREFIX + '/v2/Roles/{role_id}',
+                       controller=role_controller,
+                       action='scim_get_role',
+                       conditions=dict(method=['GET']))
+
+        mapper.connect(self.PATH_PREFIX + '/v2/Roles/{role_id}',
+                       controller=role_controller,
+                       action='scim_patch_role',
+                       conditions=dict(method=['PATCH']))
+
+        mapper.connect(self.PATH_PREFIX + '/v2/Roles/{role_id}',
+                       controller=role_controller,
+                       action='scim_put_role',
+                       conditions=dict(method=['PUT']))
+
+        mapper.connect(self.PATH_PREFIX + '/v2/Roles/{role_id}',
+                       controller=role_controller,
+                       action='scim_delete_role',
+                       conditions=dict(method=['DELETE']))
+        # Groups v1.1
+
+        mapper.connect(self.PATH_PREFIX + '/v1-1/Groups',
                        controller=group_controller,
                        action='list_groups',
                        conditions=dict(method=['GET']))
 
-        mapper.connect(self.PATH_PREFIX + '/Groups',
+        mapper.connect(self.PATH_PREFIX + '/v1-1/Groups',
                        controller=group_controller,
                        action='create_group',
                        conditions=dict(method=['POST']))
 
-        mapper.connect(self.PATH_PREFIX + '/Groups/{group_id}',
+        mapper.connect(self.PATH_PREFIX + '/v1-1/Groups/{group_id}',
                        controller=group_controller,
                        action='get_group',
                        conditions=dict(method=['GET']))
 
-        mapper.connect(self.PATH_PREFIX + '/Groups/{group_id}',
+        mapper.connect(self.PATH_PREFIX + '/v1-1/Groups/{group_id}',
                        controller=group_controller,
                        action='patch_group',
                        conditions=dict(method=['PATCH']))
 
-        mapper.connect(self.PATH_PREFIX + '/Groups/{group_id}',
+        mapper.connect(self.PATH_PREFIX + '/v1-1/Groups/{group_id}',
                        controller=group_controller,
                        action='put_group',
                        conditions=dict(method=['PUT']))
 
-        mapper.connect(self.PATH_PREFIX + '/Groups/{group_id}',
+        mapper.connect(self.PATH_PREFIX + '/v1-1/Groups/{group_id}',
+                       controller=group_controller,
+                       action='delete_group',
+                       conditions=dict(method=['DELETE']))
+
+        # Groups
+
+        mapper.connect(self.PATH_PREFIX + '/v2/Groups',
+                       controller=group_controller,
+                       action='list_groups',
+                       conditions=dict(method=['GET']))
+
+        mapper.connect(self.PATH_PREFIX + '/v2/Groups',
+                       controller=group_controller,
+                       action='create_group',
+                       conditions=dict(method=['POST']))
+
+        mapper.connect(self.PATH_PREFIX + '/v2/Groups/{group_id}',
+                       controller=group_controller,
+                       action='get_group',
+                       conditions=dict(method=['GET']))
+
+        mapper.connect(self.PATH_PREFIX + '/v2/Groups/{group_id}',
+                       controller=group_controller,
+                       action='patch_group',
+                       conditions=dict(method=['PATCH']))
+
+        mapper.connect(self.PATH_PREFIX + '/v2/Groups/{group_id}',
+                       controller=group_controller,
+                       action='put_group',
+                       conditions=dict(method=['PUT']))
+
+        mapper.connect(self.PATH_PREFIX + '/v2/Groups/{group_id}',
                        controller=group_controller,
                        action='delete_group',
                        conditions=dict(method=['DELETE']))
@@ -145,32 +241,33 @@ class ScimRouter(wsgi.ExtensionRouter):
 
         # Organizations
 
-        mapper.connect(self.PATH_PREFIX + '/Organizations',
+        mapper.connect(self.PATH_PREFIX + '/v2/Organizations',
                        controller=org_controller,
                        action='list_organizations',
                        conditions=dict(method=['GET']))
 
-        mapper.connect(self.PATH_PREFIX + '/Organizations',
+        mapper.connect(self.PATH_PREFIX + '/v2/Organizations',
                        controller=org_controller,
                        action='create_organization',
                        conditions=dict(method=['POST']))
 
-        mapper.connect(self.PATH_PREFIX + '/Organizations/{organization_id}',
+        mapper.connect(self.PATH_PREFIX + '/v2/Organizations/{organization_id}',
                        controller=org_controller,
                        action='get_organization',
                        conditions=dict(method=['GET']))
 
-        mapper.connect(self.PATH_PREFIX + '/Organizations/{organization_id}',
+        mapper.connect(self.PATH_PREFIX + '/v2/Organizations/{organization_id}',
                        controller=org_controller,
                        action='patch_organization',
                        conditions=dict(method=['PATCH']))
 
-        mapper.connect(self.PATH_PREFIX + '/Organizations/{organization_id}',
+        mapper.connect(self.PATH_PREFIX + '/v2/Organizations/{organization_id}',
                        controller=org_controller,
                        action='put_organization',
                        conditions=dict(method=['PUT']))
 
-        mapper.connect(self.PATH_PREFIX + '/Organizations/{organization_id}',
+        mapper.connect(self.PATH_PREFIX + '/v2/Organizations/{organization_id}',
                        controller=org_controller,
                        action='delete_organization',
                        conditions=dict(method=['DELETE']))
+

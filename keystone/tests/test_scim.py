@@ -104,7 +104,7 @@ class BaseCRUDTests(object):
 
         expected_entity = self.proto_entity(name, self.domain_id,
                                             ref_id=resp['id'])
-
+        
         self.assertEqual(expected_entity, got_entity)
 
     def test_update(self):
@@ -132,7 +132,7 @@ class BaseCRUDTests(object):
 
 class RolesTests(test_v3.RestfulTestCase, BaseCRUDTests):
 
-    URL = '/OS-SCIM/Roles'
+    URL = '/OS-SCIM/v2/Roles'
     NAME = 'name'
 
     def setUp(self):
@@ -162,7 +162,7 @@ class RolesTests(test_v3.RestfulTestCase, BaseCRUDTests):
 
 class UsersTests(test_v3.RestfulTestCase, BaseCRUDTests):
 
-    URL = '/OS-SCIM/Users'
+    URL = '/OS-SCIM/v2/Users'
     NAME = 'userName'
 
     def setUp(self):
@@ -172,7 +172,7 @@ class UsersTests(test_v3.RestfulTestCase, BaseCRUDTests):
 
     def build_entity(self, name=None, domain=None, ref_id=None, remove=[]):
         proto = {
-            'schemas': ['urn:scim:schemas:core:1.0',
+            'schemas': ['urn:scim:schemas:core:2.0',
                         'urn:scim:schemas:extension:keystone:1.0'],
             'userName': name,
             'password': 'password',
@@ -205,7 +205,7 @@ class UsersTests(test_v3.RestfulTestCase, BaseCRUDTests):
 
 class GroupsTests(test_v3.RestfulTestCase, BaseCRUDTests):
 
-    URL = '/OS-SCIM/Groups'
+    URL = '/OS-SCIM/v2/Groups'
     NAME = 'displayName'
 
     def setUp(self):
@@ -215,7 +215,7 @@ class GroupsTests(test_v3.RestfulTestCase, BaseCRUDTests):
 
     def build_entity(self, name=None, domain=None, ref_id=None, remove=[]):
         proto = {
-            'schemas': ['urn:scim:schemas:core:1.0',
+            'schemas': ['urn:scim:schemas:core:2.0',
                         'urn:scim:schemas:extension:keystone:1.0'],
             'displayName': name,
             'id': ref_id,
@@ -237,7 +237,7 @@ class GroupsTests(test_v3.RestfulTestCase, BaseCRUDTests):
 
 class OrganizationsTests(test_v3.RestfulTestCase, BaseCRUDTests):
 
-    URL = '/OS-SCIM/Organizations'
+    URL = '/OS-SCIM/v2/Organizations'
     NAME = 'name'
 
     def setUp(self):
@@ -247,7 +247,7 @@ class OrganizationsTests(test_v3.RestfulTestCase, BaseCRUDTests):
 
     def build_entity(self, name=None, domain=None, ref_id=None, remove=[]):
         proto = {
-            'schemas': ['urn:scim:schemas:core:1.0',
+            'schemas': ['urn:scim:schemas:core:2.0',
                         'urn:scim:schemas:extension:keystone:1.0'],
             'name': name,
             'id': ref_id,

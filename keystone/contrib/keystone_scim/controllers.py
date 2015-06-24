@@ -55,6 +55,7 @@ def pagination(context, hints=None):
 def get_scim_page_info(context, hints):
     page_info = {
         "totalResults": hints.scim_total,
+        "path": context['path']
     }
     if ('startIndex' in context['query_string']):
         page_info["startIndex"] = hints.scim_offset
@@ -119,20 +120,20 @@ class ScimUserV3Controller(UserV3):
     def get_user(self, context, user_id):
         ref = super(ScimUserV3Controller, self).get_user(
             context, user_id=user_id)
-        return conv.user_key2scim(ref['user'])
+        return conv.user_key2scim(ref['user'], path=context['path'])
 
     def create_user(self, context, **kwargs):
         scim = self._denormalize(kwargs)
         user = conv.user_scim2key(scim)
         ref = super(ScimUserV3Controller, self).create_user(context, user=user)
-        return conv.user_key2scim(ref.get('user', None))
+        return conv.user_key2scim(ref.get('user', None), path=context['path'])
 
     def patch_user(self, context, user_id, **kwargs):
         scim = self._denormalize(kwargs)
         user = conv.user_scim2key(scim)
         ref = super(ScimUserV3Controller, self).update_user(
             context, user_id=user_id, user=user)
-        return conv.user_key2scim(ref.get('user', None))
+        return conv.user_key2scim(ref.get('user', None), path=context['path'])
 
     def put_user(self, context, user_id, **kwargs):
         return self.patch_user(context, user_id, **kwargs)
@@ -227,21 +228,21 @@ class ScimGroupV3Controller(GroupV3):
     def get_group(self, context, group_id):
         ref = super(ScimGroupV3Controller, self).get_group(
             context, group_id=group_id)
-        return conv.group_key2scim(ref['group'])
+        return conv.group_key2scim(ref['group'], path=context['path'])
 
     def create_group(self, context, **kwargs):
         scim = self._denormalize(kwargs)
         group = conv.group_scim2key(scim)
         ref = super(ScimGroupV3Controller, self).create_group(
             context, group=group)
-        return conv.group_key2scim(ref.get('group', None))
+        return conv.group_key2scim(ref.get('group', None), path=context['path'])
 
     def patch_group(self, context, group_id, **kwargs):
         scim = self._denormalize(kwargs)
         group = conv.group_scim2key(scim)
         ref = super(ScimGroupV3Controller, self).update_group(
             context, group_id=group_id, group=group)
-        return conv.group_key2scim(ref.get('group', None))
+        return conv.group_key2scim(ref.get('group', None), path=context['path'])
 
     def put_group(self, context, group_id, **kwargs):
         return self.patch_group(context, group_id, **kwargs)
@@ -273,21 +274,21 @@ class ScimOrganizationV3Controller(ProjectV3):
     def get_organization(self, context, organization_id):
         ref = super(ScimOrganizationV3Controller, self).get_project(
             context, project_id=organization_id)
-        return conv.organization_key2scim(ref['project'])
+        return conv.organization_key2scim(ref['project'], path=context['path'])
 
     def create_organization(self, context, **kwargs):
         scim = self._denormalize(kwargs)
         organization = conv.organization_scim2key(scim)
         ref = super(ScimOrganizationV3Controller, self).create_project(
             context, project=organization)
-        return conv.organization_key2scim(ref.get('project', None))
+        return conv.organization_key2scim(ref.get('project', None), path=context['path'])
 
     def patch_organization(self, context, organization_id, **kwargs):
         scim = self._denormalize(kwargs)
         organization = conv.organization_scim2key(scim)
         ref = super(ScimOrganizationV3Controller, self).update_project(
             context, project_id=organization_id, project=organization)
-        return conv.user_key2scim(ref.get('project', None))
+        return conv.organization_key2scim(ref.get('project', None), path=context['path'])
 
     def put_organization(self, context, organization_id, **kwargs):
         return self.patch_organization(context, organization_id, **kwargs)
