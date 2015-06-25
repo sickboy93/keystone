@@ -205,14 +205,21 @@ class OAuth2Validator(RequestValidator):
             consumer_id = request.client.client_id
         else:
             consumer_id = request.client_id
+
+        if getattr(request, 'user', None):
+            user_id = request.user
+        else:
+            user_id = request.user_id
+
         access_token = {
             'id':token['access_token'],
             'consumer_id':consumer_id,
-            'authorizing_user_id':request.user,
+            'authorizing_user_id':user_id,
             'scopes': request.scopes,
             'expires_at':token['expires_in'],
             'refresh_token': token.get('refresh_token', None),
         }
+
         self.oauth2_api.store_access_token(access_token)
 
     def invalidate_authorization_code(self, client_id, code, request, *args, **kwargs):

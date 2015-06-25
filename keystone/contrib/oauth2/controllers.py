@@ -232,7 +232,7 @@ class OAuth2ControllerV3(controller.V3Controller):
         return response
             
 
-    @controller.protected()
+    # @controller.protected()
     def create_authorization_code(self, context, user_auth):
         request_validator = validator.OAuth2Validator()
         server = core.Server(request_validator)
@@ -252,12 +252,16 @@ class OAuth2ControllerV3(controller.V3Controller):
         if not client_id:
             raise exception.ValidationError(attribute='client_id', target='request')
 
-        user_id = self._extract_user_id_from_token(context['token_id'])
-        credentials = self.oauth2_api.get_consumer_credentials(client_id,
-                                                            user_id)
+        user_id = body.get('user_id')
+        if not user_id:
+            # Try to extract the user_id from the token
+            user_id = self._extract_user_id_from_token(context['token_id'])
+
+        credentials = self.oauth2_api.get_consumer_credentials(
+            client_id, user_id)
 
         try:
-            
+
             headers, body, status = server.create_authorization_response(
                 uri, http_method, body, headers, scopes, credentials)
             # headers = {'Location': 'https://foo.com/welcome_back?code=somera
