@@ -40,7 +40,7 @@
     "identity:update_domain": "rule:admin_required",
     "identity:delete_domain": "rule:admin_required",
 
-    "identity:get_project": "rule:admin_or_owner",
+    "identity:get_project": "rule:member_or_admin_or_owner",
     "identity:list_projects": "rule:admin_required",
     "identity:list_user_projects": "rule:admin_or_owner",
     "identity:create_project": "rule:admin_required",
