@@ -360,7 +360,7 @@ class ExtendedPermissionsConsumerCrudV3(BaseControllerV3):
         consumer_ref = self.oauth2_api.get_consumer_with_secret(consumer_id)
         return ExtendedPermissionsConsumerCrudV3.wrap_member(context, consumer_ref)
 
-    @controller.protected() 
+    @controller.protected(callback=_check_allowed_to_manage_consumer) 
     def update_consumer(self, context, consumer_id, consumer):
         self._require_matching_id(consumer_id, consumer)
         ref = self._normalize_dict(consumer)
@@ -373,6 +373,6 @@ class ExtendedPermissionsConsumerCrudV3(BaseControllerV3):
             msg = _('Cannot change consumer secret')
             raise exception.ValidationError(message=msg)
 
-    @controller.protected()
+    @controller.protected(callback=_check_allowed_to_manage_consumer)
     def delete_consumer(self, context, consumer_id):
         self.oauth2_api.delete_consumer(consumer_id)
