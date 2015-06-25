@@ -83,11 +83,9 @@ class ScimInfoController(wsgi.Application):
     @controller.protected()
     def scim_get_service_provider_configs(self, context):
         path = context['path']
-        path = '2.0' if 'v2' in path else '1.1'
+        path = '2.0' if 'v2' in path else '1.0'
         schema = schemas.SERVICE_PROVIDER_CONFIGS
         orgs, cloud, users = self.get_count()
-        import pdb
-        pdb.set_trace()
         schema['schemas'] = ["urn:scim:schemas:core:%s:ServiceProviderConfig" % path] 
         schema['information']['totalUsers'] = users
         schema['information']['totalUserOrganizations'] = orgs
@@ -125,17 +123,18 @@ class ScimUserV3Controller(UserV3):
     def get_user(self, context, user_id):
         ref = super(ScimUserV3Controller, self).get_user(
             context, user_id=user_id)
+        
         return conv.user_key2scim(ref['user'], path=context['path'])
 
     def create_user(self, context, **kwargs):
-        scim = self._denormalize(kwargs)
-        user = conv.user_scim2key(scim)
+        scim = self._denormalize(kwargs, context['path'])
+        user = conv.user_scim2key(scim, path=context['path'])
         ref = super(ScimUserV3Controller, self).create_user(context, user=user)
         return conv.user_key2scim(ref.get('user', None), path=context['path'])
 
     def patch_user(self, context, user_id, **kwargs):
-        scim = self._denormalize(kwargs)
-        user = conv.user_scim2key(scim)
+        scim = self._denormalize(kwargs, context['path'])
+        user = conv.user_scim2key(scim, path=context['path'])
         ref = super(ScimUserV3Controller, self).update_user(
             context, user_id=user_id, user=user)
         return conv.user_key2scim(ref.get('user', None), path=context['path'])
@@ -147,9 +146,10 @@ class ScimUserV3Controller(UserV3):
         return super(ScimUserV3Controller, self).delete_user(
             context, user_id=user_id)
 
-    def _denormalize(self, data):
-        data['urn:scim:schemas:extension:keystone:1.0'] = data.pop(
-            'urn_scim_schemas_extension_keystone_1.0', {})
+    def _denormalize(self, data, path):
+        path = '2.0' if 'v2' in path else '1.0'
+        data['urn:scim:schemas:extension:keystone:%s' % path] = data.pop(
+            'urn_scim_schemas_extension_keystone_%s' % path, {})
         return data
 
 
@@ -183,12 +183,12 @@ class ScimRoleV3Controller(controller.V3Controller):
         key_role = conv.role_scim2key(kwargs)
         ref = self._assign_unique_id(key_role)
         created_ref = self.assignment_api.create_role(ref['id'], ref)
-        return conv.role_key2scim(created_ref)
+        return conv.role_key2scim(created_ref, path=context['path'])
 
     @controller.protected()
     def scim_get_role(self, context, role_id):
         ref = self.assignment_api.get_role(role_id)
-        return conv.role_key2scim(ref)
+        return conv.role_key2scim(ref, path=context['path'])
 
     @controller.protected()
     def scim_patch_role(self, context, role_id, **role):
@@ -196,7 +196,7 @@ class ScimRoleV3Controller(controller.V3Controller):
         self._require_matching_id(role_id, key_role)
         self._require_matching_domain_id(role_id, role, self.load_role)
         ref = self.assignment_api.update_role(role_id, key_role)
-        return conv.role_key2scim(ref)
+        return conv.role_key2scim(ref, path=context['path'])
 
     def scim_put_role(self, context, role_id, **role):
         return self.scim_patch_role(context, role_id, **role)
@@ -236,14 +236,14 @@ class ScimGroupV3Controller(GroupV3):
         return conv.group_key2scim(ref['group'], path=context['path'])
 
     def create_group(self, context, **kwargs):
-        scim = self._denormalize(kwargs)
-        group = conv.group_scim2key(scim)
+        scim = self._denormalize(kwargs, context['path'])
+        group = conv.group_scim2key(scim, path=context['path'])
         ref = super(ScimGroupV3Controller, self).create_group(
             context, group=group)
         return conv.group_key2scim(ref.get('group', None), path=context['path'])
 
     def patch_group(self, context, group_id, **kwargs):
-        scim = self._denormalize(kwargs)
+        scim = self._denormalize(kwargs, context['path'])
         group = conv.group_scim2key(scim)
         ref = super(ScimGroupV3Controller, self).update_group(
             context, group_id=group_id, group=group)
@@ -255,9 +255,10 @@ class ScimGroupV3Controller(GroupV3):
     def delete_group(self, context, group_id):
         return super(ScimGroupV3Controller, self).delete_group(
             context, group_id=group_id)
-    def _denormalize(self, data):
-        data['urn:scim:schemas:extension:keystone:1.0'] = data.pop(
-            'urn_scim_schemas_extension_keystone_1.0', {})
+    def _denormalize(self, data, path):
+        path = '2.0' if 'v2' in path else '1.0'
+        data['urn:scim:schemas:extension:keystone:%s' % path] = data.pop(
+            'urn_scim_schemas_extension_keystone_%s' % path, {})
         return data
 
 
@@ -282,15 +283,15 @@ class ScimOrganizationV3Controller(ProjectV3):
         return conv.organization_key2scim(ref['project'], path=context['path'])
 
     def create_organization(self, context, **kwargs):
-        scim = self._denormalize(kwargs)
-        organization = conv.organization_scim2key(scim)
+        scim = self._denormalize(kwargs, context['path'])
+        organization = conv.organization_scim2key(scim, path=context['path'])
         ref = super(ScimOrganizationV3Controller, self).create_project(
             context, project=organization)
         return conv.organization_key2scim(ref.get('project', None), path=context['path'])
 
     def patch_organization(self, context, organization_id, **kwargs):
-        scim = self._denormalize(kwargs)
-        organization = conv.organization_scim2key(scim)
+        scim = self._denormalize(kwargs, context['path'])
+        organization = conv.organization_scim2key(scim, path=context['path'])
         ref = super(ScimOrganizationV3Controller, self).update_project(
             context, project_id=organization_id, project=organization)
         return conv.organization_key2scim(ref.get('project', None), path=context['path'])
@@ -302,7 +303,8 @@ class ScimOrganizationV3Controller(ProjectV3):
         return super(ScimOrganizationV3Controller, self).delete_project(
             context, project_id=organization_id)
 
-    def _denormalize(self, data):
-        data['urn:scim:schemas:extension:keystone:1.0'] = data.pop(
-            'urn_scim_schemas_extension_keystone_1.0', {})
+    def _denormalize(self, data, path):
+        path = '2.0' if 'v2' in path else '1.0'
+        data['urn:scim:schemas:extension:keystone:%s' % path] = data.pop(
+            'urn_scim_schemas_extension_keystone_%s' % path, {})
         return data

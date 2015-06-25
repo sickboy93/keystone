@@ -23,7 +23,11 @@
 import functools
 
 ROLE_SEP = '#'
-_EXT_SCHEMA = 'urn:scim:schemas:extension:keystone:1.0'
+_EXT_SCHEMA = 'urn:scim:schemas:extension:keystone:%s'
+
+def get_schema(BASE_SCHEMA, path):
+    version = '2.0' if 'v2' in path else '1.0'    
+    return BASE_SCHEMA % version
 
 def _remove_dict_nones(f):
     def wrapper(*args, **kwargs):
@@ -33,17 +37,17 @@ def _remove_dict_nones(f):
 
 
 @_remove_dict_nones
-def user_key2scim(ref, schema=True, path='1.1'):
-    path = '2.0' if 'v2' in path else '1.1'
+def user_key2scim(ref, schema=True, path='1.0'):
     ref = {
-        'schemas': ['urn:scim:schemas:core:%s' % path, _EXT_SCHEMA] if schema
+        'schemas': [get_schema('urn:scim:schemas:core:%s', path),
+                    get_schema(_EXT_SCHEMA, path)] if schema
         else None,
         'id': ref.get('id', None),
         'userName': ref.get('name', None),
         'displayName': ref.get('description', None),
         'active': ref.get('enabled', None),
         'emails': [{'value': ref['email']}] if 'email' in ref else None,
-        _EXT_SCHEMA: {
+        get_schema(_EXT_SCHEMA, path): {
             'domain_id': ref.get('domain_id', None)
         }
     }
@@ -51,19 +55,20 @@ def user_key2scim(ref, schema=True, path='1.1'):
 
 
 def listusers_key2scim(ref, page_info={}):
-    path = '2.0' if 'v2' in page_info['path'] else '1.1'
     res = {
-        'schemas': ['urn:scim:schemas:core:%s' % path, _EXT_SCHEMA],
-        'Resources': map(functools.partial(user_key2scim, schema=False), ref)
+        'schemas': [get_schema('urn:scim:schemas:core:%s', page_info['path']),
+                    get_schema(_EXT_SCHEMA, page_info['path'])],
+        'Resources': map(functools.partial(user_key2scim, schema=False,
+                                           path=page_info['path']), ref)
     }
     res.update(page_info)
     return res
 
 
 @_remove_dict_nones
-def user_scim2key(scim):
+def user_scim2key(scim, path=None):
     return {
-        'domain_id': scim.get(_EXT_SCHEMA, {})
+        'domain_id': scim.get(get_schema(_EXT_SCHEMA, path), {})
             .get('domain_id', None),
         'email': scim.get('emails', [{}])[0].get('value', None),
         'id': scim.get('id', None),
@@ -88,9 +93,9 @@ def role_scim2key(scim):
 
 
 @_remove_dict_nones
-def role_key2scim(ref, schema=True):
+def role_key2scim(ref, schema=True, path='1.0'):
     scim = {
-        'schemas': [_EXT_SCHEMA] if schema else None,
+        'schemas': [get_schema(_EXT_SCHEMA, path)] if schema else None,
         'id': ref.get('id', None)
     }
     dom_name = ref.get('name', '')
@@ -106,17 +111,18 @@ def role_key2scim(ref, schema=True):
 
 def listroles_key2scim(ref, page_info={}):
     res = {
-        'schemas': [_EXT_SCHEMA],
-        'Resources': map(functools.partial(role_key2scim, schema=False), ref)
+        'schemas': [get_schema(_EXT_SCHEMA, page_info['path'])],
+        'Resources': map(functools.partial(role_key2scim, schema=False,
+                                           path=page_info['path']), ref)
     }
     res.update(page_info)
     return res
 
 
 @_remove_dict_nones
-def group_scim2key(scim):
+def group_scim2key(scim, path='1.0'):
     return {
-        'domain_id': scim.get(_EXT_SCHEMA, {})
+        'domain_id': scim.get(get_schema(_EXT_SCHEMA, path), {})
             .get('domain_id', None),
         'id': scim.get('id', None),
         'name': scim.get('displayName', None)
@@ -124,59 +130,63 @@ def group_scim2key(scim):
 
 
 @_remove_dict_nones
-def group_key2scim(ref, schema=True, path='1.1'):
-    path = '2.0' if 'v2' in path else '1.1'
+def group_key2scim(ref, schema=True, path='1.0'):
+    # import pdb
+    # pdb.set_trace()
     return {
-        'schemas': ['urn:scim:schemas:core:%s' % path, _EXT_SCHEMA] if schema
+        'schemas': [get_schema('urn:scim:schemas:core:%s', path),
+                    get_schema(_EXT_SCHEMA, path)] if schema
         else None,
         'id': ref.get('id', None),
         'displayName': ref.get('name', None),
-        _EXT_SCHEMA: {
+        get_schema(_EXT_SCHEMA, path): {
             'domain_id': ref.get('domain_id', None)
         }
     }
 
 def listgroups_key2scim(ref, page_info={}):
-    path = '2.0' if 'v2' in page_info['path'] else '1.1'
     res = {
-        'schemas': ['urn:scim:schemas:core:%s' % path, _EXT_SCHEMA],
-        'Resources': map(functools.partial(group_key2scim, schema=False), ref)
+        'schemas': [get_schema('urn:scim:schemas:core:%s', page_info['path']),
+                    get_schema(_EXT_SCHEMA, page_info['path'])],
+        'Resources': map(functools.partial(group_key2scim, schema=False,
+                                           path=page_info['path']), ref)
     }
     res.update(page_info)
     return res
 
 
 @_remove_dict_nones
-def organization_key2scim(ref, schema=True, path='1.1'):
-    path = '2.0' if 'v2' in path else '1.1'
+def organization_key2scim(ref, schema=True, path='1.0'):
     return {
-        'schemas': ['urn:scim:schemas:core:%s' % path, _EXT_SCHEMA] if schema
+        'schemas': [get_schema('urn:scim:schemas:core:%s', path),
+                    get_schema(_EXT_SCHEMA, path)] if schema
         else None,
         'id': ref.get('id', None),
         'name': ref.get('name', None),
         'description': ref.get('description', None),
         'active': ref.get('enabled', None),
         'is_default': ref.get('is_default', None),
-        _EXT_SCHEMA: {
+        get_schema(_EXT_SCHEMA, path): {
             'domain_id': ref.get('domain_id', None)
         }
     }
 
 
 def listorganizations_key2scim(ref, page_info={}):
-    path = '2.0' if 'v2' in page_info['path'] else '1.1'
     res = {
-        'schemas': ['urn:scim:schemas:core:%s' % path, _EXT_SCHEMA],
-        'Resources': map(functools.partial(organization_key2scim, schema=False), ref)
+        'schemas': [get_schema('urn:scim:schemas:core:%s', page_info['path']),
+                    get_schema(_EXT_SCHEMA, page_info['path'])],
+        'Resources': map(functools.partial(organization_key2scim, schema=False,
+                                           path=page_info['path']), ref)
     }
     res.update(page_info)
     return res
 
 
 @_remove_dict_nones
-def organization_scim2key(scim):
+def organization_scim2key(scim, path='1.0'):
     return {
-        'domain_id': scim.get(_EXT_SCHEMA, {})
+        'domain_id': scim.get(get_schema(_EXT_SCHEMA, path), {})
             .get('domain_id', None),
         'id': scim.get('id', None),
         'enabled': scim.get('active', None),

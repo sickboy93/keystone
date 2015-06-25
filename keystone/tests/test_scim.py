@@ -62,72 +62,73 @@ class BaseCRUDTests(object):
 
         self.assertEqual(expected_entity, resp)
 
-    # def test_list(self):
-    #     name = uuid.uuid4().hex
-    #     entity = self.build_entity(name, self.domain_id)
-    #     self.post(self.URL, body=entity)
+    def test_list(self):
+        name = uuid.uuid4().hex
+        entity = self.build_entity(name, self.domain_id)
+        res=self.post(self.URL, body=entity)
 
-    #     URL = ('%(base)s?domain_id=%(domain_id)s' %
-    #            {'base': self.URL, 'domain_id': self.domain_id})
-    #     entities = self.get(URL).result
-    #     matching_listed = [u for u in entities['Resources']
-    #                        if u.get(self.NAME, '') == name]
+        URL = ('%(base)s?domain_id=%(domain_id)s' %
+               {'base': self.URL, 'domain_id': self.domain_id})
+        entities = self.get(URL).result
+        matching_listed = [u for u in entities['Resources']
+                           if u.get(self.NAME, '') == name]
 
-    #     self.assertEqual(1, len(matching_listed))
+        self.assertEqual(1, len(matching_listed))
 
-    #     expected_entity = self.proto_entity(name, self.domain_id,
-    #         ref_id=matching_listed[0]['id'], remove=['schemas'])
-    #     self.assertEqual(expected_entity, matching_listed[0])
+        expected_entity = self.proto_entity(name, self.domain_id,
+            ref_id=matching_listed[0]['id'], remove=['schemas'])
 
-    # def test_list_pagination(self):
-    #     entities = []
-    #     for i in range(0, 3):
-    #         name = uuid.uuid4().hex
-    #         entities.append(self.build_entity(name, self.domain_id))
-    #         self.post(self.URL, body=entities[i])
+        self.assertEqual(expected_entity, matching_listed[0])
 
-    #     count = 2
-    #     URL = ('%(base)s?domain_id=%(domain_id)s&count=%(count)s' %
-    #            {'base': self.URL, 'domain_id': self.domain_id, 'count': count})
-    #     res_entities = self.get(URL).result
-    #     self.assertEqual(count, len(res_entities['Resources']))
-    #     self.assertEqual(count, int(res_entities['itemsPerPage']))
-    #     self.assertTrue(count < int(res_entities['totalResults']) )
+    def test_list_pagination(self):
+        entities = []
+        for i in range(0, 3):
+            name = uuid.uuid4().hex
+            entities.append(self.build_entity(name, self.domain_id))
+            self.post(self.URL, body=entities[i])
 
-    # def test_get(self):
-    #     name = uuid.uuid4().hex
-    #     entity = self.build_entity(name, self.domain_id)
-    #     resp = self.post(self.URL, body=entity).result
+        count = 2
+        URL = ('%(base)s?domain_id=%(domain_id)s&count=%(count)s' %
+               {'base': self.URL, 'domain_id': self.domain_id, 'count': count})
+        res_entities = self.get(URL).result
+        self.assertEqual(count, len(res_entities['Resources']))
+        self.assertEqual(count, int(res_entities['itemsPerPage']))
+        self.assertTrue(count < int(res_entities['totalResults']) )
 
-    #     entity_url = '%s/%s' % (self.URL, resp['id'])
-    #     got_entity = self.get(entity_url).result
+    def test_get(self):
+        name = uuid.uuid4().hex
+        entity = self.build_entity(name, self.domain_id)
+        resp = self.post(self.URL, body=entity).result
 
-    #     expected_entity = self.proto_entity(name, self.domain_id,
-    #                                         ref_id=resp['id'])
+        entity_url = '%s/%s' % (self.URL, resp['id'])
+        got_entity = self.get(entity_url).result
+
+        expected_entity = self.proto_entity(name, self.domain_id,
+                                            ref_id=resp['id'])
         
-    #     self.assertEqual(expected_entity, got_entity)
+        self.assertEqual(expected_entity, got_entity)
 
-    # def test_update(self):
-    #     name = uuid.uuid4().hex
-    #     entity = self.build_entity(name, self.domain_id)
-    #     resp = self.post(self.URL, body=entity).result
+    def test_update(self):
+        name = uuid.uuid4().hex
+        entity = self.build_entity(name, self.domain_id)
+        resp = self.post(self.URL, body=entity).result
 
-    #     modified_entity = self.modify(resp)
+        modified_entity = self.modify(resp)
 
-    #     entity_url = '%s/%s' % (self.URL, resp['id'])
-    #     self.put(entity_url, body=modified_entity, expected_status=200)
-    #     got_entity = self.get(entity_url).result
+        entity_url = '%s/%s' % (self.URL, resp['id'])
+        self.put(entity_url, body=modified_entity, expected_status=200)
+        got_entity = self.get(entity_url).result
 
-    #     self.assertEqual(modified_entity, got_entity)
+        self.assertEqual(modified_entity, got_entity)
 
-    # def test_delete(self):
-    #     name = uuid.uuid4().hex
-    #     entity = self.build_entity(name, self.domain_id)
-    #     resp = self.post(self.URL, body=entity).result
+    def test_delete(self):
+        name = uuid.uuid4().hex
+        entity = self.build_entity(name, self.domain_id)
+        resp = self.post(self.URL, body=entity).result
 
-    #     entity_url = '%s/%s' % (self.URL, resp['id'])
-    #     self.delete(entity_url, expected_status=204)
-    #     self.get(entity_url, expected_status=404)
+        entity_url = '%s/%s' % (self.URL, resp['id'])
+        self.delete(entity_url, expected_status=204)
+        self.get(entity_url, expected_status=404)
 
 
 class RolesTests(test_v3.RestfulTestCase, BaseCRUDTests):
@@ -142,7 +143,7 @@ class RolesTests(test_v3.RestfulTestCase, BaseCRUDTests):
 
     def build_entity(self, name=None, domain=None, ref_id=None, remove=[]):
         proto = {
-            'schemas': ['urn:scim:schemas:extension:keystone:1.0'],
+            'schemas': ['urn:scim:schemas:extension:keystone:2.0'],
             'name': name,
             'domain_id': domain,
             'id': ref_id
@@ -173,7 +174,7 @@ class UsersTests(test_v3.RestfulTestCase, BaseCRUDTests):
     def build_entity(self, name=None, domain=None, ref_id=None, remove=[]):
         proto = {
             'schemas': ['urn:scim:schemas:core:2.0',
-                        'urn:scim:schemas:extension:keystone:1.0'],
+                        'urn:scim:schemas:extension:keystone:2.0'],
             'userName': name,
             'password': 'password',
             'id': ref_id,
@@ -183,7 +184,7 @@ class UsersTests(test_v3.RestfulTestCase, BaseCRUDTests):
                 }
             ],
             'active': True,
-            'urn:scim:schemas:extension:keystone:1.0': {
+            'urn:scim:schemas:extension:keystone:2.0': {
                 'domain_id': domain
             }
         }
@@ -216,10 +217,10 @@ class GroupsTests(test_v3.RestfulTestCase, BaseCRUDTests):
     def build_entity(self, name=None, domain=None, ref_id=None, remove=[]):
         proto = {
             'schemas': ['urn:scim:schemas:core:2.0',
-                        'urn:scim:schemas:extension:keystone:1.0'],
+                        'urn:scim:schemas:extension:keystone:2.0'],
             'displayName': name,
             'id': ref_id,
-            'urn:scim:schemas:extension:keystone:1.0': {
+            'urn:scim:schemas:extension:keystone:2.0': {
                 'domain_id': domain
             }
         }
@@ -248,13 +249,13 @@ class OrganizationsTests(test_v3.RestfulTestCase, BaseCRUDTests):
     def build_entity(self, name=None, domain=None, ref_id=None, remove=[]):
         proto = {
             'schemas': ['urn:scim:schemas:core:2.0',
-                        'urn:scim:schemas:extension:keystone:1.0'],
+                        'urn:scim:schemas:extension:keystone:2.0'],
             'name': name,
             'id': ref_id,
             'description': name,
             'is_default': True,
             'active': True,
-            'urn:scim:schemas:extension:keystone:1.0': {
+            'urn:scim:schemas:extension:keystone:2.0': {
                 'domain_id': domain
             }
         }
