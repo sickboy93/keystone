@@ -37,32 +37,32 @@ class ScimRouter(wsgi.ExtensionRouter):
 
         # Users v1.1
 
-        mapper.connect(self.PATH_PREFIX + '/v1-1/Users',
+        mapper.connect(self.PATH_PREFIX + '/v1/Users',
                        controller=user_controller,
                        action='list_users',
                        conditions=dict(method=['GET']))
 
-        mapper.connect(self.PATH_PREFIX + '/v1-1/Users',
+        mapper.connect(self.PATH_PREFIX + '/v1/Users',
                        controller=user_controller,
                        action='create_user',
                        conditions=dict(method=['POST']))
 
-        mapper.connect(self.PATH_PREFIX + '/v1-1/Users/{user_id}',
+        mapper.connect(self.PATH_PREFIX + '/v1/Users/{user_id}',
                        controller=user_controller,
                        action='get_user',
                        conditions=dict(method=['GET']))
 
-        mapper.connect(self.PATH_PREFIX + '/v1-1/Users/{user_id}',
+        mapper.connect(self.PATH_PREFIX + '/v1/Users/{user_id}',
                        controller=user_controller,
                        action='patch_user',
                        conditions=dict(method=['PATCH']))
 
-        mapper.connect(self.PATH_PREFIX + '/v1-1/Users/{user_id}',
+        mapper.connect(self.PATH_PREFIX + '/v1/Users/{user_id}',
                        controller=user_controller,
                        action='put_user',
                        conditions=dict(method=['PUT']))
 
-        mapper.connect(self.PATH_PREFIX + '/v1-1/Users/{user_id}',
+        mapper.connect(self.PATH_PREFIX + '/v1/Users/{user_id}',
                        controller=user_controller,
                        action='delete_user',
                        conditions=dict(method=['DELETE']))
@@ -102,32 +102,32 @@ class ScimRouter(wsgi.ExtensionRouter):
 
         # Roles v1.1
 
-        mapper.connect(self.PATH_PREFIX + '/v1-1/Roles',
+        mapper.connect(self.PATH_PREFIX + '/v1/Roles',
                        controller=role_controller,
                        action='scim_list_roles',
                        conditions=dict(method=['GET']))
 
-        mapper.connect(self.PATH_PREFIX + '/v1-1/Roles',
+        mapper.connect(self.PATH_PREFIX + '/v1/Roles',
                        controller=role_controller,
                        action='scim_create_role',
                        conditions=dict(method=['POST']))
 
-        mapper.connect(self.PATH_PREFIX + '/v1-1/Roles/{role_id}',
+        mapper.connect(self.PATH_PREFIX + '/v1/Roles/{role_id}',
                        controller=role_controller,
                        action='scim_get_role',
                        conditions=dict(method=['GET']))
 
-        mapper.connect(self.PATH_PREFIX + '/v1-1/Roles/{role_id}',
+        mapper.connect(self.PATH_PREFIX + '/v1/Roles/{role_id}',
                        controller=role_controller,
                        action='scim_patch_role',
                        conditions=dict(method=['PATCH']))
 
-        mapper.connect(self.PATH_PREFIX + '/v1-1/Roles/{role_id}',
+        mapper.connect(self.PATH_PREFIX + '/v1/Roles/{role_id}',
                        controller=role_controller,
                        action='scim_put_role',
                        conditions=dict(method=['PUT']))
 
-        mapper.connect(self.PATH_PREFIX + '/v1-1/Roles/{role_id}',
+        mapper.connect(self.PATH_PREFIX + '/v1/Roles/{role_id}',
                        controller=role_controller,
                        action='scim_delete_role',
                        conditions=dict(method=['DELETE']))
@@ -165,32 +165,32 @@ class ScimRouter(wsgi.ExtensionRouter):
                        conditions=dict(method=['DELETE']))
         # Groups v1.1
 
-        mapper.connect(self.PATH_PREFIX + '/v1-1/Groups',
+        mapper.connect(self.PATH_PREFIX + '/v1/Groups',
                        controller=group_controller,
                        action='list_groups',
                        conditions=dict(method=['GET']))
 
-        mapper.connect(self.PATH_PREFIX + '/v1-1/Groups',
+        mapper.connect(self.PATH_PREFIX + '/v1/Groups',
                        controller=group_controller,
                        action='create_group',
                        conditions=dict(method=['POST']))
 
-        mapper.connect(self.PATH_PREFIX + '/v1-1/Groups/{group_id}',
+        mapper.connect(self.PATH_PREFIX + '/v1/Groups/{group_id}',
                        controller=group_controller,
                        action='get_group',
                        conditions=dict(method=['GET']))
 
-        mapper.connect(self.PATH_PREFIX + '/v1-1/Groups/{group_id}',
+        mapper.connect(self.PATH_PREFIX + '/v1/Groups/{group_id}',
                        controller=group_controller,
                        action='patch_group',
                        conditions=dict(method=['PATCH']))
 
-        mapper.connect(self.PATH_PREFIX + '/v1-1/Groups/{group_id}',
+        mapper.connect(self.PATH_PREFIX + '/v1/Groups/{group_id}',
                        controller=group_controller,
                        action='put_group',
                        conditions=dict(method=['PUT']))
 
-        mapper.connect(self.PATH_PREFIX + '/v1-1/Groups/{group_id}',
+        mapper.connect(self.PATH_PREFIX + '/v1/Groups/{group_id}',
                        controller=group_controller,
                        action='delete_group',
                        conditions=dict(method=['DELETE']))
@@ -229,12 +229,22 @@ class ScimRouter(wsgi.ExtensionRouter):
 
         # SCIM Info
 
-        mapper.connect(self.PATH_PREFIX + '/ServiceProviderConfigs',
+        mapper.connect(self.PATH_PREFIX + '/v1/ServiceProviderConfigs',
                        controller=scim_info_controller,
                        action='scim_get_service_provider_configs',
                        conditions=dict(method=['GET']))
 
-        mapper.connect(self.PATH_PREFIX + '/Schemas',
+        mapper.connect(self.PATH_PREFIX + '/v1/Schemas',
+                       controller=scim_info_controller,
+                       action='scim_get_schemas',
+                       conditions=dict(method=['GET']))
+
+        mapper.connect(self.PATH_PREFIX + '/v2/ServiceProviderConfigs',
+                       controller=scim_info_controller,
+                       action='scim_get_service_provider_configs',
+                       conditions=dict(method=['GET']))
+
+        mapper.connect(self.PATH_PREFIX + '/v2/Schemas',
                        controller=scim_info_controller,
                        action='scim_get_schemas',
                        conditions=dict(method=['GET']))

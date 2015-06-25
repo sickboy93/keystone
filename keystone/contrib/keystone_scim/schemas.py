@@ -23,54 +23,49 @@
 import sys
 
 SERVICE_PROVIDER_CONFIGS = {
-    "schemas": ["urn:scim:schemas:core:2.0:ServiceProviderConfig"],
-    "documentationUrl": "https://tools.ietf.org/html/draft-ietf-scim-core-schema-02",
-    "totalUsers": "",
-    "totalUserOrganizations": "",
-    "totalCloudOrganizations": "",
-    "totalResources": ""
+    "schemas": "",
+    'documentationUrl': 'https://github.com/telefonicaid/fiware-keystone-scim/blob/master/README.md',
+    'patch': {
+        'supported': True
+    },
+    'information': {
+        "totalUsers": "",
+        "totalUserOrganizations": "",
+        "totalCloudOrganizations": "",
+        "totalResources": "",
+    },
+    'bulk': {
+        'supported': False,
+        'maxOperations': 0,
+        'maxPayloadSize': 0
+    },
+    'filter': {
+        'supported': True,
+        'maxResults': sys.maxint
+    },
+    'changePassword': {
+        'supported': True
+    },
+    'sort': {
+        'supported': False
+    },
+    'etag': {
+        'supported': False
+    },
+    'xmlDataFormat': {
+        'supported': False
+    },
+    'authenticationSchemes': [
+        {
+            'name': 'Keytone Authentication',
+            'description': 'Authentication using Keystone',
+            'specUrl': 'http://specs.openstack.org/openstack/keystone-specs',
+            'documentationUrl': 'http://keystone.openstack.org/',
+            'type': 'keystonetoken',
+            'primary': True
+        }
+    ]
 }
-    # 'documentationUrl': 'https://github.com/telefonicaid/fiware-keystone-scim/blob/master/README.md',
-    # 'patch': {
-    #     'supported': True
-    # },
-    # 'information': {
-    #     'totalUsers': "",
-    #     'totalOrganizations': "",
-    #     'totalResources': ""
-    # },
-    # 'bulk': {
-    #     'supported': False,
-    #     'maxOperations': 0,
-    #     'maxPayloadSize': 0
-    # },
-    # 'filter': {
-    #     'supported': True,
-    #     'maxResults': sys.maxint
-    # },
-    # 'changePassword': {
-    #     'supported': True
-    # },
-    # 'sort': {
-    #     'supported': False
-    # },
-    # 'etag': {
-    #     'supported': False
-    # },
-    # 'xmlDataFormat': {
-    #     'supported': False
-    # },
-    # 'authenticationSchemes': [
-    #     {
-    #         'name': 'Keytone Authentication',
-    #         'description': 'Authentication using Keystone',
-    #         'specUrl': 'http://specs.openstack.org/openstack/keystone-specs',
-    #         'documentationUrl': 'http://keystone.openstack.org/',
-    #         'type': 'keystonetoken',
-    #         'primary': True
-    #     }
-    # ]
-# }
 
 SCHEMAS = [
     {

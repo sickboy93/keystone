@@ -82,12 +82,17 @@ class ScimInfoController(wsgi.Application):
 
     @controller.protected()
     def scim_get_service_provider_configs(self, context):
+        path = context['path']
+        path = '2.0' if 'v2' in path else '1.1'
         schema = schemas.SERVICE_PROVIDER_CONFIGS
         orgs, cloud, users = self.get_count()
-        schema['totalUsers'] = users
-        schema['totalUserOrganizations'] = orgs
-        schema['totalCloudOrganizations'] = cloud
-        schema['totalResources'] = users + orgs + cloud
+        import pdb
+        pdb.set_trace()
+        schema['schemas'] = ["urn:scim:schemas:core:%s:ServiceProviderConfig" % path] 
+        schema['information']['totalUsers'] = users
+        schema['information']['totalUserOrganizations'] = orgs
+        schema['information']['totalCloudOrganizations'] = cloud
+        schema['information']['totalResources'] = users + orgs + cloud
         return schema
 
     @controller.protected()
