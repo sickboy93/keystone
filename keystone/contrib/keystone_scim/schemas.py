@@ -33,6 +33,9 @@ SERVICE_PROVIDER_CONFIGS = {
         "totalUserOrganizations": "",
         "totalCloudOrganizations": "",
         "totalResources": "",
+        "trialUsers": "",
+        "basicUsers": "",
+        "communityUsers": ""
     },
     'bulk': {
         'supported': False,

@@ -24,9 +24,13 @@ import functools
 
 ROLE_SEP = '#'
 _EXT_SCHEMA = 'urn:scim:schemas:extension:keystone:%s'
+DEFAULT_VERSION = '1.0'
 
 def get_schema(BASE_SCHEMA, path):
-    version = '2.0' if 'v2' in path else '1.0'    
+    if 'v2' in path:
+        version = '2.0' 
+    else: 
+        version = '1.0'  
     return BASE_SCHEMA % version
 
 def _remove_dict_nones(f):
@@ -37,7 +41,7 @@ def _remove_dict_nones(f):
 
 
 @_remove_dict_nones
-def user_key2scim(ref, schema=True, path='1.0'):
+def user_key2scim(ref, path, schema=True):
     ref = {
         'schemas': [get_schema('urn:scim:schemas:core:%s', path),
                     get_schema(_EXT_SCHEMA, path)] if schema
@@ -66,7 +70,7 @@ def listusers_key2scim(ref, page_info={}):
 
 
 @_remove_dict_nones
-def user_scim2key(scim, path=None):
+def user_scim2key(scim, path):
     return {
         'domain_id': scim.get(get_schema(_EXT_SCHEMA, path), {})
             .get('domain_id', None),
@@ -93,7 +97,7 @@ def role_scim2key(scim):
 
 
 @_remove_dict_nones
-def role_key2scim(ref, schema=True, path='1.0'):
+def role_key2scim(ref, path=DEFAULT_VERSION, schema=True):
     scim = {
         'schemas': [get_schema(_EXT_SCHEMA, path)] if schema else None,
         'id': ref.get('id', None)
@@ -120,7 +124,7 @@ def listroles_key2scim(ref, page_info={}):
 
 
 @_remove_dict_nones
-def group_scim2key(scim, path='1.0'):
+def group_scim2key(scim, path):
     return {
         'domain_id': scim.get(get_schema(_EXT_SCHEMA, path), {})
             .get('domain_id', None),
@@ -130,9 +134,7 @@ def group_scim2key(scim, path='1.0'):
 
 
 @_remove_dict_nones
-def group_key2scim(ref, schema=True, path='1.0'):
-    # import pdb
-    # pdb.set_trace()
+def group_key2scim(ref, path, schema=True):
     return {
         'schemas': [get_schema('urn:scim:schemas:core:%s', path),
                     get_schema(_EXT_SCHEMA, path)] if schema
@@ -156,7 +158,7 @@ def listgroups_key2scim(ref, page_info={}):
 
 
 @_remove_dict_nones
-def organization_key2scim(ref, schema=True, path='1.0'):
+def organization_key2scim(ref, path, schema=True):
     return {
         'schemas': [get_schema('urn:scim:schemas:core:%s', path),
                     get_schema(_EXT_SCHEMA, path)] if schema
@@ -184,7 +186,7 @@ def listorganizations_key2scim(ref, page_info={}):
 
 
 @_remove_dict_nones
-def organization_scim2key(scim, path='1.0'):
+def organization_scim2key(scim, path):
     return {
         'domain_id': scim.get(get_schema(_EXT_SCHEMA, path), {})
             .get('domain_id', None),

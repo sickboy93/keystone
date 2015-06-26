@@ -26,6 +26,7 @@ from keystone.contrib.keystone_scim import controllers
 from keystone.tests import test_v3
 import keystone.tests.core as core
 import os
+import sys
 
 CONF = config.CONF
 
@@ -131,13 +132,42 @@ class BaseCRUDTests(object):
         self.get(entity_url, expected_status=404)
 
 
-class RolesTests(test_v3.RestfulTestCase, BaseCRUDTests):
+class Rolesv1Tests(test_v3.RestfulTestCase, BaseCRUDTests):
+
+    URL = '/OS-SCIM/v1/Roles'
+    NAME = 'name'
+
+    def setUp(self):
+        super(Rolesv1Tests, self).setUp()
+        self.base_url = 'http://localhost/v3'
+        self.controller = controllers.ScimRoleV3Controller()
+
+    def build_entity(self, name=None, domain=None, ref_id=None, remove=[]):
+        proto = {
+            'schemas': ['urn:scim:schemas:extension:keystone:1.0'],
+            'name': name,
+            'domain_id': domain,
+            'id': ref_id
+        }
+        return dict((key, value)
+                    for key, value in proto.iteritems()
+                    if value is not None and key not in remove)
+
+    def proto_entity(self, name=None, domain=None, ref_id=None, remove=[]):
+        return self.build_entity(name, domain, ref_id, remove)
+
+    def modify(self, entity):
+        modified_entity = entity.copy()
+        modified_entity['name'] = uuid.uuid4().hex
+        return modified_entity
+
+class Rolesv2Tests(test_v3.RestfulTestCase, BaseCRUDTests):
 
     URL = '/OS-SCIM/v2/Roles'
     NAME = 'name'
 
     def setUp(self):
-        super(RolesTests, self).setUp()
+        super(Rolesv2Tests, self).setUp()
         self.base_url = 'http://localhost/v3'
         self.controller = controllers.ScimRoleV3Controller()
 
@@ -160,14 +190,55 @@ class RolesTests(test_v3.RestfulTestCase, BaseCRUDTests):
         modified_entity['name'] = uuid.uuid4().hex
         return modified_entity
 
+class Usersv1Tests(test_v3.RestfulTestCase, BaseCRUDTests):
 
-class UsersTests(test_v3.RestfulTestCase, BaseCRUDTests):
+    URL = '/OS-SCIM/v1/Users'
+    NAME = 'userName'
+
+    def setUp(self):
+        super(Usersv1Tests, self).setUp()
+        self.base_url = 'http://localhost/v3'
+        self.controller = controllers.ScimUserV3Controller()
+
+    def build_entity(self, name=None, domain=None, ref_id=None, remove=[]):
+        proto = {
+            'schemas': ['urn:scim:schemas:core:1.0',
+                        'urn:scim:schemas:extension:keystone:1.0'],
+            'userName': name,
+            'password': 'password',
+            'id': ref_id,
+            'emails': [
+                {
+                    'value': '%s@mailhost.com' % name
+                }
+            ],
+            'active': True,
+            'urn:scim:schemas:extension:keystone:1.0': {
+                'domain_id': domain
+            }
+        }
+        return dict((key, value)
+                    for key, value in proto.iteritems()
+                    if value is not None and key not in remove)
+
+    def proto_entity(self, name=None, domain=None, ref_id=None, remove=[]):
+        entity = self.build_entity(name, domain, ref_id, remove)
+        entity.pop('password')
+        return entity
+
+    def modify(self, entity):
+        modified_entity = entity.copy()
+        modified_entity['emails'][0]['value'] = \
+            '%s@mailhost.com' % uuid.uuid4().hex
+        return modified_entity
+
+class Usersv2Tests(test_v3.RestfulTestCase, BaseCRUDTests):
 
     URL = '/OS-SCIM/v2/Users'
     NAME = 'userName'
 
     def setUp(self):
-        super(UsersTests, self).setUp()
+        super(Usersv2Tests, self).setUp()
         self.base_url = 'http://localhost/v3'
         self.controller = controllers.ScimUserV3Controller()
 
@@ -204,23 +275,55 @@ class UsersTests(test_v3.RestfulTestCase, BaseCRUDTests):
         return modified_entity
 
 
-class GroupsTests(test_v3.RestfulTestCase, BaseCRUDTests):
+class Groupsv1Tests(test_v3.RestfulTestCase, BaseCRUDTests):
 
-    URL = '/OS-SCIM/v2/Groups'
+    URL = '/OS-SCIM/v1/Groups'
     NAME = 'displayName'
 
     def setUp(self):
-        super(GroupsTests, self).setUp()
+        super(Groupsv1Tests, self).setUp()
         self.base_url = 'http://localhost/v3'
         self.controller = controllers.ScimGroupV3Controller()
 
     def build_entity(self, name=None, domain=None, ref_id=None, remove=[]):
         proto = {
-            'schemas': ['urn:scim:schemas:core:2.0',
-                        'urn:scim:schemas:extension:keystone:2.0'],
+            'schemas': ['urn:scim:schemas:core:1.0',
+                        'urn:scim:schemas:extension:keystone:1.0'],
             'displayName': name,
             'id': ref_id,
-            'urn:scim:schemas:extension:keystone:2.0': {
+            'urn:scim:schemas:extension:keystone:1.0': {
+                'domain_id': domain
+            }
+        }
+        return dict((key, value)
+                    for key, value in proto.iteritems()
+                    if value is not None and key not in remove)
+
+    def proto_entity(self, name=None, domain=None, ref_id=None, remove=[]):
+        return self.build_entity(name, domain, ref_id, remove)
+
+    def modify(self, entity):
+        modified_entity = entity.copy()
+        modified_entity['displayName'] = uuid.uuid4().hex
+        return modified_entity
+
+class Groupsv2Tests(test_v3.RestfulTestCase, BaseCRUDTests):
+
+    URL = '/OS-SCIM/v1/Groups'
+    NAME = 'displayName'
+
+    def setUp(self):
+        super(Groupsv2Tests, self).setUp()
+        self.base_url = 'http://localhost/v3'
+        self.controller = controllers.ScimGroupV3Controller()
+
+    def build_entity(self, name=None, domain=None, ref_id=None, remove=[]):
+        proto = {
+            'schemas': ['urn:scim:schemas:core:1.0',
+                        'urn:scim:schemas:extension:keystone:1.0'],
+            'displayName': name,
+            'id': ref_id,
+            'urn:scim:schemas:extension:keystone:1.0': {
                 'domain_id': domain
             }
         }
@@ -272,32 +375,157 @@ class OrganizationsTests(test_v3.RestfulTestCase, BaseCRUDTests):
         modified_entity['name'] = uuid.uuid4().hex
         return modified_entity
 
-# class InfoTests(test_v3.RestfulTestCase):
-#     URL = '/OS-SCIM/v1/ServiceProviderConfigs'
+class Infov1Tests(test_v3.RestfulTestCase):
+    URL = '/OS-SCIM/v1/ServiceProviderConfigs'
 
-#     def setUp(self):
-#         super(InfoTests, self).setUp()
-#         self.base_url = 'http://localhost/v3'
-#         self.controller = controllers.ScimInfoController()
+    def setUp(self):
+        super(Infov1Tests, self).setUp()
+        self.base_url = 'http://localhost/v3'
+        self.controller = controllers.ScimInfoController()
 
-#     def build_entity(self, users=None, userOrgs=None, cloudOrgs=None):
-#         proto = {
-#             "schemas": ["urn:scim:schemas:core:1.1:ServiceProviderConfig"],
-#             "documentationUrl": "https://tools.ietf.org/html/draft-ietf-scim-core-schema-02",
-#             "totalUsers": users,
-#             "totalUserOrganizations": userOrgs,
-#             "totalCloudOrganizations": cloudOrgs,
-#             "totalResources": users+userOrgs+cloudOrgs
-#         }
-#         return dict((key, value)
-#                     for key, value in proto.iteritems()
-#                     if value is not None)
+    def build_entity(self, users=None, userOrgs=None, cloudOrgs=None,
+                     trial=None, basic=None, commuinty=None):
+        proto = {
+            "schemas": ["urn:scim:schemas:core:1.0:ServiceProviderConfig"],
+            'documentationUrl': 'https://github.com/telefonicaid/fiware-keystone-scim/blob/master/README.md',
+            'patch': {
+                'supported': True
+            },
+            'information': {
+                "totalUsers": users,
+                "totalUserOrganizations": userOrgs,
+                "totalCloudOrganizations": cloudOrgs,
+                "totalResources": users+userOrgs+cloudOrgs,
+                "trialUsers": trial,
+                "basicUsers": basic,
+                "communityUsers": commuinty
+            },
+            'bulk': {
+                'supported': False,
+                'maxOperations': 0,
+                'maxPayloadSize': 0
+            },
+            'filter': {
+                'supported': True,
+                'maxResults': sys.maxint
+            },
+            'changePassword': {
+                'supported': True
+            },
+            'sort': {
+                'supported': False
+            },
+            'etag': {
+                'supported': False
+            },
+            'xmlDataFormat': {
+                'supported': False
+            },
+            'authenticationSchemes': [
+                {
+                    'name': 'Keytone Authentication',
+                    'description': 'Authentication using Keystone',
+                    'specUrl': 'http://specs.openstack.org/openstack/keystone-specs',
+                    'documentationUrl': 'http://keystone.openstack.org/',
+                    'type': 'keystonetoken',
+                    'primary': True
+                }
+            ]
+        }
 
-#     def test_call(self):
-#         users = 2
-#         userOrgs = 2
-#         cloudOrgs = 2
-#         entity = self.build_entity(users, userOrgs, cloudOrgs)
-#         resp = self.get(self.URL)
-#         resp = resp.result
-#         self.assertEqual(entity, resp)
+        return dict((key, value)
+                    for key, value in proto.iteritems()
+                    if value is not None)
+
+    def test_call(self):
+        # import pdb
+        # pdb.set_trace()
+        users = 2
+        userOrgs = 2
+        cloudOrgs = 2
+        trial = 0
+        commuinty = 0
+        basic = 0
+        entity = self.build_entity(users, userOrgs, cloudOrgs,
+                                   trial, basic, commuinty)
+        resp = self.get(self.URL)
+        resp = resp.result
+        self.assertEqual(entity, resp)
+
+
+class Infov2Tests(test_v3.RestfulTestCase):
+    URL = '/OS-SCIM/v2/ServiceProviderConfigs'
+
+    def setUp(self):
+        super(Infov2Tests, self).setUp()
+        self.base_url = 'http://localhost/v3'
+        self.controller = controllers.ScimInfoController()
+
+    def build_entity(self, users=None, userOrgs=None, cloudOrgs=None,
+                     trial=None, basic=None, commuinty=None):
+        proto = {
+            "schemas": ["urn:scim:schemas:core:2.0:ServiceProviderConfig"],
+            'documentationUrl': 'https://github.com/telefonicaid/fiware-keystone-scim/blob/master/README.md',
+            'patch': {
+                'supported': True
+            },
+            'information': {
+                "totalUsers": users,
+                "totalUserOrganizations": userOrgs,
+                "totalCloudOrganizations": cloudOrgs,
+                "totalResources": users+userOrgs+cloudOrgs,
+                "trialUsers": trial,
+                "basicUsers": basic,
+                "communityUsers": commuinty
+            },
+            'bulk': {
+                'supported': False,
+                'maxOperations': 0,
+                'maxPayloadSize': 0
+            },
+            'filter': {
+                'supported': True,
+                'maxResults': sys.maxint
+            },
+            'changePassword': {
+                'supported': True
+            },
+            'sort': {
+                'supported': False
+            },
+            'etag': {
+                'supported': False
+            },
+            'xmlDataFormat': {
+                'supported': False
+            },
+            'authenticationSchemes': [
+                {
+                    'name': 'Keytone Authentication',
+                    'description': 'Authentication using Keystone',
+                    'specUrl': 'http://specs.openstack.org/openstack/keystone-specs',
+                    'documentationUrl': 'http://keystone.openstack.org/',
+                    'type': 'keystonetoken',
+                    'primary': True
+                }
+            ]
+        }
+
+        return dict((key, value)
+                    for key, value in proto.iteritems()
+                    if value is not None)
+
+    def test_call(self):
+        # import pdb
+        # pdb.set_trace()
+        users = 2
+        userOrgs = 2
+        cloudOrgs = 2
+        trial = 0
+        commuinty = 0
+        basic = 0
+        entity = self.build_entity(users, userOrgs, cloudOrgs,
+                                   trial, basic, commuinty)
+        resp = self.get(self.URL)
+        resp = resp.result
+        self.assertEqual(entity, resp)
