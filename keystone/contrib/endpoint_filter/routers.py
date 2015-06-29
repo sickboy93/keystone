@@ -58,12 +58,15 @@ class EndpointFilterExtension(wsgi.V3ExtensionRouter):
         DELETE /OS-EP-FILTER/endpoint_groups/$endpoint_group/projects/
             $project_id
 
+        GET /OS-EP-FILTER/projects/$project_id/endpoint_groups
+
     """
     PATH_PREFIX = '/OS-EP-FILTER'
     PATH_PROJECT_ENDPOINT = '/projects/{project_id}/endpoints/{endpoint_id}'
     PATH_ENDPOINT_GROUPS = '/endpoint_groups/{endpoint_group_id}'
     PATH_ENDPOINT_GROUP_PROJECTS = PATH_ENDPOINT_GROUPS + (
         '/projects/{project_id}')
+    PATH_PROJECT_ENDPOINT_GROUP = '/projects/{project_id}/endpoint_groups'
 
     def add_routes(self, mapper):
         endpoint_filter_controller = controllers.EndpointFilterV3Controller()
@@ -104,6 +107,13 @@ class EndpointFilterExtension(wsgi.V3ExtensionRouter):
             get_action='list_endpoint_groups',
             post_action='create_endpoint_group',
             rel=build_resource_relation(resource_name='endpoint_groups'))
+        
+        self._add_resource(
+            mapper, endpoint_group_controller,
+            path=self.PATH_PREFIX + self.PATH_PROJECT_ENDPOINT_GROUP,
+            get_action='list_endpoint_groups_for_project',
+            rel=build_resource_relation(resource_name='endpoint_groups'))
+        
         self._add_resource(
             mapper, endpoint_group_controller,
             path=self.PATH_PREFIX + self.PATH_ENDPOINT_GROUPS,
