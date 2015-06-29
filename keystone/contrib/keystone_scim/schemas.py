@@ -257,10 +257,10 @@ SCHEMAS = [
         ]
     },
     {
-        "id": "urn:scim:schemas:core:1.0:Organization",
+        "id": "urn:scim:schemas:core:2.0:Organization",
         "name": "Organization",
         "description": "Keystone Organization",
-        "schema": "urn:scim:schemas:core:1.0",
+        "schema": "urn:scim:schemas:core:2.0",
         "endpoint": "/Organization",
         "attributes": [
             {
@@ -268,7 +268,7 @@ SCHEMAS = [
                 "type": "string",
                 "multiValued": False,
                 "description": "Unique identifier for the SCIM resource",
-                "schema": "urn:scim:schemas:core:1.0",
+                "schema": "urn:scim:schemas:core:2.0",
                 "readOnly": True,
                 "required": True,
                 "caseExact": True
@@ -278,7 +278,7 @@ SCHEMAS = [
                 "type": "string",
                 "multiValued": False,
                 "description": "Organization name",
-                "schema": "urn:scim:schemas:core:1.0",
+                "schema": "urn:scim:schemas:core:2.0",
                 "readOnly": True,
                 "required": True,
                 "caseExact": True
@@ -288,7 +288,7 @@ SCHEMAS = [
                 "type": "string",
                 "multiValued": False,
                 "description": "Organization description",
-                "schema": "urn:scim:schemas:core:1.0",
+                "schema": "urn:scim:schemas:core:2.0",
                 "readOnly": False,
                 "required": True,
                 "caseExact": True
@@ -299,7 +299,7 @@ SCHEMAS = [
                 "multiValued": False,
                 "description": "A Boolean value indicating the User's"
                     "administrative status.",
-                "schema": "urn:scim:schemas:core:1.0",
+                "schema": "urn:scim:schemas:core:2.0",
                 "readOnly": False,
                 "required": False,
                 "caseExact": False
@@ -309,7 +309,7 @@ SCHEMAS = [
                 "type": "string",
                 "multiValued": False,
                 "description": "Organization's domain",
-                "schema": "urn:scim:schemas:extension:keystone:1.0",
+                "schema": "urn:scim:schemas:extension:keystone:2.0",
                 "readOnly": False,
                 "required": True,
                 "caseExact": True
@@ -320,7 +320,7 @@ SCHEMAS = [
                 "multiValued": False,
                 "description": "A Boolean value indicating the Organization's"
                     "default status",
-                "schema": "urn:scim:schemas:core:1.0",
+                "schema": "urn:scim:schemas:core:2.0",
                 "readOnly": False,
                 "required": False,
                 "caseExact": False
