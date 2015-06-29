@@ -47,6 +47,19 @@ EXTENSION_DATA = {
 extension.register_admin_extension(EXTENSION_DATA['alias'], EXTENSION_DATA)
 extension.register_public_extension(EXTENSION_DATA['alias'], EXTENSION_DATA)
 
+def filter_consumer(consumer_ref):
+    """Filter out private items in a consumer dict.
+
+    'secret' is never returned.
+
+    :returns: consumer_ref
+
+    """
+    if consumer_ref:
+        consumer_ref = consumer_ref.copy()
+        consumer_ref.pop('secret', None)
+    return consumer_ref
+
 class Server(oauth2lib.AuthorizationEndpoint, oauth2lib.TokenEndpoint, 
              oauth2lib.ResourceEndpoint, oauth2lib.RevocationEndpoint):
 
@@ -188,6 +201,21 @@ class Driver(object):
 
         """
         raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def get_consumer_with_secret(self, consumer_id):
+        """Like get_consumer() but returned consumer_ref includes
+        the consumer secret.
+
+        Secrets should only be shared upon consumer creation; the
+        consumer secret is required to verify incoming OAuth requests.
+
+        :param consumer_id: id of consumer to get
+        :type consumer_id: string
+        :returns: consumer_ref
+
+        """
+        raise exception.NotImplemented()  # pragma: no cover
 
     @abc.abstractmethod
     def update_consumer(self, consumer_id, consumer):

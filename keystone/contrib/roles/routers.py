@@ -49,7 +49,8 @@ class RolesExtension(wsgi.V3ExtensionRouter):
         user_assignment_controller = controllers.RoleUserAssignmentV3()
         organization_assignment_controller = controllers.RoleOrganizationAssignmentV3()
         allowed_controller = controllers.AllowedActionsControllerV3()
-
+        consumer_controller = controllers.ExtendedPermissionsConsumerCrudV3()
+        
         # ROLES
         self._add_resource(
             mapper, roles_controller,
@@ -243,3 +244,22 @@ class RolesExtension(wsgi.V3ExtensionRouter):
                 'token_id':build_parameter_relation(parameter_name='token_id'),
             })
         
+        # OAUTH2 consumer CRUD
+        self._add_resource(
+            mapper, consumer_controller,
+            path=self.PATH_PREFIX + '/consumers',
+            get_action='list_consumers',
+            post_action='create_consumer',
+            rel=build_resource_relation(resource_name='consumers'))
+
+        self._add_resource(
+            mapper, consumer_controller,
+            path=self.PATH_PREFIX + '/consumers/{consumer_id}',
+            get_action='get_consumer',
+            patch_action='update_consumer',
+            delete_action='delete_consumer',
+            rel=build_resource_relation(resource_name='consumer'),
+            path_vars={
+                'consumer_id':
+                build_parameter_relation(parameter_name='consumer_id'),
+            })

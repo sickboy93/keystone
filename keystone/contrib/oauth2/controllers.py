@@ -29,7 +29,7 @@ from keystone.openstack.common import log
 
 LOG = log.getLogger(__name__)
 
-@dependency.requires('oauth2_api') 
+@dependency.requires('oauth2_api')
 class ConsumerCrudV3(controller.V3Controller):
 
     collection_name = 'consumers'
@@ -47,27 +47,15 @@ class ConsumerCrudV3(controller.V3Controller):
         ref = self.oauth2_api.list_consumers()
         return ConsumerCrudV3.wrap_collection(context, ref)
 
-    # NOTE(garcianavalon) removed because owner field is removed
-    # @controller.protected()
-    # def list_consumers_for_user(self, context, user_id):
-    #     ref = self.oauth2_api.list_consumers_for_user(user_id)
-    #     return ConsumerCrudV3.wrap_collection(context, ref)
-
     @controller.protected()
     def create_consumer(self, context, consumer):
-        # NOTE(garcianavalon) removed because owner field is removed
-        # user_token = token_model.KeystoneToken(
-        #                     token_id=context['token_id'],
-        #                     token_data=self.token_provider_api.validate_token(
-        #                         context['token_id']))
-        # consumer['owner'] = user_token.user_id
         ref = self._assign_unique_id(self._normalize_dict(consumer))
         consumer_ref = self.oauth2_api.create_consumer(ref)
         return ConsumerCrudV3.wrap_member(context, consumer_ref)
 
     @controller.protected()
     def get_consumer(self, context, consumer_id):
-        consumer_ref = self.oauth2_api.get_consumer(consumer_id)
+        consumer_ref = self.oauth2_api.get_consumer_with_secret(consumer_id)
         return ConsumerCrudV3.wrap_member(context, consumer_ref)
 
     @controller.protected() 
@@ -189,7 +177,6 @@ class OAuth2ControllerV3(controller.V3Controller):
             # get the user id to identify the credentials in later stages
             credentials['user_id'] = self._extract_user_id_from_token(
                                                     context['token_id'])
-            
             credentials_ref = self._assign_unique_id(self._normalize_dict(credentials))
             self.oauth2_api.store_consumer_credentials(credentials_ref)
 
@@ -245,7 +232,7 @@ class OAuth2ControllerV3(controller.V3Controller):
         return response
             
 
-    @controller.protected()
+    # @controller.protected()
     def create_authorization_code(self, context, user_auth):
         request_validator = validator.OAuth2Validator()
         server = core.Server(request_validator)
@@ -265,11 +252,16 @@ class OAuth2ControllerV3(controller.V3Controller):
         if not client_id:
             raise exception.ValidationError(attribute='client_id', target='request')
 
-        user_id = self._extract_user_id_from_token(context['token_id'])
-        credentials = self.oauth2_api.get_consumer_credentials(client_id,
-                                                            user_id)
+        user_id = body.get('user_id')
+        if not user_id:
+            # Try to extract the user_id from the token
+            user_id = self._extract_user_id_from_token(context['token_id'])
+
+        credentials = self.oauth2_api.get_consumer_credentials(
+            client_id, user_id)
 
         try:
+
             headers, body, status = server.create_authorization_response(
                 uri, http_method, body, headers, scopes, credentials)
             # headers = {'Location': 'https://foo.com/welcome_back?code=somera

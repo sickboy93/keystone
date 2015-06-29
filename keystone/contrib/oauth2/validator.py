@@ -83,9 +83,18 @@ class OAuth2Validator(RequestValidator):
     def validate_response_type(self, client_id, response_type, client, request, *args, **kwargs):
         # Clients should only be allowed to use one type of response type, the
         # one associated with their one allowed grant type.
-        client_dict = self.oauth2_api.get_consumer(client_id)
-        allowed_response_type = client_dict['response_type']
-        return allowed_response_type == response_type
+
+        # FIXME(garcianavalon) we need to support multiple grant types
+        # for the same consumers right now. In the future we should
+        # separate them and only allow one grant type (registering
+        # each client one time for each grant or allowing components)
+        # or update the tools to allow to create clients with 
+        # multiple grants
+
+        # client_dict = self.oauth2_api.get_consumer(client_id)
+        # allowed_response_type = client_dict['response_type']
+        # return allowed_response_type == response_type
+        return True
 
     # Post-authorization
     def save_authorization_code(self, client_id, code, request, *args, **kwargs):
@@ -118,7 +127,7 @@ class OAuth2Validator(RequestValidator):
         if authmethod.lower() == 'basic':
             auth = auth.decode('base64')
             client_id, secret = auth.split(':', 1)
-            client_dict = self.oauth2_api.get_consumer(client_id)
+            client_dict = self.oauth2_api.get_consumer_with_secret(client_id)
             if client_dict['secret'] == secret:
                 # TODO(garcianavalon) this can be done in a cleaner way 
                 #if we change the consumer model attribute to client_id
@@ -192,14 +201,25 @@ class OAuth2Validator(RequestValidator):
         # TODO(garcinanavalon) create a custom TokenCreator instead of
         # hacking the dictionary
 
+        if getattr(request, 'client', None):
+            consumer_id = request.client.client_id
+        else:
+            consumer_id = request.client_id
+
+        if getattr(request, 'user', None):
+            user_id = request.user
+        else:
+            user_id = request.user_id
+
         access_token = {
             'id':token['access_token'],
-            'consumer_id':request.client.client_id,
-            'authorizing_user_id':request.user,
+            'consumer_id':consumer_id,
+            'authorizing_user_id':user_id,
             'scopes': request.scopes,
             'expires_at':token['expires_in'],
-            'refresh_token': token['refresh_token']
+            'refresh_token': token.get('refresh_token', None),
         }
+
         self.oauth2_api.store_access_token(access_token)
 
     def invalidate_authorization_code(self, client_id, code, request, *args, **kwargs):

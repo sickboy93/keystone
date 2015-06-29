@@ -21,7 +21,7 @@ from keystone import config
 from keystone.common import dependency
 from keystone.contrib.roles import core
 from keystone.tests import test_v3
-
+from keystone.tests import test_v3_oauth2
 
 CONF = config.CONF
 
@@ -1481,3 +1481,20 @@ class FiwareApiTests(RolesBaseTests):
         expected_orgs = (self.number_of_organizations)
         self.assertEqual(expected_orgs, len(response_organizations))
 
+class ExtendedPermissionsConsumerCRUDTests(test_v3_oauth2.ConsumerCRUDTests):
+    EXTENSION_NAME = 'roles'
+    EXTENSION_TO_ADD = 'roles_extension'
+
+    PATH_PREFIX = '/OS-ROLES'
+    CONSUMER_URL = PATH_PREFIX + '/consumers'
+    USERS_URL = '/users/{user_id}'
+    ACCESS_TOKENS_URL = PATH_PREFIX + '/access_tokens'
+
+    def setUp(self):
+        super(ExtendedPermissionsConsumerCRUDTests, self).setUp()
+
+        # Now that the app has been served, we can query CONF values
+        self.base_url = 'http://localhost/v3'
+        # NOTE(garcianavalon) I've put this line for dependency injection to work, 
+        # but I don't know if its the right way to do it...
+        self.manager = core.RolesManager()

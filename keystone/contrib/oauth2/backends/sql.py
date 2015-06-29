@@ -21,7 +21,7 @@ from keystone.i18n import _
 from oslo.utils import timeutils
 
 # TODO(garcianavalon) configuration options
-VALID_RESPONSE_TYPES = sql.Enum('code')
+VALID_RESPONSE_TYPES = sql.Enum('code', 'token')
 VALID_CLIENT_TYPES = sql.Enum('confidential')
 VALID_GRANT_TYPES = sql.Enum('authorization_code')
 
@@ -108,7 +108,7 @@ class OAuth2(oauth2.Driver):
     def list_consumers(self):
         session = sql.get_session()
         cons = session.query(Consumer)
-        return [consumer.to_dict() for consumer in cons]
+        return [oauth2.filter_consumer(consumer.to_dict()) for consumer in cons]
 
     def create_consumer(self, consumer):
         consumer['secret'] = uuid.uuid4().hex
@@ -124,11 +124,15 @@ class OAuth2(oauth2.Driver):
             session.add(consumer_ref)
         return consumer_ref.to_dict()
 
-    def get_consumer(self, consumer_id):
+    def get_consumer_with_secret(self, consumer_id):
         session = sql.get_session()
         with session.begin():
             consumer_ref = self._get_consumer(session, consumer_id) 
         return consumer_ref.to_dict()
+
+    def get_consumer(self, consumer_id):
+        return oauth2.filter_consumer(
+            self.get_consumer_with_secret(consumer_id))
 
     def update_consumer(self, consumer_id, consumer):
         session = sql.get_session()
@@ -141,7 +145,7 @@ class OAuth2(oauth2.Driver):
                 if attr != 'id':
                     setattr(consumer_ref, attr, getattr(new_consumer, attr))
             consumer_ref.extra = new_consumer.extra
-        return consumer_ref.to_dict()
+        return oauth2.filter_consumer(consumer_ref.to_dict())
 
     def delete_consumer(self, consumer_id):
         session = sql.get_session()

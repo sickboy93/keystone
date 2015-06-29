@@ -6,6 +6,13 @@
     "admin_or_owner": "rule:admin_required or rule:owner",
     "member_or_admin_or_owner": "role:member or role:owner or rule:admin_required",
     "self_user": "user_id:%(target.user.id)s", 
+    "allowed_to_manage_application": "is_allowed_to_manage:1",
+    "admin_or_manage_application": "rule:allowed_to_manage_application or rule:admin_required",
+    "allowed_to_manage_roles": "is_allowed_to_manage_roles:1",
+    "admin_or_manage_roles": "rule:allowed_to_manage_roles or rule:admin_required",
+    "allowed_to_get_and_assign": "is_allowed_to_get_and_assign:1",
+    "admin_or_get_and_assign": "rule:allowed_to_get_and_assign or rule:admin_required",
+
 
     "default": "rule:admin_required",
 
@@ -33,7 +40,7 @@
     "identity:update_domain": "rule:admin_required",
     "identity:delete_domain": "rule:admin_required",
 
-    "identity:get_project": "rule:admin_or_owner",
+    "identity:get_project": "rule:member_or_admin_or_owner",
     "identity:list_projects": "rule:admin_required",
     "identity:list_user_projects": "rule:admin_or_owner",
     "identity:create_project": "rule:admin_required",
@@ -69,11 +76,11 @@
     "identity:ec2_create_credential": "rule:admin_or_owner",
     "identity:ec2_delete_credential": "rule:admin_required or (rule:owner and user_id:%(target.credential.user_id)s)",
 
-    "identity:get_role": "rule:member_or_admin_or_owner",
-    "identity:list_roles": "rule:member_or_admin_or_owner",
-    "identity:create_role": "rule:member_or_admin_or_owner",
-    "identity:update_role": "rule:member_or_admin_or_owner",
-    "identity:delete_role": "rule:member_or_admin_or_owner",
+    "identity:get_role": "rule:admin_or_manage_roles",
+    "identity:list_roles": "rule:admin_or_manage_roles",
+    "identity:create_role": "rule:admin_or_manage_roles",
+    "identity:update_role": "rule:admin_or_manage_roles",
+    "identity:delete_role": "rule:admin_or_manage_roles",
 
     "identity:check_grant": "rule:admin_required",
     "identity:list_grants": "rule:member_or_admin_or_owner",
@@ -103,10 +110,10 @@
     "identity:delete_trust": "",
 
     "identity:create_consumer": "rule:member_or_admin_or_owner",
-    "identity:get_consumer": "rule:member_or_admin_or_owner",
-    "identity:list_consumers": "rule:member_or_admin_or_owner",
-    "identity:delete_consumer": "rule:member_or_admin_or_owner",
-    "identity:update_consumer": "rule:member_or_admin_or_owner",
+    "identity:get_consumer": "rule:admin_or_manage_application",
+    "identity:list_consumers": "rule:admin_required",
+    "identity:delete_consumer": "rule:admin_or_manage_application",
+    "identity:update_consumer": "rule:admin_or_manage_application",
 
     "identity:authorize_request_token": "rule:admin_required",
     "identity:list_access_token_roles": "rule:admin_required",
@@ -200,12 +207,15 @@
     "identity:list_applications_organization_allowed_to_manage": "rule:member_or_admin_or_owner",
     "identity:list_applications_organization_allowed_to_manage_roles": "rule:member_or_admin_or_owner",
 
-    "identity:list_permissions": "rule:member_or_admin_or_owner",
-    "identity:create_permission": "rule:member_or_admin_or_owner",
+    "identity:get_permission": "rule:admin_or_manage_roles",
+    "identity:list_permissions": "rule:admin_or_manage_roles",
+    "identity:create_permission": "rule:admin_or_manage_roles",
+    "identity:update_permission": "rule:admin_or_manage_roles",
+    "identity:delete_permission": "rule:admin_or_manage_roles",
 
-    "identity:list_permissions_for_role": "rule:member_or_admin_or_owner",
-    "identity:add_permission_to_role": "rule:member_or_admin_or_owner",
-    "identity:remove_permission_from_role": "rule:member_or_admin_or_owner",
+    "identity:list_permissions_for_role": "rule:admin_or_manage_roles",
+    "identity:add_permission_to_role": "rule:admin_or_manage_roles",
+    "identity:remove_permission_from_role": "rule:admin_or_manage_roles",
     
     "identity:validate_oauth2_token": "", 
 

@@ -25,13 +25,14 @@ from keystone.contrib.oauth2 import core
 from keystone.tests import test_v3
 
 CONF = config.CONF
-PATH_PREFIX = '/OS-OAUTH2'
 
 class OAuth2BaseTests(test_v3.RestfulTestCase):
+
 
     EXTENSION_NAME = 'oauth2'
     EXTENSION_TO_ADD = 'oauth2_extension'
 
+    PATH_PREFIX = '/OS-OAUTH2'
     CONSUMER_URL = PATH_PREFIX + '/consumers'
     USERS_URL = '/users/{user_id}'
     ACCESS_TOKENS_URL = PATH_PREFIX + '/access_tokens'
@@ -51,7 +52,8 @@ class OAuth2BaseTests(test_v3.RestfulTestCase):
 
         # Now that the app has been served, we can query CONF values
         self.base_url = 'http://localhost/v3'
-        # TODO(garcianavalon) I've put this line for dependency injection to work, but I don't know if its the right way to do it...
+        # NOTE(garcianavalon) I've put this line for dependency injection to work, 
+        # but I don't know if its the right way to do it...
         self.manager = core.Manager()
 
     def _create_consumer(self, name=None, description=None,
