@@ -54,8 +54,7 @@ def pagination(context, hints=None):
 
 def get_scim_page_info(context, hints):
     page_info = {
-        "totalResults": hints.scim_total,
-        "path": context['path']
+        "totalResults": hints.scim_total
     }
     if ('startIndex' in context['query_string']):
         page_info["startIndex"] = hints.scim_offset
@@ -146,7 +145,7 @@ class ScimUserV3Controller(UserV3):
                 domain_scope=self._get_domain_id_for_request(context),
                 hints=hints)
         scim_page_info = get_scim_page_info(context, hints)
-        return conv.listusers_key2scim(refs, scim_page_info)
+        return conv.listusers_key2scim(refs, context['path'], scim_page_info)
 
     def get_user(self, context, user_id):
         ref = super(ScimUserV3Controller, self).get_user(
@@ -202,7 +201,7 @@ class ScimRoleV3Controller(controller.V3Controller):
             pass
         refs = self.assignment_api.list_roles(hints=pagination(context, hints))
         scim_page_info = get_scim_page_info(context, hints)
-        return conv.listroles_key2scim(refs, scim_page_info)
+        return conv.listroles_key2scim(refs, context['path'], scim_page_info)
 
     @controller.protected()
     def scim_create_role(self, context, **kwargs):
@@ -255,7 +254,7 @@ class ScimGroupV3Controller(GroupV3):
                 domain_scope=self._get_domain_id_for_request(context),
                 hints=hints)
         scim_page_info = get_scim_page_info(context, hints)
-        return conv.listgroups_key2scim(refs, scim_page_info)
+        return conv.listgroups_key2scim(refs, context['path'], scim_page_info)
 
     def get_group(self, context, group_id):
         ref = super(ScimGroupV3Controller, self).get_group(
@@ -302,7 +301,7 @@ class ScimOrganizationV3Controller(ProjectV3):
         hints = pagination(context, ProjectV3.build_driver_hints(context, filters))
         refs = self.assignment_api.list_projects(hints=pagination(context, hints))
         scim_page_info = get_scim_page_info(context, hints)
-        return conv.listorganizations_key2scim(refs, scim_page_info)
+        return conv.listorganizations_key2scim(refs, context['path'], scim_page_info)
 
     def get_organization(self, context, organization_id):
         ref = super(ScimOrganizationV3Controller, self).get_project(
