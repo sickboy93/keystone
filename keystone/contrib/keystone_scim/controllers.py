@@ -62,6 +62,7 @@ def get_scim_page_info(context, hints):
         page_info["itemsPerPage"] = hints.scim_limit
     return page_info
 
+
 def get_path(path):
     if 'v2' in path:
         path = '2.0'
@@ -69,7 +70,8 @@ def get_path(path):
         path = '1.0'
     return path
 
-@dependency.requires('assignment_api','identity_api')
+
+@dependency.requires('assignment_api', 'identity_api')
 class ScimInfoController(wsgi.Application):
 
     def __init__(self):
@@ -81,9 +83,12 @@ class ScimInfoController(wsgi.Application):
 
     def get_roles(self):
         role_user = self.assignment_api.list_role_assignments()
-        basic = [u['user_id'] for u in role_user if self.role_of(u['role_id']) in 'basic']
-        trial = [u['user_id'] for u in role_user if self.role_of(u['role_id']) in 'trial']
-        community = [u['user_id'] for u in role_user if self.role_of(u['role_id']) in 'community']
+        basic = [u['user_id'] for u in role_user if self.role_of(u['role_id'])
+                 in 'basic']
+        trial = [u['user_id'] for u in role_user if self.role_of(u['role_id'])
+                 in 'trial']
+        community = [u['user_id'] for u in role_user
+                     if self.role_of(u['role_id']) in 'community']
         basic = len(basic)
         trial = len(trial)
         community = len(community)
@@ -91,8 +96,9 @@ class ScimInfoController(wsgi.Application):
 
     def get_count(self):
         orgs = self.assignment_api.list_projects()
-        users = self.identity_api.list_users() 
-        cloud_projects = [getattr(user, 'cloud_project_id', None) for user in users]
+        users = self.identity_api.list_users()
+        cloud_projects = [getattr(user, 'cloud_project_id', None)
+                          for user in users]
         filtered_orgs = [i for i in orgs if not getattr(i, 'is_default', False)
                          and i.get('id') not in cloud_projects]
         orgs_len = len(filtered_orgs)
@@ -103,7 +109,8 @@ class ScimInfoController(wsgi.Application):
     def edit_schema(self, path, schema):
         orgs, cloud, users = self.get_count()
         basic, trial, community = self.get_roles()
-        schema['schemas'] = ["urn:scim:schemas:core:%s:ServiceProviderConfig" % path] 
+        schema['schemas'] = ["urn:scim:schemas:core:%s:ServiceProviderConfig"
+                             % path]
         schema['information']['totalUsers'] = users
         schema['information']['totalUserOrganizations'] = orgs
         schema['information']['totalCloudOrganizations'] = cloud
@@ -112,7 +119,6 @@ class ScimInfoController(wsgi.Application):
         schema['information']['basicUsers'] = basic
         schema['information']['communityUsers'] = community
         return schema
-
 
     @controller.protected()
     def scim_get_service_provider_configs(self, context):
@@ -149,7 +155,7 @@ class ScimUserV3Controller(UserV3):
 
     def get_user(self, context, user_id):
         ref = super(ScimUserV3Controller, self).get_user(
-            context, user_id=user_id) 
+            context, user_id=user_id)
         return conv.user_key2scim(ref['user'], path=context['path'])
 
     def create_user(self, context, **kwargs):

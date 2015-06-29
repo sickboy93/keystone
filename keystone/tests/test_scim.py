@@ -19,7 +19,6 @@
 # under the License.
 
 import uuid
-import random
 
 from keystone import config
 from keystone.contrib.keystone_scim import controllers
@@ -516,8 +515,6 @@ class Infov2Tests(test_v3.RestfulTestCase):
                     if value is not None)
 
     def test_call(self):
-        # import pdb
-        # pdb.set_trace()
         users = 2
         userOrgs = 2
         cloudOrgs = 2

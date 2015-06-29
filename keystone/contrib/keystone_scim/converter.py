@@ -26,12 +26,14 @@ ROLE_SEP = '#'
 _EXT_SCHEMA = 'urn:scim:schemas:extension:keystone:%s'
 DEFAULT_VERSION = '1.0'
 
+
 def get_schema(BASE_SCHEMA, path):
     if 'v2' in path:
         version = '2.0' 
     else: 
         version = '1.0'  
     return BASE_SCHEMA % version
+
 
 def _remove_dict_nones(f):
     def wrapper(*args, **kwargs):
@@ -145,6 +147,7 @@ def group_key2scim(ref, path, schema=True):
             'domain_id': ref.get('domain_id', None)
         }
     }
+
 
 def listgroups_key2scim(ref, path, page_info={}):
     res = {
