@@ -113,7 +113,6 @@ class JsonBodyMiddleware(wsgi.Middleware):
         params_json = request.body
         if not params_json:
             return
-
         # Reject unrecognized content types. Empty string indicates
         # the client did not explicitly set the header
         if request.content_type not in ('application/json', ''):

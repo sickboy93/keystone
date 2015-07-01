@@ -217,5 +217,13 @@
     "identity:add_permission_to_role": "rule:admin_or_manage_roles",
     "identity:remove_permission_from_role": "rule:admin_or_manage_roles",
     
-    "identity:validate_oauth2_token": ""   
+    "identity:validate_oauth2_token": "", 
+
+    "identity:scim_get_role":"rule:admin_required",
+    "identity:scim_create_role":"rule:admin_required",
+    "identity:scim_update_role":"rule:admin_required",
+    "identity:scim_delete_role":"rule:admin_required",
+    "identity:scim_get_service_provider_configs":"",
+    "identity:scim_get_schemas":""
+
 }
