@@ -42,7 +42,7 @@ class OAuth2(auth.AuthMethodHandler):
         headers = context['headers']
         uri = controller.V3Controller.base_url(context, context['path'])
         http_method = 'POST'
-        required_scopes = ['all_info'] 
+        required_scopes = ['all_info']
         request_validator = validator.OAuth2Validator()
         server = oauth2_core.Server(request_validator)
         body = {
@@ -62,5 +62,3 @@ class OAuth2(auth.AuthMethodHandler):
         else:
             msg = _('Could not validate the access token')
             raise exception.Unauthorized(msg)
-            
-        
