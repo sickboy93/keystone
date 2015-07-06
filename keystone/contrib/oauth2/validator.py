@@ -12,14 +12,11 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-
-import six
 import datetime
 
 from keystone import exception
 from keystone.auth import plugins as auth_plugins
 from keystone.common import dependency
-from keystone.contrib.oauth2 import core as oauth2_api
 from keystone.openstack.common import log
 from oauthlib.oauth2 import RequestValidator
 
@@ -211,15 +208,15 @@ class OAuth2Validator(RequestValidator):
         else:
             user_id = request.user_id
 
+        expires_at = datetime.datetime.today() + datetime.timedelta(seconds=token['expires_in'])
         access_token = {
             'id':token['access_token'],
             'consumer_id':consumer_id,
             'authorizing_user_id':user_id,
             'scopes': request.scopes,
-            'expires_at':token['expires_in'],
+            'expires_at':datetime.datetime.strftime(expires_at, '%Y-%m-%d %H:%M:%S'),
             'refresh_token': token.get('refresh_token', None),
         }
-
         self.oauth2_api.store_access_token(access_token)
 
     def invalidate_authorization_code(self, client_id, code, request, *args, **kwargs):
@@ -235,7 +232,10 @@ class OAuth2Validator(RequestValidator):
         except exception.NotFound:
             return False
 
-        # TODO(garcianavalon) check expiration date
+        if (datetime.datetime.strptime(access_token['expires_at'], '%Y-%m-%d %H:%M:%S') 
+            < datetime.datetime.today()):
+            return False
+
         if access_token['scopes'] != scopes:
             return False
         # NOTE(garcianavalon) we set some attributes in request for later use. There
