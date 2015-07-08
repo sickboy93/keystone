@@ -400,3 +400,14 @@ class Driver(object):
 
         """
         raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def get_access_token_by_refresh_token(self, refresh_token):
+        """Obtains the access_token associated with a refresh token.
+
+        :param refresh_token: The refresh token issued with the access token.
+        :type refresh_token: string
+        :returns: access_token as dict
+
+        """
+        raise exception.NotImplemented()

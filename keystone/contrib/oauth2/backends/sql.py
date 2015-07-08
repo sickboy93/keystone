@@ -82,7 +82,7 @@ class AccessToken(sql.ModelBase, sql.DictBase):
     __tablename__ = 'access_token_oauth2'
 
     attributes = ['id', 'consumer_id', 'authorizing_user_id', 'expires_at',
-                'scopes', 'valid', 'extra']
+                'scopes', 'refresh_token', 'valid', 'extra']
 
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
     consumer_id = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
@@ -281,3 +281,12 @@ class OAuth2(oauth2.Driver):
             query = session.query(AccessToken).filter_by(consumer_id=client_id)
             for token in query.all():
                 session.delete(token)
+
+    def get_access_token_by_refresh_token(self, refresh_token):
+        session = sql.get_session()
+        with session.begin():
+            access_token_ref = session.query(AccessToken).filter_by(refresh_token=refresh_token).first()
+            if access_token_ref is None:
+                msg = _('Access Token for refresh token %s not found') %refresh_token
+                raise exception.NotFound(message=msg)
+        return access_token_ref.to_dict()

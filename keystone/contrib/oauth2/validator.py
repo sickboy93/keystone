@@ -160,12 +160,6 @@ class OAuth2Validator(RequestValidator):
 
     def validate_grant_type(self, client_id, grant_type, client, request, *args, **kwargs):
         # Clients should only be allowed to use one type of grant.
-        # In this case, it must be "authorization_code" or "refresh_token"
-
-        # # TODO(garcianavalon) support for refresh tokens
-        # # client_id comes as None, we use the one in request
-        # client_dict = self.oauth2_api.get_consumer(request.client.client_id)
-        # return grant_type == client_dict['grant_type']
 
         # FIXME(garcianavalon) we need to support multiple grant types
         # for the same consumers right now. In the future we should
@@ -173,9 +167,14 @@ class OAuth2Validator(RequestValidator):
         # each client one time for each grant or allowing components)
         # or update the tools to allow to create clients with 
         # multiple grants
+        # # client_id comes as None, we use the one in request
+        # client_dict = self.oauth2_api.get_consumer(request.client.client_id)
+        # return grant_type == client_dict['grant_type']
 
-        # TODO(garcianavalon) link with SQL backend soported grant_types
-        return grant_type in ['password', 'authorization_code', 'client_credentials']
+        # TODO(garcianavalon) sync with SQL backend soported grant_types
+        return grant_type in [
+            'password', 'authorization_code', 'client_credentials', 'refresh_token',
+        ]
 
     def save_bearer_token(self, token, request, *args, **kwargs):
         # Remember to associate it with request.scopes, request.user and
@@ -258,7 +257,49 @@ class OAuth2Validator(RequestValidator):
         # access token if the client did not specify a scope during the
         # request.
         # TODO(garcianavalon)
-        pass
+        return ['all_info']
+
+    def is_within_original_scope(self, request_scopes, refresh_token, request, *args, **kwargs):
+        """Check if requested scopes are within a scope of the refresh token.
+        When access tokens are refreshed the scope of the new token
+        needs to be within the scope of the original token. This is
+        ensured by checking that all requested scopes strings are on
+        the list returned by the get_original_scopes. If this check
+        fails, is_within_original_scope is called. The method can be
+        used in situations where returning all valid scopes from the
+        get_original_scopes is not practical.
+        :param request_scopes: A list of scopes that were requested by client
+        :param refresh_token: Unicode refresh_token
+        :param request: The HTTP Request (oauthlib.common.Request)
+        :rtype: True or False
+        Method is used by:
+            - Refresh token grant
+        """
+        # TODO(garcianavalon)
+        return True
+
+    def validate_refresh_token(self, refresh_token, client, request, *args, **kwargs):
+        """Ensure the Bearer token is valid and authorized access to scopes.
+        OBS! The request.user attribute should be set to the resource owner
+        associated with this refresh token.
+        :param refresh_token: Unicode refresh token
+        :param client: Client object set by you, see authenticate_client.
+        :param request: The HTTP Request (oauthlib.common.Request)
+        :rtype: True or False
+        Method is used by:
+            - Authorization Code Grant (indirectly by issuing refresh tokens)
+            - Resource Owner Password Credentials Grant (also indirectly)
+            - Refresh Token Grant
+        """
+        try:
+            access_token = self.oauth2_api.get_access_token_by_refresh_token(refresh_token)
+        except exception.NotFound:
+            return False
+
+        request.user = access_token['authorizing_user_id']
+        
+        return True
+
 
     # Support for password grant
     def validate_user(self, username, password, client, request, 
