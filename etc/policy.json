@@ -6,11 +6,11 @@
     "admin_or_owner": "rule:admin_required or rule:owner",
     "member_or_admin_or_owner": "role:member or role:owner or rule:admin_required",
     "self_user": "user_id:%(target.user.id)s", 
-    "allowed_to_manage_application": "is_allowed_to_manage:1",
+    "allowed_to_manage_application": "True:%(is_allowed_to_manage)s",
     "admin_or_manage_application": "rule:allowed_to_manage_application or rule:admin_required",
-    "allowed_to_manage_roles": "is_allowed_to_manage_roles:1",
+    "allowed_to_manage_roles": "True:%(target.is_allowed_to_manage_roles)s",
     "admin_or_manage_roles": "rule:allowed_to_manage_roles or rule:admin_required",
-    "allowed_to_get_and_assign": "is_allowed_to_get_and_assign:1",
+    "allowed_to_get_and_assign": "True:%(is_allowed_to_get_and_assign)s",
     "admin_or_get_and_assign": "rule:allowed_to_get_and_assign or rule:admin_required",
 
 
