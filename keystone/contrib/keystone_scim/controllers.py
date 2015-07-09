@@ -79,7 +79,7 @@ class ScimInfoController(wsgi.Application):
 
     def get_roles(self, roles):
         roles_count = {}
-        assignments = self.assignment_api.list_role_assignments_for_role()
+        assignments = self.assignment_api.list_role_assignments()
         for role_name in roles:
             role = next((role for role in self.assignment_api.list_roles() if role['name'] == role_name), None)
             if not role:
@@ -93,10 +93,15 @@ class ScimInfoController(wsgi.Application):
     def get_count(self):
         orgs = self.assignment_api.list_projects()
         users = self.identity_api.list_users()
-        cloud_projects = [getattr(user, 'cloud_project_id', None)
-                          for user in users]
-        filtered_orgs = [i for i in orgs if not getattr(i, 'is_default', False)
-                         and i.get('id') not in cloud_projects]
+
+        # TODO(garcianavalon) remove this users iteration when
+        # cloud_project flag gets added to organizations
+        cloud_projects = set([
+            user.get('cloud_project_id', None) for user in users
+        ]) - set([None])
+        filtered_orgs = set([
+            i['id'] for i in orgs if not i.get('is_default', False)
+        ]) - cloud_projects
         orgs_len = len(filtered_orgs)
         cloud_len = len(cloud_projects)
         users_len = len(users)
@@ -105,6 +110,7 @@ class ScimInfoController(wsgi.Application):
     def edit_schema(self, path, schema):
         orgs, cloud, users = self.get_count()
         roles_count = self.get_roles(roles=['basic', 'trial', 'community'])
+
         schema['schemas'] = ["urn:scim:schemas:core:%s:ServiceProviderConfig"
                              % path]
         schema['information']['totalUsers'] = users
