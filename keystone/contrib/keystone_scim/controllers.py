@@ -77,22 +77,19 @@ class ScimInfoController(wsgi.Application):
     def __init__(self):
         super(ScimInfoController, self).__init__()
 
-    def role_of(self, role_id):
-        role = self.assignment_api.get_role(role_id)
-        return role['name']
+    def _get_role_count(self, role_name):
+        import pdb; pdb.set_trace()
+        # NOTE(garcianavalon) this should be done in the backend layer
+        role = next((role for role in self.assignment_api.list_roles() if role['name'] == role_name), None)
+        assignments = self.assignment_api.list_grants(role_id=role['id'])
+        return len(assignments)
 
-    def get_roles(self):
-        role_user = self.assignment_api.list_role_assignments()
-        basic = [u['user_id'] for u in role_user if self.role_of(u['role_id'])
-                 in 'basic']
-        trial = [u['user_id'] for u in role_user if self.role_of(u['role_id'])
-                 in 'trial']
-        community = [u['user_id'] for u in role_user
-                     if self.role_of(u['role_id']) in 'community']
-        basic = len(basic)
-        trial = len(trial)
-        community = len(community)
-        return basic, trial, community
+    def get_roles(self, roles):
+        roles_count = {}
+        for role_name in roles:
+            roles_count[role_name] = self._get_role_count(role_name)
+
+        return roles_count
 
     def get_count(self):
         orgs = self.assignment_api.list_projects()
@@ -108,16 +105,16 @@ class ScimInfoController(wsgi.Application):
 
     def edit_schema(self, path, schema):
         orgs, cloud, users = self.get_count()
-        basic, trial, community = self.get_roles()
+        #roles_count = self.get_roles(roles=['basic', 'trial', 'community'])
         schema['schemas'] = ["urn:scim:schemas:core:%s:ServiceProviderConfig"
                              % path]
         schema['information']['totalUsers'] = users
         schema['information']['totalUserOrganizations'] = orgs
         schema['information']['totalCloudOrganizations'] = cloud
         schema['information']['totalResources'] = users + orgs + cloud
-        schema['information']['trialUsers'] = trial
-        schema['information']['basicUsers'] = basic
-        schema['information']['communityUsers'] = community
+        #schema['information']['trialUsers'] = roles_count['trial']
+        #schema['information']['basicUsers'] = roles_count['basic']
+        #schema['information']['communityUsers'] = roles_count['community']
         return schema
 
     @controller.protected()
