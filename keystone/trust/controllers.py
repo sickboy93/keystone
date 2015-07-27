@@ -140,7 +140,7 @@ class TrustV3(controller.V3Controller):
                                             target='request')
         if trust.get('project_id'):
             self._require_role(trust)
-        self._require_user_is_trustor(context, trust)
+        #self._require_user_is_trustor(context, trust)
         self._require_trustee_exists(trust['trustee_user_id'])
         all_roles = self.assignment_api.list_roles()
         clean_roles = self._clean_role_list(context, trust, all_roles)
