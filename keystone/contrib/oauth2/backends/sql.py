@@ -51,7 +51,6 @@ class AuthorizationCode(sql.ModelBase, sql.DictBase):
     code = sql.Column(sql.String(64), primary_key=True, nullable=False)
     consumer_id = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
                              nullable=False, index=True)
-    # TODO(garcianavalon) shouldnt it be a Foreign Key??
     authorizing_user_id = sql.Column(sql.String(64), nullable=False)
     # TODO(garcianavalon) datetime type or similar?
     expires_at = sql.Column(sql.String(64), nullable=False)
@@ -67,7 +66,6 @@ class ConsumerCredentials(sql.ModelBase, sql.DictBase):
                 'response_type', 'state', 'created_at', 'extra']
     
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
-    # TODO(garcianavalon) shouldnt it be a Foreign Key??
     user_id = sql.Column(sql.String(64), index=True, nullable=False)
     client_id = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
                              nullable=False, index=True)
@@ -87,8 +85,9 @@ class AccessToken(sql.ModelBase, sql.DictBase):
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
     consumer_id = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
                              nullable=False, index=True)
-    # TODO(garcianavalon) shouldnt it be a Foreign Key??
-    authorizing_user_id = sql.Column(sql.String(64), nullable=False)
+    # NOTE(garcianavalon) if the consumers uses the client credentials grant
+    # there is no authorizing user, so it should be nullable.
+    authorizing_user_id = sql.Column(sql.String(64), nullable=True)
     # TODO(garcianavalon) datetime type or similar?
     expires_at = sql.Column(sql.String(64), nullable=False)
     scopes = sql.Column(sql.JsonBlob(), nullable=True)
