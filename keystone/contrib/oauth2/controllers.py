@@ -137,11 +137,6 @@ class OAuth2ControllerV3(controller.V3Controller):
         return user_token.user_id
 
     @controller.protected()
-    def resource_owner_password_credentials(self, context):
-        pass
-
-
-    @controller.protected()
     def request_authorization_code(self, context):
         request_validator = validator.OAuth2Validator()
         server = core.Server(request_validator)
