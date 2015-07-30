@@ -13,7 +13,6 @@
     "allowed_to_get_and_assign": "True:%(is_allowed_to_get_and_assign)s",
     "admin_or_get_and_assign": "rule:allowed_to_get_and_assign or rule:admin_required",
     "user_is_trustor": "user_id:%(trust.trustor_user_id)s",
-    "admin_or_trustor": "rule:user_is_trustor or rule:admin_required",
 
 
     "default": "rule:admin_required",
@@ -103,7 +102,8 @@
     "identity:revocation_list": "rule:service_or_admin",
     "identity:revoke_token": "rule:member_or_admin_or_owner",
 
-    "identity:create_trust": "rule:admin_required",
+    "identity:create_trust": "rule:user_is_trustor",
+    "identity:create_trust_for_admin": "rule:admin_required",
     "identity:get_trust": "rule:admin_or_owner",
     "identity:list_trusts": "",
     "identity:list_roles_for_trust": "",

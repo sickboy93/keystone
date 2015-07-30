@@ -39,6 +39,13 @@ class Routers(wsgi.RoutersBase):
             get_action='list_trusts',
             post_action='create_trust',
             rel=_build_resource_relation(resource_name='trusts'))
+
+        self._add_resource(
+            mapper, trust_controller,
+            path='/OS-TRUST/trusts_for_admin',
+            post_action='create_trust_for_admin',
+            rel=_build_resource_relation(resource_name='trusts'))
+
         self._add_resource(
             mapper, trust_controller,
             path='/OS-TRUST/trusts/{trust_id}',

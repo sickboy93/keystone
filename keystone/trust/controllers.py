@@ -140,6 +140,40 @@ class TrustV3(controller.V3Controller):
                                             target='request')
         if trust.get('project_id'):
             self._require_role(trust)
+        self._require_user_is_trustor(context, trust)
+        self._require_trustee_exists(trust['trustee_user_id'])
+        all_roles = self.assignment_api.list_roles()
+        clean_roles = self._clean_role_list(context, trust, all_roles)
+        self._require_trustor_has_role_in_project(trust, clean_roles)
+        trust['expires_at'] = self._parse_expiration_date(
+            trust.get('expires_at'))
+        trust_id = uuid.uuid4().hex
+        new_trust = self.trust_api.create_trust(trust_id, trust, clean_roles)
+        self._fill_in_roles(context, new_trust, all_roles)
+        return TrustV3.wrap_member(context, new_trust)
+
+    @controller.protected()
+    @validation.validated(schema.trust_create, 'trust')
+    def create_trust_for_admin(self, context, trust=None):
+        """Create a new trust.
+
+        Removes the limitation of the user creating the trust must be the trustor.
+        VERY DANGEROUS! Only expose it for admins.
+
+        """
+        # Explicitly prevent a trust token from creating a new trust.
+        auth_context = context.get('environment',
+                                   {}).get('KEYSTONE_AUTH_CONTEXT', {})
+        if auth_context.get('is_delegated_auth'):
+            raise exception.Forbidden(
+                _('Cannot create a trust'
+                  ' with a token issued via delegation.'))
+
+        if not trust:
+            raise exception.ValidationError(attribute='trust',
+                                            target='request')
+        if trust.get('project_id'):
+            self._require_role(trust)
         #self._require_user_is_trustor(context, trust)
         self._require_trustee_exists(trust['trustee_user_id'])
         all_roles = self.assignment_api.list_roles()
