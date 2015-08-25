@@ -32,18 +32,18 @@ def upgrade(migrate_engine):
     meta.bind = migrate_engine
 
     if 'mysql' in str(meta):
-        consumer_credentials_table = sql.Table('consumer_credentials_oauth2', meta, autoload=True)
+        permission_table = sql.Table('permission_fiware', meta, autoload=True)
         consumer_oauth2 = sql.Table('consumer_oauth2', meta, autoload=True)
 
         ForeignKeyConstraint(
-            columns=[consumer_credentials_table.c.client_id],
+            columns=[permission_table.c.application_id],
             refcolumns=[consumer_oauth2.c.id],
-            name='consumer_credentials_oauth2_ibfk_1').drop()
+            name='permission_fiware_ibfk_1').drop()
 
         ForeignKeyConstraint(
-            columns=[consumer_credentials_table.c.client_id],
+            columns=[permission_table.c.application_id],
             refcolumns=[consumer_oauth2.c.id],
-            name='consumer_credentials_oauth2_ibfk_1', ondelete='CASCADE').create()
+            name='permission_fiware_ibfk_1', ondelete='CASCADE').create()
 
 def downgrade(migrate_engine):
     # Operations to reverse the above upgrade go here.
@@ -51,16 +51,16 @@ def downgrade(migrate_engine):
     meta.bind = migrate_engine
 
     if 'mysql' in str(meta):
-        consumer_credentials_table = sql.Table('consumer_credentials_oauth2', meta, autoload=True)
+        permission_table = sql.Table('permission_fiware', meta, autoload=True)
         consumer_oauth2 = sql.Table('consumer_oauth2', meta, autoload=True)
 
         ForeignKeyConstraint(
-            columns=[consumer_credentials_table.c.client_id],
+            columns=[permission_table.c.application_id],
             refcolumns=[consumer_oauth2.c.id],
-            name='consumer_credentials_oauth2_ibfk_1', ondelete='CASCADE').drop()
+            name='permission_fiware_ibfk_1', ondelete='CASCADE').drop()
 
         ForeignKeyConstraint(
-            columns=[consumer_credentials_table.c.client_id],
+            columns=[permission_table.c.application_id],
             refcolumns=[consumer_oauth2.c.id],
-            name='consumer_credentials_oauth2_ibfk_1').create()
+            name='permission_fiware_ibfk_1').create()
 
