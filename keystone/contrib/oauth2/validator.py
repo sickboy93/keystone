@@ -293,6 +293,23 @@ class OAuth2Validator(RequestValidator):
         """
         try:
             access_token = self.oauth2_api.get_access_token_by_refresh_token(refresh_token)
+            
+            # Validate that the refresh token is not expired
+            token_duration = 28800 # TODO(garcianavalon) extract as configuration option
+            refresh_token_duration = 14 # TODO(garcianavalon) extract as configuration option
+            
+            # TODO(garcianavalon) find a better place to do this
+            access_token_expiration_date = datetime.datetime.strptime(
+                access_token['expires_at'], '%Y-%m-%d %H:%M:%S')
+
+            refres_token_expiration_date = (
+                access_token_expiration_date 
+                - datetime.timedelta(seconds=token_duration) 
+                + datetime.timedelta(days=refresh_token_duration))
+
+            if refres_token_expiration_date < datetime.datetime.today():
+                return False
+
         except exception.NotFound:
             return False
 
