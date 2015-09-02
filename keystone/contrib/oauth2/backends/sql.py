@@ -17,9 +17,10 @@ import uuid
 from keystone.common import sql
 from keystone.contrib import oauth2
 from keystone import exception
-from keystone.i18n import _
-from oslo.utils import timeutils
-
+#from keystone.i18n import _
+from keystone.openstack.common.gettextutils import _
+#from oslo.utils import timeutils
+from keystone.openstack.common import timeutils
 # TODO(garcianavalon) configuration options
 VALID_RESPONSE_TYPES = sql.Enum('code', 'token')
 VALID_CLIENT_TYPES = sql.Enum('confidential')
@@ -29,14 +30,14 @@ class Consumer(sql.ModelBase, sql.DictBase):
     __tablename__ = 'consumer_oauth2'
     attributes = ['id', 'name', 'description', 'secret', 'client_type', 'redirect_uris',
                     'grant_type', 'response_type', 'scopes', 'extra']
-    __table_args__ = {'extend_existing': True}                
+    __table_args__ = {'extend_existing': True}
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
     name = sql.Column(sql.String(64), nullable=False)
     description = sql.Column(sql.Text(), nullable=True)
     secret = sql.Column(sql.String(128), nullable=False)
-    client_type = sql.Column(VALID_CLIENT_TYPES, nullable=False) 
+    client_type = sql.Column(VALID_CLIENT_TYPES, nullable=False)
     redirect_uris = sql.Column(sql.JsonBlob(), nullable=False)
-    grant_type = sql.Column(VALID_GRANT_TYPES, nullable=False) 
+    grant_type = sql.Column(VALID_GRANT_TYPES, nullable=False)
     response_type = sql.Column(VALID_RESPONSE_TYPES, nullable=False)
     # TODO(garcianavalon) better naming to reflect they are the allowed scopes for the client
     scopes = sql.Column(sql.JsonBlob(), nullable=True)
@@ -64,7 +65,7 @@ class ConsumerCredentials(sql.ModelBase, sql.DictBase):
     __tablename__ = 'consumer_credentials_oauth2'
     attributes = ['id', 'user_id', 'client_id', 'redirect_uri',
                 'response_type', 'state', 'created_at', 'extra']
-    
+
     id = sql.Column(sql.String(64), primary_key=True, nullable=False)
     user_id = sql.Column(sql.String(64), index=True, nullable=False)
     client_id = sql.Column(sql.String(64), sql.ForeignKey('consumer_oauth2.id'),
@@ -74,7 +75,7 @@ class ConsumerCredentials(sql.ModelBase, sql.DictBase):
     state = sql.Column(sql.String(256), nullable=True)
     created_at = sql.Column(sql.DateTime(), default=None, nullable=False)
     extra = sql.Column(sql.JsonBlob(), nullable=True)
-    
+
 
 class AccessToken(sql.ModelBase, sql.DictBase):
     __tablename__ = 'access_token_oauth2'
@@ -126,7 +127,7 @@ class OAuth2(oauth2.Driver):
     def get_consumer_with_secret(self, consumer_id):
         session = sql.get_session()
         with session.begin():
-            consumer_ref = self._get_consumer(session, consumer_id) 
+            consumer_ref = self._get_consumer(session, consumer_id)
         return consumer_ref.to_dict()
 
     def get_consumer(self, consumer_id):
@@ -135,7 +136,7 @@ class OAuth2(oauth2.Driver):
 
     def update_consumer(self, consumer_id, consumer):
         session = sql.get_session()
-        with session.begin():            
+        with session.begin():
             consumer_ref = self._get_consumer(session, consumer_id)
             old_consumer_dict = consumer_ref.to_dict()
             old_consumer_dict.update(consumer)
@@ -156,6 +157,7 @@ class OAuth2(oauth2.Driver):
         session.delete(consumer_ref)
 
     # AUTHORIZATION CODES
+    #def list_authorization_codes(self):
     def list_authorization_codes(self, user_id=None):
         session = sql.get_session()
         cons = session.query(AuthorizationCode)
@@ -174,7 +176,7 @@ class OAuth2(oauth2.Driver):
             msg = _('Authorization Code %s not found') %code
             raise exception.NotFound(message=msg)
         return authorization_code_ref
-        
+
     def get_authorization_code(self, code):
         session = sql.get_session()
         with session.begin():
@@ -198,7 +200,7 @@ class OAuth2(oauth2.Driver):
     def store_consumer_credentials(self, credentials):
         if not credentials.get('state'):
             credentials['state'] = None
-            
+
         if not credentials.get('created_at'):
             credentials['created_at'] = timeutils.utcnow()
 
@@ -214,11 +216,11 @@ class OAuth2(oauth2.Driver):
             # NOTE(garcianavalon) I have decided to keep the credentials stored
             # after the client grants the authorization, so the client can POST
             # again to get a new authorization code with out needing the redirect
-            # with the query string before. Therefore, this query retrieves the 
+            # with the query string before. Therefore, this query retrieves the
             #last row for that user-client tuple
             query = (
                 session.query(ConsumerCredentials)
-                    .filter_by(user_id=user_id, 
+                    .filter_by(user_id=user_id,
                             client_id=client_id)
                     .order_by(sql.sql.desc(ConsumerCredentials.created_at))
             )

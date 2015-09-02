@@ -60,7 +60,7 @@ def filter_consumer(consumer_ref):
         consumer_ref.pop('secret', None)
     return consumer_ref
 
-class Server(oauth2lib.AuthorizationEndpoint, oauth2lib.TokenEndpoint, 
+class Server(oauth2lib.AuthorizationEndpoint, oauth2lib.TokenEndpoint,
              oauth2lib.ResourceEndpoint, oauth2lib.RevocationEndpoint):
 
     """An OAuth2 Server configured with the grants we need."""
@@ -89,7 +89,7 @@ class Server(oauth2lib.AuthorizationEndpoint, oauth2lib.TokenEndpoint,
         bearer = oauth2lib.BearerToken(request_validator, token_generator,
                              token_expires_in, refresh_token_generator)
         oauth2lib.AuthorizationEndpoint.__init__(
-            self, 
+            self,
             default_response_type='code',
             response_types={
                'code': auth_grant,
@@ -97,7 +97,7 @@ class Server(oauth2lib.AuthorizationEndpoint, oauth2lib.TokenEndpoint,
             },
             default_token_type=bearer)
         oauth2lib.TokenEndpoint.__init__(
-            self, 
+            self,
             default_grant_type='authorization_code',
             grant_types={
                'authorization_code': auth_grant,
@@ -128,12 +128,12 @@ class Manager(manager.Manager):
 
     # TODO(garcianavalon) revoke tokens on consumer delete
     # TODO(garcianavalon) revoke Identity tokens issued by an access token on token revokation
-    
-    
+
+
     @notifications.deleted(_CONSUMER)
     def delete_consumer(self, consumer_id):
         ret_val = self.driver.delete_consumer(consumer_id)
-        
+
         # delete all the stored credentials
         self.driver.delete_consumer_credentials(consumer_id)
 
@@ -364,7 +364,7 @@ class Driver(object):
         """
         raise exception.NotImplemented()
 
-    
+
     @abc.abstractmethod
     def revoke_access_token(self, access_token_id, user_id=None):
         """Invalidate an access token.
