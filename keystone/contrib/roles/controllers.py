@@ -409,10 +409,16 @@ class FiwareApiControllerV3(BaseControllerV3):
             # extract the user-scoped roles
             user_roles = user_organization.pop('roles') 
 
+        def _get_name(user):
+            name = user.get('username')
+            if not name:
+                name = user['name']
+            return name
+
         response_body = {
             'id':user['id'],
             'email': user['name'],
-            'displayName': user.get('username', user['name']),
+            'displayName': _get_name(user),
             'roles': user_roles,
             'organizations': organizations,
             'app_id': application_id
