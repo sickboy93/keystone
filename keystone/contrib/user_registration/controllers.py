@@ -67,7 +67,8 @@ class UserRegistrationV3(controller.V3Controller):
             'description': 'This organization is intended to be used'
                 ' in the cloud environment. As long as you are a trial or'
                 ' community user this organization will be authorized'
-                ' as purchaser in the Cloud Application.'
+                ' as purchaser in the Cloud Application.',
+            'is_cloud_project': True,
         }
         cloud_project_ref = self._assign_unique_id(
             self._normalize_dict(cloud_project))
