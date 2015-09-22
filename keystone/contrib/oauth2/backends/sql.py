@@ -156,7 +156,7 @@ class OAuth2(oauth2.Driver):
         session.delete(consumer_ref)
 
     # AUTHORIZATION CODES
-    def list_authorization_codes(self):
+    def list_authorization_codes(self, user_id=None):
         session = sql.get_session()
         cons = session.query(AuthorizationCode)
         return [authorization_code.to_dict() for authorization_code in cons]
