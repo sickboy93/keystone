@@ -19,8 +19,8 @@ from keystone.contrib import oauth2
 from keystone import exception
 #from keystone.i18n import _
 from keystone.openstack.common.gettextutils import _
-#from oslo.utils import timeutils
-from keystone.openstack.common import timeutils
+try: from oslo.utils import timeutils
+except ImportError: from keystone.openstack.common import timeutils
 # TODO(garcianavalon) configuration options
 VALID_RESPONSE_TYPES = sql.Enum('code', 'token')
 VALID_CLIENT_TYPES = sql.Enum('confidential')

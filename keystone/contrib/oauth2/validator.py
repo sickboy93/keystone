@@ -20,8 +20,8 @@ from keystone.common import dependency
 from keystone.openstack.common import log
 from oauthlib.oauth2 import RequestValidator
 
-#from oslo.utils import timeutils
-from keystone.openstack.common import timeutils
+try: from oslo.utils import timeutils
+except ImportError: from keystone.openstack.common import timeutils
 
 METHOD_NAME = 'oauth2_validator'
 LOG = log.getLogger(__name__)
