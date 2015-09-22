@@ -90,7 +90,7 @@ class OAuth2Extension(wsgi.ExtensionRouter):
         mapper.connect(
              self.PATH_PREFIX + '/consumers',
              controller=consumer_controller,
-             action='list_consumer',
+             action='list_consumers',
              conditions=dict(method=['GET']))
 
         #self._add_resource(
@@ -155,7 +155,7 @@ class OAuth2Extension(wsgi.ExtensionRouter):
         mapper.connect(
             '/users/{user_id}' + self.PATH_PREFIX + '/access_tokens/{access_token_id}',
             controller=access_token_controller,
-            action='delete_access_token',
+            action='revoke_access_token',
             conditions=dict(method=['DELETE']))
         # Resource Owner endpoint for Authorization Codes
         #self._add_resource(
