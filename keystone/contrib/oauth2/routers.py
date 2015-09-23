@@ -76,12 +76,6 @@ class OAuth2Extension(wsgi.ExtensionRouter):
         oauth2_controller = controllers.OAuth2ControllerV3()
 
         # Admin only consumer CRUD
-        #self._add_resource(
-        #    mapper, consumer_controller,
-        #    path=self.PATH_PREFIX + '/consumers',
-        #    get_action='list_consumers',
-        #    post_action='create_consumer',
-        #    rel=build_resource_relation(resource_name='consumers'))
         mapper.connect(
              self.PATH_PREFIX + '/consumers',
              controller=consumer_controller,
@@ -92,19 +86,6 @@ class OAuth2Extension(wsgi.ExtensionRouter):
              controller=consumer_controller,
              action='list_consumers',
              conditions=dict(method=['GET']))
-
-        #self._add_resource(
-        #    mapper, consumer_controller,
-        #    path=self.PATH_PREFIX + '/consumers/{consumer_id}',
-        #    get_action='get_consumer',
-        #    patch_action='update_consumer',
-        #    delete_action='delete_consumer',
-        #    rel=build_resource_relation(resource_name='consumer'),
-        #    path_vars={
-        #        'consumer_id':
-        #        build_parameter_relation(parameter_name='consumer_id'),
-        #    })
-
         mapper.connect(
             self.PATH_PREFIX + '/consumers/{consumer_id}',
             controller=consumer_controller,
@@ -122,31 +103,11 @@ class OAuth2Extension(wsgi.ExtensionRouter):
             conditions=dict(method=['DELETE']))
 
         # Resource Owner CRUD for Access Tokens
-        #self._add_resource(
-        #    mapper, access_token_controller,
-        #    path='/users/{user_id}' + self.PATH_PREFIX + '/access_tokens',
-        #    get_action='list_access_tokens',
-        #    rel=build_resource_relation(resource_name='access_tokens'),
-        #    path_vars={
-        #        'user_id':
-        #        build_parameter_relation(parameter_name='user_id'),
-        #    })
         mapper.connect(
             '/users/{user_id}' + self.PATH_PREFIX + '/access_tokens',
             controller=access_token_controller,
             action='list_access_tokens',
             conditions=dict(method=['GET']))
-
-        #self._add_resource(
-        #    mapper, access_token_controller,
-        #    path='/users/{user_id}' + self.PATH_PREFIX + '/access_tokens/{access_token_id}',
-        #    get_action='get_access_token',
-        #    delete_action='revoke_access_token',
-        #    rel=build_resource_relation(resource_name='access_token'),
-        #    path_vars={
-        #        'user_id': build_parameter_relation(parameter_name='user_id'),
-        #        'access_token_id': build_parameter_relation(parameter_name='access_token_id'),
-        #    })
         mapper.connect(
             '/users/{user_id}' + self.PATH_PREFIX + '/access_tokens/{access_token_id}',
             controller=access_token_controller,
@@ -158,15 +119,6 @@ class OAuth2Extension(wsgi.ExtensionRouter):
             action='revoke_access_token',
             conditions=dict(method=['DELETE']))
         # Resource Owner endpoint for Authorization Codes
-        #self._add_resource(
-        #    mapper, authorization_code_controller,
-        #    path=self.PATH_PREFIX + '/users/{user_id}/authorization_codes',
-        #    get_action='list_authorization_codes',
-        #    rel=build_resource_relation(resource_name='authorization_code'),
-        #    path_vars={
-        #        'user_id':
-        #        build_parameter_relation(parameter_name='user_id'),
-        #    })
         mapper.connect(
             self.PATH_PREFIX + '/users/{user_id}/authorization_codes',
             controller=authorization_code_controller,
@@ -174,12 +126,6 @@ class OAuth2Extension(wsgi.ExtensionRouter):
             conditions=dict(method=['GET']))
 
         # OAuth2 flow calls
-        #self._add_resource(
-        #    mapper, oauth2_controller,
-        #    path=self.PATH_PREFIX + '/authorize',
-        #    post_action='create_authorization_code',
-        #    get_action='request_authorization_code',
-        #    rel=build_resource_relation(resource_name='authorization_code'))
         mapper.connect(
             self.PATH_PREFIX + '/authorize',
             controller=oauth2_controller,
@@ -191,11 +137,6 @@ class OAuth2Extension(wsgi.ExtensionRouter):
             action='request_authorization_code',
             conditions=dict(method=['GET']))
 
-        #self._add_resource(
-        #    mapper, oauth2_controller,
-        #    path=self.PATH_PREFIX + '/access_token',
-        #    post_action='create_access_token',
-        #    rel=build_resource_relation(resource_name='access_tokens'))
         mapper.connect(
             self.PATH_PREFIX + '/access_token',
             controller=oauth2_controller,
