@@ -81,10 +81,23 @@ class AuthorizationCodeEndpointV3(controller.V3Controller):
     collection_name = 'authorization_codes'
     member_name = 'authorization_code'
 
+    @classmethod
+    def _add_self_referential_link(cls, context, ref):
+        # NOTE: overriding method to add proper path to self link
+        ref.setdefault('links', {})
+        path = '/OS-OAUTH2/users/%(user_id)s/authorization_codes' % {
+           'user_id': cls._get_user_id(ref)
+        }
+        ref['links']['self'] = cls.base_url(context, path) + '/' + ref['authorizing_user_id']
+
+    @staticmethod
+    def _get_user_id(entity):
+        return entity.get('authorizing_user_id', '')
+
     @controller.protected()
-    def list_authorization_codes(self, context):
+    def list_authorization_codes(self, context, user_id):
         """Description of the controller logic."""
-        ref = self.oauth2_api.list_authorization_codes()
+        ref = self.oauth2_api.list_authorization_codes(user_id=user_id)
         return AuthorizationCodeEndpointV3.wrap_collection(context, ref)
 
 @dependency.requires('oauth2_api')

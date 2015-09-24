@@ -388,7 +388,7 @@ class RolesDriver(object):
     # ROLE-USER
     @abc.abstractmethod
     def list_role_user_assignments(self, user_id=None, organization_id=None, 
-                              application_id=None):
+                                   application_id=None):
         """List all role to user assignments. Filtering by user, organization and/or 
         application
 
