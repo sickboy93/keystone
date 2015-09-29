@@ -17,9 +17,9 @@ import itertools
 from keystone import exception
 from keystone.common import controller
 from keystone.common import dependency
-from keystone.i18n import _
 
-@dependency.requires('roles_api')
+
+@dependency.requires('roles_api', 'identity_api')
 class BaseControllerV3(controller.V3Controller):
 
     @classmethod
@@ -164,7 +164,7 @@ class RoleCrudV3(BaseControllerV3):
     def delete_role(self, context, role_id):
         self.roles_api.delete_role(role_id)
 
-@dependency.requires('identity_api')
+
 class RoleUserAssignmentV3(BaseControllerV3):
     collection_name = 'role_assignments'
     member_name = 'role_assignment'
@@ -468,7 +468,7 @@ class ExtendedPermissionsConsumerCrudV3(BaseControllerV3):
 
     def _validate_consumer_ref(self, consumer):
         if 'secret' in consumer:
-            msg = _('Cannot change consumer secret')
+            msg = 'Cannot change consumer secret'
             raise exception.ValidationError(message=msg)
 
     @controller.protected(callback=_check_allowed_to_manage_consumer)
