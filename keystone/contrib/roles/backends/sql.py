@@ -143,7 +143,7 @@ class Roles(roles.RolesDriver):
 
     # ROLE-USER
     def list_role_user_assignments(self, user_id=None, organization_id=None, 
-                         application_id=None):
+                                   application_id=None):
         session = sql.get_session() 
         query = session.query(RoleUser)
         if user_id:
