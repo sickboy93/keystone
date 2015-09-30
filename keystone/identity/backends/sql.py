@@ -32,9 +32,10 @@ CONF = config.CONF
 class User(sql.ModelBase, sql.DictBase):
     __tablename__ = 'user'
     attributes = ['id', 'name', 'domain_id', 'password', 'enabled',
-                  'default_project_id']
+                  'default_project_id', 'username']
     id = sql.Column(sql.String(64), primary_key=True)
     name = sql.Column(sql.String(255), nullable=False)
+    username = sql.Column(sql.String(255), nullable=True)
     domain_id = sql.Column(sql.String(64), sql.ForeignKey('domain.id'),
                            nullable=False)
     password = sql.Column(sql.String(128))

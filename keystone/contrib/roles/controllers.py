@@ -12,12 +12,14 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import itertools
+
 from keystone import exception
 from keystone.common import controller
 from keystone.common import dependency
-from keystone.i18n import _
 
-@dependency.requires('roles_api')
+
+@dependency.requires('roles_api', 'identity_api')
 class BaseControllerV3(controller.V3Controller):
 
     @classmethod
@@ -26,35 +28,113 @@ class BaseControllerV3(controller.V3Controller):
         path = '/OS-ROLES/' + cls.collection_name
         return super(BaseControllerV3, cls).base_url(context, path=path)
 
+# CUSTOM API CHECKS
+def _check_allowed_to_manage_roles(self, context, protection, role=None, role_id=None):
+    """Add a flag for the policy engine if the user is allowed to manage
+    the requested application.
+
+    """
+    ref = {}
+    application_id = None
+    if role_id or (role and not 'application_id' in role):
+        role = self.roles_api.get_role(role_id)
+
+    if role:
+        application_id = role['application_id']
+
+    if 'application_id' in context['query_string']:
+        # List filtering
+        application_id = context['query_string']['application_id']
+
+    user_id = context['environment']['KEYSTONE_AUTH_CONTEXT']['user_id']
+    allowed_applications = self.roles_api.list_applications_user_allowed_to_manage_roles(
+        user_id=user_id, organization_id=None)
+    ref['is_allowed_to_manage_roles'] = application_id in allowed_applications
+
+    self.check_protection(context, protection, ref)
+
+def _check_allowed_to_get_and_assign(self, context, protection, user_id=None,
+                                     role_id=None, organization_id=None,
+                                     application_id=None):
+    """Add a flag for the policy engine if the user is allowed to asign and
+    remove roles from a user or list application assignments.
+
+    """
+    ref = {}
+    if application_id:
+        req_user = self.identity_api.get_user(
+            context['environment']['KEYSTONE_AUTH_CONTEXT']['user_id'])
+        req_project_id = context['environment']['KEYSTONE_AUTH_CONTEXT']['project_id']
+        if req_project_id == req_user.get('default_project_id'):
+            # user acting as user
+            allowed_roles = self.roles_api.list_roles_user_allowed_to_assign(
+                user_id=req_user['id'], organization_id=None)
+        else:
+            # user logged as org
+            allowed_roles = self.roles_api.list_roles_organization_allowed_to_assign(
+                organization_id=req_project_id)
+
+        if role_id:
+            # Role must be allowed
+            ref['is_allowed_to_get_and_assign'] = role_id in list(
+                itertools.chain(*allowed_roles.values()))
+        else:
+            # application must be allowed
+            ref['is_allowed_to_get_and_assign'] = application_id in allowed_roles.keys()
+
+    self.check_protection(context, protection, ref)
+
+def _check_allowed_to_manage_permissions(self, context, protection, permission=None,
+                                         permission_id=None, role_id=None):
+    """Add a flag for the policy engine if the user is allowed to manage
+    the requested application.
+
+    """
+    ref = {}
+    application_id = None
+
+    if permission_id or (permission and not 'application_id' in permission):
+        permission = self.roles_api.get_permission(permission_id)
+
+    if permission:
+        application_id = permission['application_id']
+
+    if role_id:
+        role = self.roles_api.get_role(role_id)
+        application_id = role['application_id']
+
+    if 'application_id' in context['query_string']:
+        # List filtering
+        application_id = context['query_string']['application_id']
+
+    user_id = context['environment']['KEYSTONE_AUTH_CONTEXT']['user_id']
+    allowed_applications = self.roles_api.list_applications_user_allowed_to_manage_roles(
+        user_id=user_id, organization_id=None)
+    ref['is_allowed_to_manage_roles'] = application_id in allowed_applications
+
+    self.check_protection(context, protection, ref)
+
+def _check_allowed_to_manage_consumer(self, context, protection, consumer_id=None,
+                                      consumer=None):
+    """Add a flag for the policy engine if the user is allowed to manage
+    the requested application.
+
+    """
+    ref = {}
+
+    user_id = context['environment']['KEYSTONE_AUTH_CONTEXT']['user_id']
+    allowed_applications = self.roles_api.list_applications_user_allowed_to_manage(
+        user_id=user_id, organization_id=None)
+    ref['is_allowed_to_manage'] = consumer_id in allowed_applications
+
+    self.check_protection(context, protection, ref)
+
+# CONTROLLERS
 
 class RoleCrudV3(BaseControllerV3):
 
     collection_name = 'roles'
     member_name = 'role'
-
-    def _check_allowed_to_manage_roles(self, context, protection, role=None, role_id=None):
-        """Add a flag for the policy engine if the user is allowed to manage
-        the requested application. 
-
-        """
-        ref = {}
-        application_id = None
-        if role_id or (role and not 'application_id' in role):
-            role = self.roles_api.get_role(role_id)
-
-        if role:
-            application_id = role['application_id']
-
-        if 'application_id' in context['query_string']:
-            # List filtering
-            application_id = context['query_string']['application_id']
-
-        user_id = context['environment']['KEYSTONE_AUTH_CONTEXT']['user_id']
-        allowed_applications = self.roles_api.list_applications_user_allowed_to_manage_roles(
-            user_id=user_id, organization_id=None)
-        ref['is_allowed_to_manage_roles'] = application_id in allowed_applications
-
-        self.check_protection(context, protection, ref)
 
     @controller.protected(callback=_check_allowed_to_manage_roles)
     def list_roles(self, context):
@@ -84,7 +164,7 @@ class RoleCrudV3(BaseControllerV3):
     def delete_role(self, context, role_id):
         self.roles_api.delete_role(role_id)
 
-@dependency.requires('identity_api')
+
 class RoleUserAssignmentV3(BaseControllerV3):
     collection_name = 'role_assignments'
     member_name = 'role_assignment'
@@ -92,27 +172,6 @@ class RoleUserAssignmentV3(BaseControllerV3):
     @classmethod
     def _add_self_referential_link(cls, context, ref):
         pass
-
-    def _check_allowed_to_get_and_assign(self, context, protection, user_id=None,
-                                             role_id=None, organization_id=None,
-                                             application_id=None):
-        """Add a flag for the policy engine if the user is allowed to asign and
-        remove roles from a user or list application assignments.
-
-        """
-        ref = {}
-        if application_id:
-            user_id = context['environment']['KEYSTONE_AUTH_CONTEXT']['user_id']
-            allowed_roles = self.roles_api.list_roles_user_allowed_to_assign(
-                user_id=user_id, organization_id=None)
-            if role_id:
-                # Role must be allowed
-                ref['is_allowed_to_get_and_assign'] = role_id in allowed_roles.values()
-            else:
-                # application must be allowed
-                ref['is_allowed_to_get_and_assign'] = application_id in allowed_roles.keys()
-
-        self.check_protection(context, protection, ref)
 
     @controller.protected(callback=_check_allowed_to_get_and_assign)
     def list_role_user_assignments(self, context):
@@ -180,27 +239,6 @@ class RoleOrganizationAssignmentV3(BaseControllerV3):
     def _add_self_referential_link(cls, context, ref):
         pass
 
-    def _check_allowed_to_get_and_assign(self, context, protection, user_id=None,
-                                             role_id=None, organization_id=None,
-                                             application_id=None):
-        """Add a flag for the policy engine if the user is allowed to asign and
-        remove roles from a user or list application assignments.
-
-        """
-        ref = {}
-        if application_id:
-            user_id = context['environment']['KEYSTONE_AUTH_CONTEXT']['user_id']
-            allowed_roles = self.roles_api.list_roles_user_allowed_to_assign(
-                user_id=user_id, organization_id=None)
-            if role_id:
-                # Role must be allowed
-                ref['is_allowed_to_get_and_assign'] = role_id in allowed_roles.values()
-            else:
-                # application must be allowed
-                ref['is_allowed_to_get_and_assign'] = application_id in allowed_roles.keys()
-
-        self.check_protection(context, protection, ref)
-
     @controller.protected(callback=_check_allowed_to_get_and_assign)
     def list_role_organization_assignments(self, context):
         filters = context['query_string']
@@ -208,17 +246,17 @@ class RoleOrganizationAssignmentV3(BaseControllerV3):
         return RoleOrganizationAssignmentV3.wrap_collection(context, ref)
 
     @controller.protected(callback=_check_allowed_to_get_and_assign)
-    def add_role_to_organization(self, context, role_id, 
+    def add_role_to_organization(self, context, role_id,
                                  organization_id, application_id):
         self.roles_api.add_role_to_organization(role_id,
                                                 organization_id, 
                                                 application_id)
 
-    @controller.protected(callback=_check_allowed_to_get_and_assign)
+    #@controller.protected(callback=_check_allowed_to_get_and_assign)
     def remove_role_from_organization(self, context, role_id, 
                                       organization_id, application_id):
         self.roles_api.remove_role_from_organization(role_id,
-                                                     organization_id, 
+                                                     organization_id,
                                                      application_id)
 
 
@@ -284,41 +322,11 @@ class AllowedActionsControllerV3(BaseControllerV3):
         }
         return response
 
-        
+
 class PermissionCrudV3(BaseControllerV3):
 
     collection_name = 'permissions'
     member_name = 'permission'
-
-    def _check_allowed_to_manage_permissions(self, context, protection, permission=None,
-                                       permission_id=None, role_id=None):
-        """Add a flag for the policy engine if the user is allowed to manage
-        the requested application. 
-
-        """
-        ref = {}
-        application_id = None
-
-        if permission_id or (permission and not 'application_id' in permission):
-            permission = self.roles_api.get_permission(permission_id)
-
-        if permission:
-            application_id = permission['application_id']
-
-        if role_id:
-            role = self.roles_api.get_role(role_id)
-            application_id = role['application_id']
-
-        if 'application_id' in context['query_string']:
-            # List filtering
-            application_id = context['query_string']['application_id']
-
-        user_id = context['environment']['KEYSTONE_AUTH_CONTEXT']['user_id']
-        allowed_applications = self.roles_api.list_applications_user_allowed_to_manage_roles(
-            user_id=user_id, organization_id=None)
-        ref['is_allowed_to_manage_roles'] = application_id in allowed_applications
-
-        self.check_protection(context, protection, ref)
 
     @controller.protected(callback=_check_allowed_to_manage_permissions)
     def list_permissions(self, context):
@@ -341,8 +349,8 @@ class PermissionCrudV3(BaseControllerV3):
     @controller.protected(callback=_check_allowed_to_manage_permissions) 
     def update_permission(self, context, permission_id, permission):
         self._require_matching_id(permission_id, permission)
-        ref = self.roles_api.update_permission(permission_id, 
-                                self._normalize_dict(permission))
+        ref = self.roles_api.update_permission(
+            permission_id, self._normalize_dict(permission))
         return PermissionCrudV3.wrap_member(context, ref)
 
     @controller.protected(callback=_check_allowed_to_manage_permissions)
@@ -409,10 +417,16 @@ class FiwareApiControllerV3(BaseControllerV3):
             # extract the user-scoped roles
             user_roles = user_organization.pop('roles') 
 
+        def _get_name(user):
+            name = user.get('username')
+            if not name:
+                name = user['name']
+            return name
+
         response_body = {
             'id':user['id'],
             'email': user['name'],
-            'displayName': user.get('username', user['name']),
+            'displayName': _get_name(user),
             'roles': user_roles,
             'organizations': organizations,
             'app_id': application_id
@@ -427,20 +441,6 @@ class ExtendedPermissionsConsumerCrudV3(BaseControllerV3):
 
     collection_name = 'consumers'
     member_name = 'consumer'
-
-    def _check_allowed_to_manage_consumer(self, context, protection, consumer_id=None, consumer=None):
-        """Add a flag for the policy engine if the user is allowed to manage
-        the requested application.
-
-        """
-        ref = {}
-
-        user_id = context['environment']['KEYSTONE_AUTH_CONTEXT']['user_id']
-        allowed_applications = self.roles_api.list_applications_user_allowed_to_manage(
-            user_id=user_id, organization_id=None)
-        ref['is_allowed_to_manage'] = consumer_id in allowed_applications
-
-        self.check_protection(context, protection, ref)
 
     @controller.protected()
     def list_consumers(self, context):
@@ -468,7 +468,7 @@ class ExtendedPermissionsConsumerCrudV3(BaseControllerV3):
 
     def _validate_consumer_ref(self, consumer):
         if 'secret' in consumer:
-            msg = _('Cannot change consumer secret')
+            msg = 'Cannot change consumer secret'
             raise exception.ValidationError(message=msg)
 
     @controller.protected(callback=_check_allowed_to_manage_consumer)

@@ -462,6 +462,11 @@ class V3Controller(wsgi.Application):
             if key in ref:
                 filter_value = filter['value']
                 target_value = ref[key]
+
+                if not target_value:
+                    # NOTE(garcianavalon) prevent exceptions!
+                    return False
+
                 if not filter['case_sensitive']:
                     # We only support inexact filters on strings so
                     # it's OK to use lower()
