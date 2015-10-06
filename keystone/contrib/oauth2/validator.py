@@ -20,7 +20,8 @@ from keystone.common import dependency
 from keystone.openstack.common import log
 from oauthlib.oauth2 import RequestValidator
 
-from oslo.utils import timeutils
+try: from oslo.utils import timeutils
+except ImportError: from keystone.openstack.common import timeutils
 
 METHOD_NAME = 'oauth2_validator'
 LOG = log.getLogger(__name__)
@@ -36,17 +37,17 @@ class OAuth2Validator(RequestValidator):
         client_dict = self.oauth2_api.get_consumer(client_id)
         if client_dict:
             return True
-        # NOTE(garcianavalon) Currently the sql driver raises an exception 
-        # if the consumer doesnt exist so we throw the Keystone NotFound 
-        # 404 Not Found exception instead of the OAutlib InvalidClientId 
+        # NOTE(garcianavalon) Currently the sql driver raises an exception
+        # if the consumer doesnt exist so we throw the Keystone NotFound
+        # 404 Not Found exception instead of the OAutlib InvalidClientId
         # 400 Bad Request exception.
-        return False 
+        return False
 
     def validate_redirect_uri(self, client_id, redirect_uri, request, *args, **kwargs):
         # Is the client allowed to use the supplied redirect_uri? i.e. has
         # the client previously registered this EXACT redirect uri.
         client_dict = self.oauth2_api.get_consumer(client_id)
-        registered_uris = client_dict['redirect_uris']  
+        registered_uris = client_dict['redirect_uris']
         return redirect_uri in registered_uris
 
     def get_default_redirect_uri(self, client_id, request, *args, **kwargs):
@@ -69,7 +70,7 @@ class OAuth2Validator(RequestValidator):
         for scope in scopes:
             if not scope in client_dict['scopes']:
                 return False
-        return True      
+        return True
 
     def get_default_scopes(self, client_id, request, *args, **kwargs):
         # Scopes a client will authorize for if none are supplied in the
@@ -85,7 +86,7 @@ class OAuth2Validator(RequestValidator):
         # for the same consumers right now. In the future we should
         # separate them and only allow one grant type (registering
         # each client one time for each grant or allowing components)
-        # or update the tools to allow to create clients with 
+        # or update the tools to allow to create clients with
         # multiple grants
 
         # client_dict = self.oauth2_api.get_consumer(client_id)
@@ -116,7 +117,7 @@ class OAuth2Validator(RequestValidator):
 
     # Token request
     def authenticate_client(self, request, *args, **kwargs):
-        # Whichever authentication method suits you, HTTP Basic might work 
+        # Whichever authentication method suits you, HTTP Basic might work
         # TODO(garcianavalon) write it cleaner
         LOG.debug('OAUTH2: authenticating client')
         authmethod, auth = request.headers['Authorization'].split(' ', 1)
@@ -126,9 +127,9 @@ class OAuth2Validator(RequestValidator):
             client_id, secret = auth.split(':', 1)
             client_dict = self.oauth2_api.get_consumer_with_secret(client_id)
             if client_dict['secret'] == secret:
-                # TODO(garcianavalon) this can be done in a cleaner way 
+                # TODO(garcianavalon) this can be done in a cleaner way
                 #if we change the consumer model attribute to client_id
-                request.client = type('obj', (object,), 
+                request.client = type('obj', (object,),
                     {'client_id' : client_id})
                 LOG.info('OAUTH2: succesfully authenticated client %s',
                     client_dict['name'])
@@ -152,7 +153,7 @@ class OAuth2Validator(RequestValidator):
         request.state = authorization_code['state']
         request.user = authorization_code['authorizing_user_id']
         return True
-        
+
     def confirm_redirect_uri(self, client_id, code, redirect_uri, client, *args, **kwargs):
         # You did save the redirect uri with the authorization code right?
         authorization_code = self.oauth2_api.get_authorization_code(code)
@@ -165,7 +166,7 @@ class OAuth2Validator(RequestValidator):
         # for the same consumers right now. In the future we should
         # separate them and only allow one grant type (registering
         # each client one time for each grant or allowing components)
-        # or update the tools to allow to create clients with 
+        # or update the tools to allow to create clients with
         # multiple grants
         # # client_id comes as None, we use the one in request
         # client_dict = self.oauth2_api.get_consumer(request.client.client_id)
@@ -182,15 +183,15 @@ class OAuth2Validator(RequestValidator):
         # the authorization code. Don't forget to save both the
         # access_token and the refresh_token and set expiration for the
         # access_token to now + expires_in seconds.
- 
+
 
         # token is a dictionary with the following elements:
-        # { 
-        #     u'access_token': u'iC1DQuu7zOgNIjquPXPmXE5hKnTwgu', 
-        #     u'expires_in': 3600, 
-        #     u'token_type': u'Bearer', 
-        #     u'state': u'yKxWeujbz9VUBncQNrkWvVcx8EXl1w', 
-        #     u'scope': u'basic_scope', 
+        # {
+        #     u'access_token': u'iC1DQuu7zOgNIjquPXPmXE5hKnTwgu',
+        #     u'expires_in': 3600,
+        #     u'token_type': u'Bearer',
+        #     u'state': u'yKxWeujbz9VUBncQNrkWvVcx8EXl1w',
+        #     u'scope': u'basic_scope',
         #     u'refresh_token': u'02DTsL6oWgAibU7xenvXttwG80trJC'
         # }
 
@@ -222,7 +223,7 @@ class OAuth2Validator(RequestValidator):
         # Authorization codes are use once, invalidate it when a Bearer token
         # has been acquired.
         self.oauth2_api.invalidate_authorization_code(code)
-        
+
     # Protected resource request
     def validate_bearer_token(self, token, scopes, request):
         # Remember to check expiration and scope membership
@@ -293,7 +294,7 @@ class OAuth2Validator(RequestValidator):
         """
         try:
             access_token = self.oauth2_api.get_access_token_by_refresh_token(refresh_token)
-            
+
             # Validate that the refresh token is not expired
             token_duration = 28800 # TODO(garcianavalon) extract as configuration option
             refresh_token_duration = 14 # TODO(garcianavalon) extract as configuration option
@@ -314,12 +315,12 @@ class OAuth2Validator(RequestValidator):
             return False
 
         request.user = access_token['authorizing_user_id']
-        
+
         return True
 
 
     # Support for password grant
-    def validate_user(self, username, password, client, request, 
+    def validate_user(self, username, password, client, request,
                       *args, **kwargs):
         """Ensure the username and password is valid.
         OBS! The validation should also set the user attribute of the request

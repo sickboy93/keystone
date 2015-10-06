@@ -23,8 +23,9 @@ from keystone.common import dependency
 from keystone.common import wsgi
 from keystone.contrib.oauth2 import core
 from keystone.contrib.oauth2 import validator
-from keystone.i18n import _
-from keystone.models import token_model
+#from keystone.i18n import _
+from keystone.openstack.common.gettextutils import _
+#from keystone.models import token_model
 from keystone.openstack.common import log
 
 LOG = log.getLogger(__name__)
@@ -58,7 +59,7 @@ class ConsumerCrudV3(controller.V3Controller):
         consumer_ref = self.oauth2_api.get_consumer_with_secret(consumer_id)
         return ConsumerCrudV3.wrap_member(context, consumer_ref)
 
-    @controller.protected() 
+    @controller.protected()
     def update_consumer(self, context, consumer_id, consumer):
         self._require_matching_id(consumer_id, consumer)
         ref = self._normalize_dict(consumer)
@@ -95,8 +96,10 @@ class AuthorizationCodeEndpointV3(controller.V3Controller):
         return entity.get('authorizing_user_id', '')
 
     @controller.protected()
+    #def list_authorization_codes(self, context):
     def list_authorization_codes(self, context, user_id):
         """Description of the controller logic."""
+        #ref = self.oauth2_api.list_authorization_codes()
         ref = self.oauth2_api.list_authorization_codes(user_id=user_id)
         return AuthorizationCodeEndpointV3.wrap_collection(context, ref)
 
@@ -136,18 +139,20 @@ class AccessTokenEndpointV3(controller.V3Controller):
         """Revokes an access token"""
         self.oauth2_api.revoke_access_token(access_token_id, user_id=user_id)
 
-@dependency.requires('oauth2_api', 'token_provider_api')  
+@dependency.requires('oauth2_api', 'token_provider_api')
 class OAuth2ControllerV3(controller.V3Controller):
 
     collection_name = 'not_used'
     member_name = 'not_used'
 
     def _extract_user_id_from_token(self, token_id):
-        user_token = token_model.KeystoneToken(
-                            token_id=token_id,
-                            token_data=self.token_provider_api.validate_token(
-                                token_id))
-        return user_token.user_id
+        #user_token = token_model.KeystoneToken(
+        #                    token_id=token_id,
+        #                    token_data=self.token_provider_api.validate_token(
+        #                        token_id))
+        #return user_token.user_id
+        user_token_data = self.token_provider_api.validate_token(token_id)
+        return user_token_data['token']['user']['id']
 
     @controller.protected()
     def request_authorization_code(self, context):
@@ -172,16 +177,16 @@ class OAuth2ControllerV3(controller.V3Controller):
             #     'redirect_uri': 'https://foo.com/welcome_back',
             #     'response_type': 'code',
             #     'state': 'randomstring',
-            #     'request' : The request object created internally. 
+            #     'request' : The request object created internally.
             # }
             # these credentials will be needed in the post authorization view and
             # should be persisted between. None of them are secret but take care
             # to ensure their integrity if embedding them in the form or cookies.
 
-            # NOTE(garcianavalon) We are not storing this for now, 
+            # NOTE(garcianavalon) We are not storing this for now,
             # but might do it in the future
             request = credentials.pop('request')
-            
+
             # get the user id to identify the credentials in later stages
             credentials['user_id'] = self._extract_user_id_from_token(
                                                     context['token_id'])
@@ -191,10 +196,10 @@ class OAuth2ControllerV3(controller.V3Controller):
             # Present user with a nice form where client (id foo) request access to
             # his default scopes (omitted from request), after which you will
             # redirect to his default redirect uri (omitted from request).
-            
-            # This JSON is to be used by the next layer (ie a Django server) to 
+
+            # This JSON is to be used by the next layer (ie a Django server) to
             # populate the view
-            response['data'] = { 
+            response['data'] = {
                 'consumer': {
                     'id':credentials['client_id']
                     # TODO(garcianavalon) add consumer description
@@ -235,10 +240,10 @@ class OAuth2ControllerV3(controller.V3Controller):
 
             # We send back the errors in the response body
             response['error'] = json.loads(e.json)
-            LOG.warning('OAUTH2: OAuth2Error %s' %response['error'])            
+            LOG.warning('OAUTH2: OAuth2Error %s' %response['error'])
 
         return response
-            
+
 
     # @controller.protected()
     def create_authorization_code(self, context, user_auth):
@@ -281,7 +286,7 @@ class OAuth2ControllerV3(controller.V3Controller):
             response = wsgi.render_response(body,
                                             status=(302, 'Found'),
                                             headers=headers.items())
-            
+
             LOG.info('OAUTH2: Created Authorization Code to consumer %(consumer)s \
                 for user %(user)s with scope %(scope)s. Redirecting to %(uri)s', {
                     'consumer': client_id,
@@ -314,9 +319,9 @@ class OAuth2ControllerV3(controller.V3Controller):
         # Validate request
         headers = context['headers']
         # NOTE(garcianavalon) Work around the keystone limitation with content types
-        # Keystone only accepts JSON bodies while OAuth2.0 (RFC 6749) requires 
+        # Keystone only accepts JSON bodies while OAuth2.0 (RFC 6749) requires
         # x-www-form-urlencoded
-        # We leave it like this to support future versions where the use of 
+        # We leave it like this to support future versions where the use of
         # x-www-form-urlencoded is accepted
         if headers['Content-Type'] == 'application/x-www-form-urlencoded':
             body = context['query_string']
@@ -328,7 +333,7 @@ class OAuth2ControllerV3(controller.V3Controller):
                 msg = _('grant_type missing in request body: {0}'
                     ).format(token_request)
                 raise exception.ValidationError(message=msg)
-            if (grant_type == 'authorization_code' 
+            if (grant_type == 'authorization_code'
                 and not 'code' in token_request):
 
                 msg = _('code missing in request body: %s') %token_request
@@ -337,7 +342,7 @@ class OAuth2ControllerV3(controller.V3Controller):
             body = urllib.urlencode(token_request)
         else:
             msg = _('Content-Type: %s is not supported') %headers['Content-Type']
-            raise exception.ValidationError(message=msg) 
+            raise exception.ValidationError(message=msg)
 
         # check headers for authentication
         authmethod, auth = headers['Authorization'].split(' ', 1)
@@ -347,7 +352,7 @@ class OAuth2ControllerV3(controller.V3Controller):
 
         uri = self.base_url(context, context['path'])
         http_method = 'POST'
-        
+
         # Extra credentials you wish to include
         credentials = None # TODO(garcianavalon)
 
@@ -380,7 +385,7 @@ class OAuth2ControllerV3(controller.V3Controller):
         # fail to authenticate etc.
 
         # NOTE(garcianavalon) oauthlib returns the body as a JSON string already,
-        # and the Keystone base controlers expect a dictionary  
+        # and the Keystone base controlers expect a dictionary
         body = json.loads(body)
         # TODO(garcianavalon) body contains scope instead of scopes and is only a
         # space separated string instead of a list. We can wait for a change in

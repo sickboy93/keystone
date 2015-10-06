@@ -24,7 +24,7 @@ import sys
 
 SERVICE_PROVIDER_CONFIGS = {
     "schemas": "",
-    'documentationUrl': 'https://github.com/telefonicaid/fiware-keystone-scim/blob/master/README.md',
+    'documentationUrl': 'https://github.com/ging/fi-ware-idm/wiki/SCIM-2.0-API',
     'patch': {
         'supported': True
     },
