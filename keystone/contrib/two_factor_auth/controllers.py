@@ -40,8 +40,7 @@ class TwoFactorV3Controller(controller.V3Controller):
     def is_two_factor_auth_enabled(self, context, user_id):
         """Checks if a certain user has enabled two factor auth"""
 
-        is_enabled = self.two_factor_auth_api.is_two_factor_enabled(user_id)
-        return TwoFactorV3Controller.wrap_member(context, is_enabled)
+        self.two_factor_auth_api.is_two_factor_enabled(user_id)
 
     @controller.protected()
     def enable_two_factor_auth(self, context, user_id):

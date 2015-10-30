@@ -47,7 +47,7 @@ class TwoFactorAuth(two_factor_auth.Driver):
         if twofactor is None:
             raise exception.NotFound(_('Two Factor Authentication is not enabled for user %s.' %user_id))
         else:
-            return twofactor.two_factor_key.to_dict()
+            return twofactor
 
     def delete_two_factor_key(self, user_id):
         session = sql.get_session()
