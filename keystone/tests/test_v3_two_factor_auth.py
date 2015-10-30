@@ -38,7 +38,10 @@ class TwoFactorTests(test_v3.RestfulTestCase):
     def _create_two_factor_key(self):
         return self.post(TWOFACTOR_URL.format(user_id=self.user_id))
 
-    def _check_is_two_factor_enabled(self, expected_status=200):
+    def _delete_two_factor_key(self, expected_status=204):
+        return self.delete(TWOFACTOR_URL.format(user_id=self.user_id),expected_status=expected_status)
+
+    def _check_is_two_factor_enabled(self, expected_status=204):
         return self.head(TWOFACTOR_URL.format(user_id=self.user_id), expected_status=expected_status)
 
     # TEST METHODS
@@ -51,9 +54,22 @@ class TwoFactorTests(test_v3.RestfulTestCase):
         key2 = self._create_two_factor_key()
         self.assertNotEqual(key1,key2)
 
-    def test_two_factor_is_enabled_1(self):
+    def test_two_factor_disable_after_enabling(self):
         self._create_two_factor_key()
-        self._check_is_two_factor_enabled(expected_status=200)
+        self._delete_two_factor_key()
 
-    def test_two_factor_is_enabled_2(self):
+    def test_two_factor_disable_without_enabling(self):
+        self._delete_two_factor_key(expected_status=404)
+
+    def test_two_factor_is_enabled_after_creating(self):
+        self._create_two_factor_key()
+        self._check_is_two_factor_enabled()
+
+    def test_two_factor_is_disabled(self):
+        self._check_is_two_factor_enabled(expected_status=404)
+
+    def test_two_factor_is_enabled_after_deleting(self):
+        self._create_two_factor_key()
+        self._check_is_two_factor_enabled()
+        self._delete_two_factor_key()
         self._check_is_two_factor_enabled(expected_status=404)
