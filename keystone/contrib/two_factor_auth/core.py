@@ -50,7 +50,7 @@ class TwoFactorAuthManager(manager.Manager):
     def delete_two_factor_key_callback(self, service, resource_type, operation,
                                  payload):
         user_id = payload['resource_info']
-        return self.driver.delete_two_factor_key(user_id)
+        self.driver.delete_two_factor_key(user_id)
 
     def create_two_factor_key(self, user_id):
         LOG.info("Creating a new two factor key.")

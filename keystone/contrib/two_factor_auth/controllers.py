@@ -53,4 +53,4 @@ class TwoFactorV3Controller(controller.V3Controller):
     def disable_two_factor_auth(self, context, user_id):
         """Disables two factor auth for a certain user"""
 
-        self.two_factor_auth_api.delete_two_factor_key(user_id)
+        return self.two_factor_auth_api.delete_two_factor_key(user_id)
