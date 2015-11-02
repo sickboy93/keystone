@@ -35,41 +35,61 @@ class TwoFactorTests(test_v3.RestfulTestCase):
         # but I don't know if its the right way to do it...
         self.manager = core.TwoFactorAuthManager()
 
-    def _create_two_factor_key(self):
-        return self.post(TWOFACTOR_URL.format(user_id=self.user_id))
+    def _create_two_factor_key(self, user_id, expected_status=None):
+        return self.post(TWOFACTOR_URL.format(user_id=user_id), expected_status=expected_status)
 
-    def _delete_two_factor_key(self, expected_status=204):
-        return self.delete(TWOFACTOR_URL.format(user_id=self.user_id),expected_status=expected_status)
+    def _delete_two_factor_key(self, user_id, expected_status=None):
+        return self.delete(TWOFACTOR_URL.format(user_id=user_id),expected_status=expected_status)
 
-    def _check_is_two_factor_enabled(self, expected_status=204):
-        return self.head(TWOFACTOR_URL.format(user_id=self.user_id), expected_status=expected_status)
+    def _check_is_two_factor_enabled(self, user_id, expected_status=None):
+        return self.head(TWOFACTOR_URL.format(user_id=user_id), expected_status=expected_status)
+
+    def _create_user(self):
+        user = self.new_user_ref(domain_id=self.domain_id)
+        password = user['password']
+        user = self.identity_api.create_user(user)
+        user['password'] = password
+        return user
+
+    def _delete_user(self, user_id):
+        self.identity_api.delete_user(user_id)
 
     # TEST METHODS
 
     def test_two_factor_enable(self):
-        self._create_two_factor_key()
+        self._create_two_factor_key(user_id=self.user_id)
 
     def test_two_factor_new_code(self):
-        key1 = self._create_two_factor_key()
-        key2 = self._create_two_factor_key()
+        key1 = self._create_two_factor_key(user_id=self.user_id)
+        key2 = self._create_two_factor_key(user_id=self.user_id)
         self.assertNotEqual(key1,key2)
 
     def test_two_factor_disable_after_enabling(self):
-        self._create_two_factor_key()
-        self._delete_two_factor_key()
+        self._create_two_factor_key(user_id=self.user_id)
+        self._delete_two_factor_key(user_id=self.user_id)
 
     def test_two_factor_disable_without_enabling(self):
-        self._delete_two_factor_key(expected_status=404)
+        self._delete_two_factor_key(user_id=self.user_id, expected_status=404)
 
     def test_two_factor_is_enabled_after_creating(self):
-        self._create_two_factor_key()
-        self._check_is_two_factor_enabled()
+        self._create_two_factor_key(user_id=self.user_id)
+        self._check_is_two_factor_enabled(user_id=self.user_id)
 
     def test_two_factor_is_disabled(self):
-        self._check_is_two_factor_enabled(expected_status=404)
+        self._check_is_two_factor_enabled(user_id=self.user_id, expected_status=404)
 
     def test_two_factor_is_enabled_after_deleting(self):
-        self._create_two_factor_key()
-        self._check_is_two_factor_enabled()
-        self._delete_two_factor_key()
-        self._check_is_two_factor_enabled(expected_status=404)
+        self._create_two_factor_key(user_id=self.user_id)
+        self._check_is_two_factor_enabled(user_id=self.user_id)
+        self._delete_two_factor_key(user_id=self.user_id)
+        self._check_is_two_factor_enabled(user_id=self.user_id, expected_status=404)
+
+    def test_two_factor_create_key_for_nonexistent_user(self):
+        self._create_two_factor_key(user_id='nonexistent_user', expected_status=404)
+
+    def test_two_factor_delete_user(self):
+        user = self._create_user()
+        self._create_two_factor_key(user_id=user['id'])
+        self._check_is_two_factor_enabled(user_id=user['id'])
+        self._delete_user(user_id=user['id'])
+        self._check_is_two_factor_enabled(user_id=user['id'], expected_status=404)
