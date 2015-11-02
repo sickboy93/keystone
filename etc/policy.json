@@ -55,6 +55,10 @@
     "identity:delete_user": "rule:admin_required or rule:self_user",
     "identity:change_password": "rule:admin_required or rule:self_user",
 
+    "identity:is_two_factor_auth_enabled": "rule:admin_required or rule:self_user",
+    "identity:enable_two_factor_auth": "rule:admin_required or rule:self_user",
+    "identity:disable_two_factor_auth": "rule:admin_required or rule:self_user",
+
     "identity:get_group": "rule:admin_required",
     "identity:list_groups": "rule:admin_required",
     "identity:list_groups_for_user": "rule:admin_or_owner",
