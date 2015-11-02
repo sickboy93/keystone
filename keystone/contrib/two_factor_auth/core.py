@@ -27,7 +27,7 @@ import abc
 
 LOG = log.getLogger(__name__)
 
-
+@dependency.requires('identity_api')
 @dependency.provider('two_factor_auth_api')
 class TwoFactorAuthManager(manager.Manager):
     """Two Factor Authentication Manager.
@@ -53,6 +53,7 @@ class TwoFactorAuthManager(manager.Manager):
         self.driver.delete_two_factor_key(user_id)
 
     def create_two_factor_key(self, user_id):
+        user = self.identity_api.get_user(user_id) # check if user exists
         LOG.info("Creating a new two factor key.")
         key = pyotp.random_base32()
         return self.driver.create_two_factor_key(user_id, key)
