@@ -17,15 +17,20 @@ from keystone.common import dependency
 from keystone.contrib.two_factor_auth import controllers
 from keystone.contrib.two_factor_auth import core
 
-TWOFACTOR_URL = '/users/{user_id}/OS-TWOFACTOR/two_factor_auth'
+TWOFACTOR_BASE_URL = '/users/{user_id}/OS-TWOFACTOR'
+TWOFACTOR_URL = TWOFACTOR_BASE_URL + '/two_factor_auth'
+TWOFACTOR_QUESTION_URL = TWOFACTOR_BASE_URL + '/sec_question'
 
-class TwoFactorTests(test_v3.RestfulTestCase):
+class TwoFactorBaseTests(test_v3.RestfulTestCase):
 
     EXTENSION_NAME = 'two_factor_auth'
     EXTENSION_TO_ADD = 'two_factor_auth_extension'
 
+    SAMPLE_SECURITY_QUESTION = 'Sample question'
+    SAMPLE_SECURITY_ANSWER = 'Sample answer'
+
     def setUp(self):
-        super(TwoFactorTests, self).setUp()
+        super(TwoFactorBaseTests, self).setUp()
 
         # Now that the app has been served, we can query CONF values
         self.base_url = 'http://localhost/v3'
@@ -35,14 +40,31 @@ class TwoFactorTests(test_v3.RestfulTestCase):
         # but I don't know if its the right way to do it...
         self.manager = core.TwoFactorAuthManager()
 
+
     def _create_two_factor_key(self, user_id, expected_status=None):
-        return self.post(TWOFACTOR_URL.format(user_id=user_id), expected_status=expected_status)
+        data = self.new_ref()
+        data['security_question'] = self.SAMPLE_SECURITY_QUESTION
+        data['security_answer'] = self.SAMPLE_SECURITY_ANSWER
+
+        return self.post(TWOFACTOR_URL.format(user_id=user_id), 
+                         body = {'two_factor_auth': data},
+                         expected_status=expected_status)
 
     def _delete_two_factor_key(self, user_id, expected_status=None):
         return self.delete(TWOFACTOR_URL.format(user_id=user_id),expected_status=expected_status)
 
     def _check_is_two_factor_enabled(self, user_id, expected_status=None):
         return self.head(TWOFACTOR_URL.format(user_id=user_id), expected_status=expected_status)
+
+    def _check_security_question(self, user_id, sec_answer, expected_status=None):
+        body = {
+            'two_factor_auth': {
+                'security_answer': sec_answer
+            }
+        }
+        return self.get(TWOFACTOR_QUESTION_URL.format(user_id=user_id), 
+                        expected_status=expected_status,
+                        body=body)
 
     def _create_user(self):
         user = self.new_user_ref(domain_id=self.domain_id)
@@ -54,7 +76,8 @@ class TwoFactorTests(test_v3.RestfulTestCase):
     def _delete_user(self, user_id):
         self.identity_api.delete_user(user_id)
 
-    # TEST METHODS
+
+class TwoFactorAuthTests(TwoFactorBaseTests):
 
     def test_two_factor_enable(self):
         self._create_two_factor_key(user_id=self.user_id)
@@ -93,3 +116,22 @@ class TwoFactorTests(test_v3.RestfulTestCase):
         self._check_is_two_factor_enabled(user_id=user['id'])
         self._delete_user(user_id=user['id'])
         self._check_is_two_factor_enabled(user_id=user['id'], expected_status=404)
+
+
+class TwoFactorSecQuestionTests(TwoFactorBaseTests):
+
+    def test_security_question_correct(self):
+        self._create_two_factor_key(user_id=self.user_id)
+        self._check_security_question(user_id=self.user_id, 
+                                      sec_answer=self.SAMPLE_SECURITY_ANSWER)
+
+    def test_security_question_wrong(self):
+        self._create_two_factor_key(user_id=self.user_id)
+        self._check_security_question(user_id=self.user_id,
+                                      sec_answer='Wrong answer',
+                                      expected_status=401)
+
+    def test_security_question_nonexistent(self):
+        self._check_security_question(user_id=self.user_id,
+                                      sec_answer='Does not matter',
+                                      expected_status=404)

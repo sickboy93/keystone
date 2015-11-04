@@ -24,8 +24,10 @@ def upgrade(migrate_engine):
     two_factor_auth_table = sql.Table(
         'two_factor_auth',
         meta,
-        sql.Column('user_id',sql.String(64), nullable=False, primary_key=True),
-        sql.Column('two_factor_key',sql.String(32), nullable=False))
+        sql.Column('user_id', sql.String(64), nullable=False, primary_key=True),
+        sql.Column('two_factor_key', sql.String(32), nullable=False),
+        sql.Column('security_question', sql.String(128), nullable=False),
+        sql.Column('security_answer', sql.String(128), nullable=False))
     two_factor_auth_table.create(migrate_engine, checkfirst=True)
 
 
@@ -35,4 +37,4 @@ def downgrade(migrate_engine):
     meta.bind = migrate_engine
 
     two_factor_auth_table = sql.Table('two_factor_auth', meta, autoload=True)
-    table.drop(migrate_engine, checkfirst=True)
+    two_factor_auth_table.drop(migrate_engine, checkfirst=True)

@@ -52,34 +52,49 @@ class TwoFactorAuthManager(manager.Manager):
         user_id = payload['resource_info']
         self.driver.delete_two_factor_key(user_id)
 
-    def create_two_factor_key(self, user_id):
+    def create_two_factor_key(self, user_id, two_factor_auth):
         user = self.identity_api.get_user(user_id) # check if user exists
-        LOG.info("Creating a new two factor key.")
-        key = pyotp.random_base32()
-        return self.driver.create_two_factor_key(user_id, key)
+        #LOG.info("Creating a new two factor key.")
+        two_factor_auth['key'] = pyotp.random_base32()
+        return self.driver.create_two_factor_key(user_id, two_factor_auth)
+
+    def check_security_question(self, user_id, two_factor_auth):
+        #LOG.info("Checking security question")
+        user = self.identity_api.get_user(user_id) # check if user exists
+        return self.driver.check_security_question(user_id, two_factor_auth)
 
 @six.add_metaclass(abc.ABCMeta)
 class Driver(object):
     """Interface description for Two Factor Auth driver."""
     
     @abc.abstractmethod
-    def create_two_factor_key(self, user_id, two_factor_key):
-        """Do something
+    def create_two_factor_key(self, user_id, two_factor_auth):
+        """Saves both the two factor key and the security question.
 
-        :param data: example data
-        :type data: string
+        :param user_id: user ID
+        :param two_factor_auth: dict containing the data to be saved
         :raises: keystone.exception,
-        :returns: None.
+        :returns: dict with the saved data
 
         """
         raise exception.NotImplemented()
 
     @abc.abstractmethod
     def is_two_factor_enabled(self, user_id):
-        """Do something
+        """Checks whether two factor authentication is enabled.
 
-        :param data: example data
-        :type data: string
+        :param user_id: user ID
+        :raises: keystone.exception,
+        :returns: the data object if exists
+
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def delete_two_factor_key(self, user_id):
+        """Deletes two factor data.
+
+        :param user_id: user ID
         :raises: keystone.exception,
         :returns: None.
 
@@ -87,13 +102,11 @@ class Driver(object):
         raise exception.NotImplemented()
 
     @abc.abstractmethod
-    def delete_two_factor_key(self, user_id):
-        """Do something
+    def check_security_question(self, user_id, two_factor_auth):
+        """Checks whether the provided answer is correct.
 
-        :param data: example data
-        :type data: string
-        :raises: keystone.exception,
+        :param user_id: user ID
+        :param sec_answer: answer to the security question
         :returns: None.
-
         """
         raise exception.NotImplemented()

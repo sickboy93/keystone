@@ -30,9 +30,10 @@ class TwoFactorExtension(wsgi.V3ExtensionRouter):
     The API looks like::
 
       # two factor enabling and disabling endpoint
-      POST /users/{user_id}/OS-TWOFACTOR/two_factor_auth #enable
+      POST /users/{user_id}/OS-TWOFACTOR/two_factor_auth #enable and create question/answer
       HEAD /users/{user_id}/OS-TWOFACTOR/two_factor_auth #is enabled?
       DELETE /users/{user_id}/OS-TWOFACTOR/two_factor_auth #disable 
+      GET /users/{user_id}/OS-TWOFACTOR/sec_question #check security question
       
     """
 
@@ -47,5 +48,12 @@ class TwoFactorExtension(wsgi.V3ExtensionRouter):
             get_head_action='is_two_factor_auth_enabled',
             post_action='enable_two_factor_auth',
             delete_action='disable_two_factor_auth',
-            rel=build_resource_relation(resource_name='two_factor_key')
+            rel=build_resource_relation(resource_name='two_factor_auth')
+            )
+
+        self._add_resource(
+            mapper, two_factor_controller,
+            path=self.PATH_PREFIX + '/{user_id}/OS-TWOFACTOR/sec_question',
+            get_action='check_security_question',
+            rel=build_resource_relation(resource_name='two_factor_auth')
             )

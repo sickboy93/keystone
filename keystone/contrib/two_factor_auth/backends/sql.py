@@ -19,25 +19,38 @@ from keystone.common import sql
 from keystone.contrib import two_factor_auth
 from keystone.i18n import _
 from oslo.utils import timeutils
+from keystone.openstack.common import log
+
+
+LOG = log.getLogger(__name__)
+
 
 class TwoFactor(sql.ModelBase, sql.ModelDictMixin):
     __tablename__ = 'two_factor_auth'
-    attributes = ['user_id', 'two_factor_key']              
+    attributes = ['user_id', 'two_factor_key', 'security_question', 'security_answer']              
     user_id = sql.Column(sql.String(64), nullable=False, primary_key=True)
     two_factor_key = sql.Column(sql.String(32), nullable=False)
+    security_question = sql.Column(sql.String(128), nullable=False)
+    security_answer = sql.Column(sql.String(128), nullable=False)
+
 
 class TwoFactorAuth(two_factor_auth.Driver):
     """ CRUD driver for the SQL backend """
 
-    def create_two_factor_key(self, user_id, two_factor_key):
+    def create_two_factor_key(self, user_id, two_factor_auth):
         session = sql.get_session()
         twofactor = session.query(TwoFactor).get(user_id)
         with session.begin():
             if twofactor is None:
-                twofactor = TwoFactor(user_id=user_id,two_factor_key=two_factor_key)
+                twofactor = TwoFactor(user_id=user_id,
+                                      two_factor_key=two_factor_auth['key'],
+                                      security_question=two_factor_auth['security_question'],
+                                      security_answer=two_factor_auth['security_answer'])
                 session.add(twofactor)
             else:
-                twofactor.two_factor_key = two_factor_key
+                twofactor.two_factor_key = two_factor_auth['key']
+                twofactor.security_question = two_factor_auth['security_question']
+                twofactor.security_answer = two_factor_auth['security_answer']
             session.add(twofactor)   
         return twofactor.to_dict()
 
@@ -57,3 +70,14 @@ class TwoFactorAuth(two_factor_auth.Driver):
         else:
             with session.begin():
                 session.delete(twofactor)
+
+    def check_security_question(self, user_id, two_factor_auth):
+        session = sql.get_session()
+        twofactor = session.query(TwoFactor).get(user_id)
+        if twofactor is None:
+            raise exception.NotFound(_('Two Factor Authentication is not enabled for user %s.' % user_id))
+        else:
+            if (two_factor_auth['security_answer'] != twofactor.security_answer):
+                raise exception.Unauthorized(_('Invalid answer'))
+            else:
+                return twofactor.to_dict()
