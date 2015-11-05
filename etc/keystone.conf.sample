@@ -478,7 +478,7 @@
 #
 
 # Default auth methods. (list value)
-methods=external,password,token,oauth2
+methods=external,password,token,oauth2,two_factor
 
 # The password auth plugin module. (string value)
 #password=keystone.auth.plugins.password.Password
@@ -492,6 +492,9 @@ methods=external,password,token,oauth2
 
 # The oauth2 plugin module (string value)
 oauth2=keystone.auth.plugins.oauth2.OAuth2
+
+# The two factor auth plugin module (string value)
+#two_factor=keystone.auth.plugins.two_factor.TwoFactor
 
 
 [cache]
@@ -1570,5 +1573,9 @@ driver = keystone.contrib.endpoint_filter.backends.catalog_sql.EndpointFilterCat
 
 # Trust backend driver. (string value)
 #driver=keystone.trust.backends.sql.Trust
+
+
+[two_factor_auth]
+driver=keystone.contrib.two_factor_auth.backends.sql.TwoFactorAuth
 
 
