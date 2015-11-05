@@ -21,7 +21,7 @@ from keystone.contrib.two_factor_auth import controllers
 
 build_resource_relation = functools.partial(
     json_home.build_v3_extension_resource_relation,
-    extension_name='OS-TWOFACTOR', extension_version='1.0')
+    extension_name='OS-TWO-FACTOR', extension_version='1.0')
 
 
 class TwoFactorExtension(wsgi.V3ExtensionRouter):
@@ -30,30 +30,41 @@ class TwoFactorExtension(wsgi.V3ExtensionRouter):
     The API looks like::
 
       # two factor enabling and disabling endpoint
-      POST /users/{user_id}/OS-TWOFACTOR/two_factor_auth #enable and create question/answer
-      HEAD /users/{user_id}/OS-TWOFACTOR/two_factor_auth #is enabled?
-      DELETE /users/{user_id}/OS-TWOFACTOR/two_factor_auth #disable 
-      GET /users/{user_id}/OS-TWOFACTOR/sec_question #check security question
+      HEAD /OS-TWO-FACTOR/two_factor_auth?user_id=&?user_name=?domain_id= #is enabled?
+
+      POST /users/{user_id}/OS-TWO-FACTOR/two_factor_auth #enable and create question/answer
+      DELETE /users/{user_id}/OS-TWO-FACTOR/two_factor_auth #disable 
+      GET /users/{user_id}/OS-TWO-FACTOR/sec_question #check security question
       
     """
 
-    PATH_PREFIX = '/users'
+    PATH_PREFIX = '/OS-TWO-FACTOR'
 
     def add_routes(self, mapper):
         two_factor_controller = controllers.TwoFactorV3Controller()
 
         self._add_resource(
-            mapper, two_factor_controller,
-            path=self.PATH_PREFIX + '/{user_id}/OS-TWOFACTOR/two_factor_auth',
+            mapper,
+            two_factor_controller,
+            path=self.PATH_PREFIX + '/two_factor_auth',
+            get_head_action='is_two_factor_auth_enabled',
+            rel=build_resource_relation(resource_name='two_factor_auth')
+        )
+
+        self._add_resource(
+            mapper,
+            two_factor_controller,
+            path='/users/{user_id}' + self.PATH_PREFIX + '/two_factor_auth',
             get_head_action='is_two_factor_auth_enabled',
             post_action='enable_two_factor_auth',
             delete_action='disable_two_factor_auth',
             rel=build_resource_relation(resource_name='two_factor_auth')
-            )
+        )
 
         self._add_resource(
-            mapper, two_factor_controller,
-            path=self.PATH_PREFIX + '/{user_id}/OS-TWOFACTOR/sec_question',
+            mapper,
+            two_factor_controller,
+            path='/users/{user_id}' + self.PATH_PREFIX + '/sec_question',
             get_action='check_security_question',
             rel=build_resource_relation(resource_name='two_factor_auth')
-            )
+        )

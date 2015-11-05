@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-
+from keystone import exception
 from keystone.common import controller
 from keystone.common import dependency
 
@@ -20,7 +20,7 @@ from keystone.openstack.common import log
 LOG = log.getLogger(__name__)
 
 
-@dependency.requires('two_factor_auth_api')
+@dependency.requires('two_factor_auth_api', 'identity_api')
 class TwoFactorV3Controller(controller.V3Controller):
     collection_name = ''
     member_name = ''
@@ -36,9 +36,29 @@ class TwoFactorV3Controller(controller.V3Controller):
         ref.setdefault('links', {})
         ref['links']['self'] = cls.base_url(context) + '/' + ref['user_id']
 
-    @controller.protected()
-    def is_two_factor_auth_enabled(self, context, user_id):
+    #@controller.protected()
+    def is_two_factor_auth_enabled(self, context):
         """Checks if a certain user has enabled two factor auth"""
+        user_id = context['query_string'].get('user_id')
+        
+        if not user_id:
+            user_name = context['query_string'].get('user_name')
+            domain_id = context['query_string'].get('domain_id')
+
+            if not user_name and not domain_id:
+                # 400 bad request -> need id or name + domain
+                raise exception.ValidationError(
+                    attribute='user_id or user_name and domain_id',
+                    target='query string')
+
+            if bool(user_name) != bool(domain_id):
+                # 400 bad request -> need both domain and name
+                raise exception.ValidationError(
+                    attribute='user_name and domain_id',
+                    target='query string')
+
+            user = self.identity_api.get_user_by_name(user_name, domain_id)
+            user_id = user['id']
 
         self.two_factor_auth_api.is_two_factor_enabled(user_id)
 

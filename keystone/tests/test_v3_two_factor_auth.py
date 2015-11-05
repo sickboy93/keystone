@@ -12,14 +12,18 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import urllib
+
 from keystone.tests import test_v3
-from keystone.common import dependency
 from keystone.contrib.two_factor_auth import controllers
 from keystone.contrib.two_factor_auth import core
 
-TWOFACTOR_BASE_URL = '/users/{user_id}/OS-TWOFACTOR'
-TWOFACTOR_URL = TWOFACTOR_BASE_URL + '/two_factor_auth'
-TWOFACTOR_QUESTION_URL = TWOFACTOR_BASE_URL + '/sec_question'
+TWO_FACTOR_USER_URL = '/users/{user_id}'
+TWO_FACTOR_BASE_URL = '/OS-TWO-FACTOR'
+AUTH_ENDPOINT = '/two_factor_auth'
+QUESTION_ENDPOINT = '/sec_question'
+TWO_FACTOR_URL = TWO_FACTOR_USER_URL + TWO_FACTOR_BASE_URL + AUTH_ENDPOINT
+TWO_FACTOR_QUESTION_URL = TWO_FACTOR_USER_URL + TWO_FACTOR_BASE_URL + QUESTION_ENDPOINT
 
 class TwoFactorBaseTests(test_v3.RestfulTestCase):
 
@@ -35,9 +39,6 @@ class TwoFactorBaseTests(test_v3.RestfulTestCase):
         # Now that the app has been served, we can query CONF values
         self.base_url = 'http://localhost/v3'
         self.controller = controllers.TwoFactorV3Controller()
-
-        # TODO(garcianavalon) I've put this line for dependency injection to work, 
-        # but I don't know if its the right way to do it...
         self.manager = core.TwoFactorAuthManager()
 
 
@@ -46,15 +47,19 @@ class TwoFactorBaseTests(test_v3.RestfulTestCase):
         data['security_question'] = self.SAMPLE_SECURITY_QUESTION
         data['security_answer'] = self.SAMPLE_SECURITY_ANSWER
 
-        return self.post(TWOFACTOR_URL.format(user_id=user_id), 
-                         body = {'two_factor_auth': data},
-                         expected_status=expected_status)
+        return self.post(
+            TWO_FACTOR_URL.format(user_id=user_id), 
+            body={'two_factor_auth': data},
+            expected_status=expected_status
+        )
 
     def _delete_two_factor_key(self, user_id, expected_status=None):
-        return self.delete(TWOFACTOR_URL.format(user_id=user_id),expected_status=expected_status)
+        return self.delete(TWO_FACTOR_URL.format(user_id=user_id), expected_status=expected_status)
 
-    def _check_is_two_factor_enabled(self, user_id, expected_status=None):
-        return self.head(TWOFACTOR_URL.format(user_id=user_id), expected_status=expected_status)
+    def _check_is_two_factor_enabled(self, expected_status=None, **kwargs):
+        return self.head(
+            TWO_FACTOR_BASE_URL + AUTH_ENDPOINT + '?' +urllib.urlencode(kwargs), 
+            expected_status=expected_status)
 
     def _check_security_question(self, user_id, sec_answer, expected_status=None):
         body = {
@@ -62,7 +67,7 @@ class TwoFactorBaseTests(test_v3.RestfulTestCase):
                 'security_answer': sec_answer
             }
         }
-        return self.get(TWOFACTOR_QUESTION_URL.format(user_id=user_id), 
+        return self.get(TWO_FACTOR_QUESTION_URL.format(user_id=user_id), 
                         expected_status=expected_status,
                         body=body)
 
@@ -85,7 +90,7 @@ class TwoFactorAuthTests(TwoFactorBaseTests):
     def test_two_factor_new_code(self):
         key1 = self._create_two_factor_key(user_id=self.user_id)
         key2 = self._create_two_factor_key(user_id=self.user_id)
-        self.assertNotEqual(key1,key2)
+        self.assertNotEqual(key1, key2)
 
     def test_two_factor_disable_after_enabling(self):
         self._create_two_factor_key(user_id=self.user_id)
@@ -94,12 +99,37 @@ class TwoFactorAuthTests(TwoFactorBaseTests):
     def test_two_factor_disable_without_enabling(self):
         self._delete_two_factor_key(user_id=self.user_id, expected_status=404)
 
-    def test_two_factor_is_enabled_after_creating(self):
+    def test_two_factor_is_enabled(self):
         self._create_two_factor_key(user_id=self.user_id)
         self._check_is_two_factor_enabled(user_id=self.user_id)
 
+    def test_two_factor_is_enabled_name_and_domain(self):
+        self._create_two_factor_key(user_id=self.user_id)
+        self._check_is_two_factor_enabled(
+            user_name=self.user['name'],
+            domain_id=self.user['domain_id'])
+
     def test_two_factor_is_disabled(self):
         self._check_is_two_factor_enabled(user_id=self.user_id, expected_status=404)
+
+    def test_two_factor_is_disabled_name_and_domain(self):
+        self._check_is_two_factor_enabled(
+            user_name=self.user['name'],
+            domain_id=self.user['domain_id'],
+            expected_status=404)
+
+    def test_two_factor_check_no_params(self):
+        self._check_is_two_factor_enabled(expected_status=400)
+
+    def test_two_factor_check_no_domain(self):
+        self._check_is_two_factor_enabled(
+            user_name=self.user['name'],
+            expected_status=400)
+
+    def test_two_factor_check_no_username(self):
+        self._check_is_two_factor_enabled(
+            domain_id=self.user['domain_id'],
+            expected_status=400)
 
     def test_two_factor_is_enabled_after_deleting(self):
         self._create_two_factor_key(user_id=self.user_id)
