@@ -57,10 +57,11 @@ class TwoFactorAuth(two_factor_auth.Driver):
     def is_two_factor_enabled(self, user_id):
         session = sql.get_session()
         twofactor = session.query(TwoFactor).get(user_id)
+
         if twofactor is None:
-            raise exception.NotFound(_('Two Factor Authentication is not enabled for user %s.' %user_id))
+            return False
         else:
-            return twofactor
+            return True
 
     def delete_two_factor_key(self, user_id):
         session = sql.get_session()
@@ -70,6 +71,14 @@ class TwoFactorAuth(two_factor_auth.Driver):
         else:
             with session.begin():
                 session.delete(twofactor)
+
+    def get_two_factor_info(self, user_id):
+        session = sql.get_session()
+        twofactor = session.query(TwoFactor).get(user_id)
+        if twofactor is None:
+            raise exception.NotFound(_('Two Factor Authentication is not enabled for user %s.' %user_id))
+        else:
+            return twofactor
 
     def check_security_question(self, user_id, two_factor_auth):
         session = sql.get_session()
