@@ -50,15 +50,15 @@ class TwoFactorAuthManager(manager.Manager):
     def delete_two_factor_key_callback(self, service, resource_type, operation,
                                  payload):
         """"Deletes user two factor info when user is deleted."""
-
+        
         user_id = payload['resource_info']
-        self.driver.delete_two_factor_key(user_id)
+        if self.driver.is_two_factor_enabled(user_id):
+            self.driver.delete_two_factor_key(user_id)
 
     def create_two_factor_key(self, user_id, two_factor_auth):
         """Enables two factor auth for a certain user."""
 
         user = self.identity_api.get_user(user_id) # check if user exists
-        #LOG.info("Creating a new two factor key.")
         two_factor_auth['key'] = pyotp.random_base32()
         return self.driver.create_two_factor_key(user_id, two_factor_auth)
 
@@ -71,7 +71,6 @@ class TwoFactorAuthManager(manager.Manager):
     def check_security_question(self, user_id, two_factor_auth):
         """Checks if the provided security answer is correct"""
 
-        #LOG.info("Checking security question")
         user = self.identity_api.get_user(user_id) # check if user exists
         return self.driver.check_security_question(user_id, two_factor_auth)
 
@@ -80,8 +79,6 @@ class TwoFactorAuthManager(manager.Manager):
 
         twofactor = self.driver.get_two_factor_info(user_id)
         totp = pyotp.TOTP(twofactor.two_factor_key)
-        LOG.info("Code to verify is "+time_based_code)
-        LOG.info(totp.verify(time_based_code))
         return totp.verify(time_based_code)
 
 @six.add_metaclass(abc.ABCMeta)
