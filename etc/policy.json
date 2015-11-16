@@ -195,7 +195,7 @@
     "identity:reset_password": "rule:member_or_admin_or_owner",
     "identity:new_activation_key": "rule:member_or_admin_or_owner",
 
-    "identity:list_role_user_assignments": "rule:member_or_admin_or_owner",
+    "identity:list_role_user_assignments": "rule:admin_or_get_and_assign",
     "identity:list_roles_user_allowed_to_assign": "rule:member_or_admin_or_owner",
     "identity:add_role_to_user": "rule:admin_or_get_and_assign",
     "identity:remove_role_from_user": "rule:admin_or_get_and_assign",
@@ -208,7 +208,7 @@
     "identity:list_applications_user_allowed_to_manage": "rule:member_or_admin_or_owner",
     "identity:list_applications_user_allowed_to_manage_roles": "rule:member_or_admin_or_owner",
 
-    "identity:list_role_organization_assignments": "rule:member_or_admin_or_owner",
+    "identity:list_role_organization_assignments": "rule:admin_or_get_and_assign",
     "identity:list_roles_organization_allowed_to_assign": "rule:member_or_admin_or_owner",
 
     "identity:list_applications_organization_allowed_to_manage": "rule:member_or_admin_or_owner",
