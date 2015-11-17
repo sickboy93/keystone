@@ -178,14 +178,31 @@ class TwoFactorSecQuestionTests(TwoFactorBaseTests):
 
 class TwoFactorAuthTests(TwoFactorBaseTests):
 
+    def auth_plugin_config_override(self, methods=None, **method_classes):
+        if methods is None:
+            methods = ['external', 'password', 'token', 'oauth1', 'saml2', 'oauth2']
+            if not method_classes:
+                method_classes = dict(
+                    external='keystone.auth.plugins.external.DefaultDomain',
+                    password='keystone.auth.plugins.two_factor.TwoFactor',
+                    token='keystone.auth.plugins.token.Token',
+                    oauth1='keystone.auth.plugins.oauth1.OAuth',
+                    saml2='keystone.auth.plugins.saml2.Saml2',
+                    oauth2='keystone.auth.plugins.oauth2.OAuth2',
+                )
+        self.config_fixture.config(group='auth', methods=methods)
+        common_cfg.setup_authentication()
+        if method_classes:
+            self.config_fixture.config(group='auth', **method_classes)
+
     def _auth_body(self, **kwargs):
         body = {
             "auth": {
                 "identity": {  
                     "methods": [
-                        "two_factor"
+                        "password"
                     ],
-                    "two_factor": {
+                    "password": {
                         "user": {
                         }
                     },
@@ -193,7 +210,7 @@ class TwoFactorAuthTests(TwoFactorBaseTests):
             }
         }
 
-        payload = body['auth']['identity']['two_factor']
+        payload = body['auth']['identity']['password']
 
         if 'user_id' in kwargs:
             payload['user']['id'] = kwargs['user_id']

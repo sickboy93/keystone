@@ -356,7 +356,7 @@ class TestCase(BaseTestCase):
 
     def auth_plugin_config_override(self, methods=None, **method_classes):
         if methods is None:
-            methods = ['external', 'password', 'token', 'oauth1', 'saml2', 'oauth2', 'two_factor']
+            methods = ['external', 'password', 'token', 'oauth1', 'saml2', 'oauth2']
             if not method_classes:
                 method_classes = dict(
                     external='keystone.auth.plugins.external.DefaultDomain',
@@ -365,7 +365,6 @@ class TestCase(BaseTestCase):
                     oauth1='keystone.auth.plugins.oauth1.OAuth',
                     saml2='keystone.auth.plugins.saml2.Saml2',
                     oauth2='keystone.auth.plugins.oauth2.OAuth2',
-                    two_factor='keystone.auth.plugins.two_factor.TwoFactor'
                 )
         self.config_fixture.config(group='auth', methods=methods)
         common_cfg.setup_authentication()
