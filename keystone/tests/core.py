@@ -364,7 +364,7 @@ class TestCase(BaseTestCase):
                     token='keystone.auth.plugins.token.Token',
                     oauth1='keystone.auth.plugins.oauth1.OAuth',
                     saml2='keystone.auth.plugins.saml2.Saml2',
-                    oauth2='keystone.auth.plugins.oauth2.OAuth2'
+                    oauth2='keystone.auth.plugins.oauth2.OAuth2',
                 )
         self.config_fixture.config(group='auth', methods=methods)
         common_cfg.setup_authentication()

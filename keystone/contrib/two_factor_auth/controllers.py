@@ -22,8 +22,8 @@ LOG = log.getLogger(__name__)
 
 @dependency.requires('two_factor_auth_api', 'identity_api')
 class TwoFactorV3Controller(controller.V3Controller):
-    collection_name = ''
-    member_name = ''
+    collection_name = 'two_factor_auth'
+    member_name = 'two_factor_auth_data'
 
     @classmethod
     def base_url(cls, context, path=None):
@@ -65,7 +65,6 @@ class TwoFactorV3Controller(controller.V3Controller):
     @controller.protected()
     def enable_two_factor_auth(self, context, user_id, two_factor_auth):
         """Enables two factor auth for a certain user"""
-
         twofactor = self.two_factor_auth_api.create_two_factor_key(user_id, two_factor_auth)
         return TwoFactorV3Controller.wrap_member(context, twofactor)
 

@@ -15,8 +15,16 @@
 import urllib
 
 from keystone.tests import test_v3
+from keystone.common import config as common_cfg
+
 from keystone.contrib.two_factor_auth import controllers
 from keystone.contrib.two_factor_auth import core
+
+from keystone.openstack.common import log
+
+import pyotp
+
+LOG = log.getLogger(__name__)
 
 TWO_FACTOR_USER_URL = '/users/{user_id}'
 TWO_FACTOR_BASE_URL = '/OS-TWO-FACTOR'
@@ -71,6 +79,7 @@ class TwoFactorBaseTests(test_v3.RestfulTestCase):
                         expected_status=expected_status,
                         body=body)
 
+
     def _create_user(self):
         user = self.new_user_ref(domain_id=self.domain_id)
         password = user['password']
@@ -79,10 +88,10 @@ class TwoFactorBaseTests(test_v3.RestfulTestCase):
         return user
 
     def _delete_user(self, user_id):
-        self.identity_api.delete_user(user_id)
+        self.delete(TWO_FACTOR_USER_URL.format(user_id=user_id))
 
 
-class TwoFactorAuthTests(TwoFactorBaseTests):
+class TwoFactorCRUDTests(TwoFactorBaseTests):
 
     def test_two_factor_enable(self):
         self._create_two_factor_key(user_id=self.user_id)
@@ -144,7 +153,7 @@ class TwoFactorAuthTests(TwoFactorBaseTests):
         user = self._create_user()
         self._create_two_factor_key(user_id=user['id'])
         self._check_is_two_factor_enabled(user_id=user['id'])
-        self._delete_user(user_id=user['id'])
+        self._delete_user(user['id'])
         self._check_is_two_factor_enabled(user_id=user['id'], expected_status=404)
 
 
@@ -165,3 +174,108 @@ class TwoFactorSecQuestionTests(TwoFactorBaseTests):
         self._check_security_question(user_id=self.user_id,
                                       sec_answer='Does not matter',
                                       expected_status=404)
+
+
+class TwoFactorAuthTests(TwoFactorBaseTests):
+
+    def auth_plugin_config_override(self, methods=None, **method_classes):
+        if methods is None:
+            methods = ['external', 'password', 'token', 'oauth1', 'saml2', 'oauth2']
+            if not method_classes:
+                method_classes = dict(
+                    external='keystone.auth.plugins.external.DefaultDomain',
+                    password='keystone.auth.plugins.two_factor.TwoFactor',
+                    token='keystone.auth.plugins.token.Token',
+                    oauth1='keystone.auth.plugins.oauth1.OAuth',
+                    saml2='keystone.auth.plugins.saml2.Saml2',
+                    oauth2='keystone.auth.plugins.oauth2.OAuth2',
+                )
+        self.config_fixture.config(group='auth', methods=methods)
+        common_cfg.setup_authentication()
+        if method_classes:
+            self.config_fixture.config(group='auth', **method_classes)
+
+    def _auth_body(self, **kwargs):
+        body = {
+            "auth": {
+                "identity": {  
+                    "methods": [
+                        "password"
+                    ],
+                    "password": {
+                        "user": {
+                        }
+                    },
+                }
+            }
+        }
+
+        payload = body['auth']['identity']['password']
+
+        if 'user_id' in kwargs:
+            payload['user']['id'] = kwargs['user_id']
+        if 'password' in kwargs:
+            payload['user']['password'] = kwargs['password']
+        if 'user_name' in kwargs:
+            payload['user']['name'] = kwargs['user_name']
+        if 'domain_id' in kwargs:
+            payload['user']['domain'] = {}
+            payload['user']['domain']['id'] = kwargs['domain_id']
+        if 'time_based_code' in kwargs:
+            payload['time_based_code'] = kwargs['time_based_code']
+
+        return body
+
+    def _authenticate(self, auth_body, expected_status=201):
+        return self.post('/auth/tokens', body=auth_body, expected_status=expected_status, noauth=True)
+
+    def _get_current_code(self, user_id):
+        two_factor_info = self.manager.get_two_factor_info(user_id)
+
+        totp = pyotp.TOTP(two_factor_info.two_factor_key)
+        return totp.now()
+
+    def test_auth_correct(self):
+        self._create_two_factor_key(user_id=self.user_id)
+
+        req = self._auth_body(user_id=self.user_id,
+                              password=self.user['password'],
+                              time_based_code=self._get_current_code(self.user_id))
+        self._authenticate(auth_body=req)
+
+    def test_auth_correct_two_factor_disabled(self):
+        req = self._auth_body(
+            user_id=self.user_id, 
+            password=self.user['password'])
+        self._authenticate(auth_body=req)
+
+    def test_auth_correct_name_and_domain(self):
+        self._create_two_factor_key(user_id=self.user_id)
+        req = self._auth_body(
+            user_name=self.user['name'],
+            domain_id=self.user['domain_id'],
+            time_based_code=self._get_current_code(self.user_id),
+            password=self.user['password'])
+        self._authenticate(auth_body=req)
+
+    def test_auth_correct_two_factor_disabled_name_and_domain(self):
+        req = self._auth_body(
+            user_name=self.user['name'],
+            domain_id=self.user['domain_id'],
+            password=self.user['password'])
+        self._authenticate(auth_body=req)
+
+    def test_auth_no_code(self):
+        self._create_two_factor_key(user_id=self.user_id)
+        req = self._auth_body(
+            user_id=self.user_id, 
+            password=self.user['password'])
+        self._authenticate(auth_body=req, expected_status=400)
+
+    def test_auth_wrong_code(self):
+        self._create_two_factor_key(user_id=self.user_id)
+        req = self._auth_body(
+            user_id=self.user_id, 
+            time_based_code='123456', 
+            password=self.user['password'])
+        self._authenticate(auth_body=req, expected_status=401)
