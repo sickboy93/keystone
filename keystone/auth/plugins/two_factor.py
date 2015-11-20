@@ -25,7 +25,7 @@ from keystone.openstack.common import log
 
 LOG = log.getLogger(__name__)
 
-METHOD_NAME = 'two_factor'
+METHOD_NAME = 'password'
       
 @dependency.requires('assignment_api', 'identity_api')
 class UserTwoFactorAuthInfo(UserAuthInfo):
@@ -37,13 +37,13 @@ class UserTwoFactorAuthInfo(UserAuthInfo):
 
     def __init__(self):
         super(UserTwoFactorAuthInfo, self).__init__()
-        self.time_based_code = None
+        self.verification_code = None
 
     def _validate_and_normalize_auth_data(self, auth_payload):
         super(UserTwoFactorAuthInfo, self)._validate_and_normalize_auth_data(auth_payload)
-        if 'time_based_code' not in auth_payload:
+        if 'verification_code' not in auth_payload:
             raise exception.ValidationError(attribute='user', target=METHOD_NAME)
-        self.time_based_code = auth_payload['time_based_code']
+        self.verification_code = auth_payload['verification_code']
 
 
 @dependency.requires('two_factor_auth_api')
@@ -67,7 +67,7 @@ class TwoFactor(Password):
 
         user_info = UserTwoFactorAuthInfo.create(auth_payload)
 
-        if not self.two_factor_auth_api.verify_code(user_id, user_info.time_based_code):
+        if not self.two_factor_auth_api.verify_code(user_id, user_info.verification_code):
             raise exception.Unauthorized(_('Invalid time based code'))
         
         return super(TwoFactor, self).authenticate(context, auth_payload, auth_context)

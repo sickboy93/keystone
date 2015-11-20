@@ -74,12 +74,12 @@ class TwoFactorAuthManager(manager.Manager):
         user = self.identity_api.get_user(user_id) # check if user exists
         return self.driver.check_security_question(user_id, two_factor_auth)
 
-    def verify_code(self, user_id, time_based_code):
+    def verify_code(self, user_id, verification_code):
         """Verifies a given time based code"""
 
         twofactor = self.driver.get_two_factor_info(user_id)
         totp = pyotp.TOTP(twofactor.two_factor_key)
-        return totp.verify(time_based_code)
+        return totp.verify(verification_code)
 
 @six.add_metaclass(abc.ABCMeta)
 class Driver(object):

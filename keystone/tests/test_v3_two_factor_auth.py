@@ -221,8 +221,8 @@ class TwoFactorAuthTests(TwoFactorBaseTests):
         if 'domain_id' in kwargs:
             payload['user']['domain'] = {}
             payload['user']['domain']['id'] = kwargs['domain_id']
-        if 'time_based_code' in kwargs:
-            payload['time_based_code'] = kwargs['time_based_code']
+        if 'verification_code' in kwargs:
+            payload['verification_code'] = kwargs['verification_code']
 
         return body
 
@@ -240,7 +240,7 @@ class TwoFactorAuthTests(TwoFactorBaseTests):
 
         req = self._auth_body(user_id=self.user_id,
                               password=self.user['password'],
-                              time_based_code=self._get_current_code(self.user_id))
+                              verification_code=self._get_current_code(self.user_id))
         self._authenticate(auth_body=req)
 
     def test_auth_correct_two_factor_disabled(self):
@@ -254,7 +254,7 @@ class TwoFactorAuthTests(TwoFactorBaseTests):
         req = self._auth_body(
             user_name=self.user['name'],
             domain_id=self.user['domain_id'],
-            time_based_code=self._get_current_code(self.user_id),
+            verification_code=self._get_current_code(self.user_id),
             password=self.user['password'])
         self._authenticate(auth_body=req)
 
@@ -276,6 +276,6 @@ class TwoFactorAuthTests(TwoFactorBaseTests):
         self._create_two_factor_key(user_id=self.user_id)
         req = self._auth_body(
             user_id=self.user_id, 
-            time_based_code='123456', 
+            verification_code='123456', 
             password=self.user['password'])
         self._authenticate(auth_body=req, expected_status=401)
