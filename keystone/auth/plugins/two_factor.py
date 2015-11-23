@@ -41,9 +41,10 @@ class UserTwoFactorAuthInfo(UserAuthInfo):
 
     def _validate_and_normalize_auth_data(self, auth_payload):
         super(UserTwoFactorAuthInfo, self)._validate_and_normalize_auth_data(auth_payload)
-        if 'verification_code' not in auth_payload:
-            raise exception.ValidationError(attribute='user', target=METHOD_NAME)
-        self.verification_code = auth_payload['verification_code']
+        verification_code = auth_payload['user'].get('verification_code', None)
+        if not verification_code:
+            raise exception.ValidationError(attribute='verification_code', target=METHOD_NAME)
+        self.verification_code = verification_code
 
 
 @dependency.requires('two_factor_auth_api')

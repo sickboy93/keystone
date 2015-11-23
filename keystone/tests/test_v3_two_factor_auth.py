@@ -222,7 +222,7 @@ class TwoFactorAuthTests(TwoFactorBaseTests):
             payload['user']['domain'] = {}
             payload['user']['domain']['id'] = kwargs['domain_id']
         if 'verification_code' in kwargs:
-            payload['verification_code'] = kwargs['verification_code']
+            payload['user']['verification_code'] = kwargs['verification_code']
 
         return body
 

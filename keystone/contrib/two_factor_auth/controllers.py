@@ -23,7 +23,7 @@ LOG = log.getLogger(__name__)
 @dependency.requires('two_factor_auth_api', 'identity_api')
 class TwoFactorV3Controller(controller.V3Controller):
     collection_name = 'two_factor_auth'
-    member_name = 'two_factor_auth_data'
+    member_name = 'two_factor_auth'
 
     @classmethod
     def base_url(cls, context, path=None):
