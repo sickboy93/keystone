@@ -36,7 +36,7 @@ class TwoFactorV3Controller(controller.V3Controller):
         ref.setdefault('links', {})
         ref['links']['self'] = cls.base_url(context) + '/' + ref['user_id']
 
-    #@controller.protected()
+    @controller.protected()
     def is_two_factor_auth_enabled(self, context):
         """Checks if a certain user has enabled two factor auth"""
         user_id = context['query_string'].get('user_id')
