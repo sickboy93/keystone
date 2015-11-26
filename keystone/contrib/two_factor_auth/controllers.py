@@ -20,7 +20,7 @@ from keystone.openstack.common import log
 LOG = log.getLogger(__name__)
 
 
-@dependency.requires('two_factor_auth_api', 'identity_api')
+@dependency.requires('two_factor_auth_api', 'identity_api', 'assignment_api')
 class TwoFactorV3Controller(controller.V3Controller):
     collection_name = 'two_factor_auth'
     member_name = 'two_factor_auth'
@@ -44,19 +44,24 @@ class TwoFactorV3Controller(controller.V3Controller):
         if not user_id:
             user_name = context['query_string'].get('user_name')
             domain_id = context['query_string'].get('domain_id')
+            domain_name = context['query_string'].get('domain_name')
 
-            if not user_name and not domain_id:
+            if not user_name and not(domain_id or domain_name) :
                 # 400 bad request -> need id or name + domain
                 raise exception.ValidationError(
-                    attribute='user_id or user_name and domain_id',
+                    attribute='user_id or user_name and domain (id or name)',
                     target='query string')
 
-            if bool(user_name) != bool(domain_id):
+            if (bool(user_name) != bool(domain_id)) and (bool(user_name) != bool(domain_name)):
                 # 400 bad request -> need both domain and name
                 raise exception.ValidationError(
-                    attribute='user_name and domain_id',
+                    attribute='user_name and either domain_id or domain_name',
                     target='query string')
 
+            if not domain_id:
+                domain = self.assignment_api.get_domain_by_name(domain_name)
+                domain_id = domain['id']
+            
             user = self.identity_api.get_user_by_name(user_name, domain_id)
             user_id = user['id']
 
