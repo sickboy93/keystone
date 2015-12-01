@@ -19,8 +19,14 @@ import migrate
 import sqlalchemy as sql
 from sqlalchemy import orm
 
-from keystone.contrib.initial_data import core
 from keystone.contrib.initial_data import data
+
+def _insert_data(meta, session, table_name, elements):
+    table = sql.Table(table_name, meta, autoload=True)
+
+    for element_data in elements:
+        table.insert(element_data).execute()
+        session.commit()
 
 
 def upgrade(migrate_engine):
@@ -30,109 +36,28 @@ def upgrade(migrate_engine):
     meta.bind = migrate_engine
     session = orm.sessionmaker(bind=migrate_engine)()
 
-	# Keystone services
-    _create_services_and_endpoints(meta, session)
+	# Create regions
+    _insert_data(meta, session, 'region', data.REGIONS)
+     # Create services
+    _insert_data(meta, session, 'service', data.SERVICES)
+    _insert_data(meta, session, 'endpoint', data.ENDPOINTS)
 
     # Enpoint groups
-    _create_endpoint_group_filters(meta, session)
+    _insert_data(meta, session, 'endpoint_group', data.ENDPOINT_GROUPS)
     
     # Keystone roles
-    _create_keystone_roles(meta, session)
+    _insert_data(meta, session, 'role', data.KEYSTONE_ROLES)
 
     # Default users and projects
-    _create_users_and_projects(meta, session)
+    _insert_data(meta, session, 'user', data.USERS)
+    _insert_data(meta, session, 'project', data.PROJECTS)
+    _insert_data(meta, session, 'assignment', data.ASSIGNMENTS)
 
     #_create_internal_roles_and_permissions(meta, session)
 
     # Make the idm user administrator
     #_grant_administrator(meta, session)
 
-def _create_services_and_endpoints(meta, session):
-    """Create services and its endpoints from a service catalog. Create also
-    all the required regions.
-    """
-
-    # Create regions
-    region_table = sql.Table('region', meta, autoload=True)
-    for region in data.REGIONS:
-        region_table.insert({
-            'id': region,
-            'description': '',
-        }).execute()
-
-        session.commit()
-
-    # Create services
-    service_table = sql.Table('service', meta, autoload=True)
-    endpoint_table = sql.Table('endpoint', meta, autoload=True)
-    for service_data in data.SERVICE_CATALOG:
-        service_id = uuid.uuid4().hex
-
-        service_table.insert({
-            'id': service_id,
-            'type': service_data['type'],
-            'enabled': True,
-        }).execute()
-
-        session.commit()
-
-        # Create endpoints
-        for endpoint_data in service_data['endpoints']:
-            interfaces = [
-                ('public', endpoint_data['publicURL']),
-                ('admin', endpoint_data['adminURL']),
-                ('internal', endpoint_data['internalURL']),
-            ]
-            for interface in interfaces:
-                endpoint_table.insert({
-                    'id': uuid.uuid4().hex,
-                    'service_id': service_id,
-                    'url': interface[1],
-                    'region_id': endpoint_data['region'],
-                    'interface': interface[0],
-                }).execute()
-
-                session.commit()
-
-
-def _create_endpoint_group_filters(meta, session):
-    """Create an endpoint group that filters for each region and one
-    that filters for identity service.
-    """
-    endpoint_group_table = sql.Table('endpoint_group', meta, autoload=True)
-    for region in data.REGIONS:
-        endpoint_group_table.insert({
-            'id': uuid.uuid4().hex,
-            'name': region + ' Region Group',
-            'filters': json.dumps({'region_id': region}),
-        }).execute()
-
-        session.commit()
-
-    identity_services = [] # TODO(garcianavalon)
-
-    for service in identity_services:
-        endpoint_group_table.insert({
-            'id': uuid.uuid4().hex,
-            'name': service.name + ' Identity Group',
-            'filters': json.dumps({'service_id': service.id}),
-        }).execute()
-
-        session.commit()
-
-def _create_keystone_roles(meta, session):
-    """Default keystone roles.
-    NOTE(garcianavalon) don't confuse it with keystone v2 API
-    default role (member_role_name=_member_). We need a default
-    role to add users to projects. Horizon knows this role throught
-    the local_settings.py file.
-    """
-    core.insert_data(meta, session, 'role', data.KEYSTONE_ROLES)
-
-def _create_users_and_projects(meta, session):
-    core.insert_data(meta, session, 'user', data.USERS)
-    core.insert_data(meta, session, 'project', data.PROJECTS)
-    core.insert_data(meta, session, 'assignment', data.ASSIGNMENTS)
 
 
 # def _create_internal_roles_and_permissions(meta, session):

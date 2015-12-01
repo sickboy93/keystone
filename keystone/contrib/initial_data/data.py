@@ -32,30 +32,88 @@ KEYSTONE_PUBLIC_ADDRESS = '127.0.0.1'
 KEYSTONE_ADMIN_ADDRESS = '127.0.0.1'
 KEYSTONE_INTERNAL_ADDRESS = '127.0.0.1'
 
-REGIONS = [
-  'Spain2', 
+_REGIONS = [
+    'Spain2',
 ]
 
-SERVICE_CATALOG = [
-  {
-    'endpoints': [
-      {
-        'region': REGIONS[0],
-        'adminURL': 'http://{url}:{port}/v3/'.format(
-          url=KEYSTONE_ADMIN_ADDRESS,
-          port=CONF.admin_port),
-        'internalURL': 'http://{url}:{port}/v3/'.format(
-          url=KEYSTONE_INTERNAL_ADDRESS,
-          port=CONF.admin_port),
-        'publicURL': 'http://{url}:{port}/v3/'.format(
-          url=KEYSTONE_PUBLIC_ADDRESS,
-          port=CONF.public_port)
-      }
-    ],
-    'type': 'identity',
-    'name': 'keystone'
-  }
+REGIONS = []
+for region in _REGIONS:
+    REGIONS.append({
+        'id': region,
+        'description': '',
+    })
+
+_SERVICE_CATALOG = [
+    {
+        'endpoints': [
+            {
+                'region': _REGIONS[0],
+                'adminURL': 'http://{url}:{port}/v3/'.format(
+                    url=KEYSTONE_ADMIN_ADDRESS,
+                    port=CONF.admin_port),
+                'internalURL': 'http://{url}:{port}/v3/'.format(
+                    url=KEYSTONE_INTERNAL_ADDRESS,
+                    port=CONF.admin_port),
+                'publicURL': 'http://{url}:{port}/v3/'.format(
+                    url=KEYSTONE_PUBLIC_ADDRESS,
+                    port=CONF.public_port)
+            }
+        ],
+        'type': 'identity',
+        'name': 'keystone'
+    }
 ]
+
+SERVICES = []
+ENDPOINTS = []
+for service_data in _SERVICE_CATALOG:
+    service_id = uuid.uuid4().hex
+
+    SERVICES.append({
+        'id': service_id,
+        'type': service_data['type'],
+        'enabled': True,
+        'extra': json.dumps({
+            'name': service_data['name'],
+        }),
+    })
+
+
+    # Create endpoints
+    for endpoint_data in service_data['endpoints']:
+        interfaces = [
+            ('public', endpoint_data['publicURL']),
+            ('admin', endpoint_data['adminURL']),
+            ('internal', endpoint_data['internalURL']),
+        ]
+        for interface in interfaces:
+            ENDPOINTS.append({
+                'id': uuid.uuid4().hex,
+                'service_id': service_id,
+                'url': interface[1],
+                'region_id': endpoint_data['region'],
+                'interface': interface[0],
+            })
+
+# Endpoint Group Filters
+ENDPOINT_GROUPS = []
+
+# one for each region
+for region in _REGIONS:
+    ENDPOINT_GROUPS.append({
+        'id': uuid.uuid4().hex,
+        'name': region + ' Region Group',
+        'filters': json.dumps({'region_id': region}),
+    })
+
+# one for each identity service
+for service in [s for s in SERVICES if s['type'] == 'identity']:
+    ENDPOINT_GROUPS.append({
+        'id': uuid.uuid4().hex,
+        'name': json.loads(service['extra'])['name'] + ' Identity Group',
+        'filters': json.dumps({'service_id': service['id']}),
+    })
+
 
 # Keystone Roles
 KEYSTONE_ROLES = [
