@@ -43,8 +43,6 @@ EXTENSION_DATA = {
 extension.register_admin_extension(EXTENSION_DATA['alias'], EXTENSION_DATA)
 extension.register_public_extension(EXTENSION_DATA['alias'], EXTENSION_DATA)
 
-def find_element_by(elements, attr, value):
-    return next(r for r in elements if r[attr]==value)
 
 def insert_data(meta, session, table_name, elements):
     table = sql.Table(table_name, meta, autoload=True)
