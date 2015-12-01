@@ -201,3 +201,51 @@ ASSIGNMENTS = [
         'inherited': False,
     },
 ]
+
+# Internal FIWARE roles and permissions
+
+APLICATIONS = [
+    {
+        'id': 'idm_admin_app',
+        'name': 'idm_admin_app',
+        'description': '',
+        'grant_type':'authorization_code',
+        'client_type':'confidential',
+        'extra': json.dumps({
+                'is_default': True,
+            }),
+    },
+]
+
+FIWARE_PERMISSIONS = [
+]
+
+FIWARE_ROLES = [
+]
+    # Default Permissions and roles
+    created_permissions = []
+    for permission in settings.INTERNAL_PERMISSIONS:
+        created_permissions.append(
+            keystone.fiware_roles.permissions.create(
+                name=permission, application=idm_app, is_internal=True))
+    created_roles = []
+    for role in settings.INTERNAL_ROLES:
+        created_role = keystone.fiware_roles.roles.create(
+            name=role, application=idm_app, is_internal=True)
+        created_roles.append(created_role)
+        # Link roles with permissions
+        for index in settings.INTERNAL_ROLES[role]:
+            keystone.fiware_roles.permissions.add_to_role(
+                created_role, created_permissions[index])
+
+# Finally export all the data
+DATA = [
+    ('region', REGIONS),
+    ('service', SERVICES),
+    ('endpoint', ENDPOINTS),
+    ('endpoint_group', ENDPOINT_GROUPS),
+    ('role', KEYSTONE_ROLES),
+    ('user', USERS),
+    ('project', PROJECTS),
+    ('assignment', ASSIGNMENTS),
+]

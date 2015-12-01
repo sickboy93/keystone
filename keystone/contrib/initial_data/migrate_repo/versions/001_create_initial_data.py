@@ -12,21 +12,11 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import json
-import uuid
-
 import migrate
 import sqlalchemy as sql
 from sqlalchemy import orm
 
-from keystone.contrib.initial_data import data
-
-def _insert_data(meta, session, table_name, elements):
-    table = sql.Table(table_name, meta, autoload=True)
-
-    for element_data in elements:
-        table.insert(element_data).execute()
-        session.commit()
+from keystone.contrib.initial_data.data import DATA
 
 
 def upgrade(migrate_engine):
@@ -36,22 +26,12 @@ def upgrade(migrate_engine):
     meta.bind = migrate_engine
     session = orm.sessionmaker(bind=migrate_engine)()
 
-	# Create regions
-    _insert_data(meta, session, 'region', data.REGIONS)
-     # Create services
-    _insert_data(meta, session, 'service', data.SERVICES)
-    _insert_data(meta, session, 'endpoint', data.ENDPOINTS)
+    for (table_name, elements) in DATA:
+        table = sql.Table(table_name, meta, autoload=True)
 
-    # Enpoint groups
-    _insert_data(meta, session, 'endpoint_group', data.ENDPOINT_GROUPS)
-    
-    # Keystone roles
-    _insert_data(meta, session, 'role', data.KEYSTONE_ROLES)
-
-    # Default users and projects
-    _insert_data(meta, session, 'user', data.USERS)
-    _insert_data(meta, session, 'project', data.PROJECTS)
-    _insert_data(meta, session, 'assignment', data.ASSIGNMENTS)
+        for element_data in elements:
+            table.insert(element_data).execute()
+            session.commit()
 
     #_create_internal_roles_and_permissions(meta, session)
 
@@ -60,30 +40,7 @@ def upgrade(migrate_engine):
 
 
 
-# def _create_internal_roles_and_permissions(meta, session):
-#     # Default internal application
-#     idm_app = keystone.oauth2.consumers.create(
-#         settings.IDM_USER_CREDENTIALS['username'],
-#         description='',
-#         grant_type='authorization_code',
-#         client_type='confidential',
-#         is_default=True)
 
-#     # Default Permissions and roles
-#     created_permissions = []
-#     for permission in settings.INTERNAL_PERMISSIONS:
-#         created_permissions.append(
-#             keystone.fiware_roles.permissions.create(
-#                 name=permission, application=idm_app, is_internal=True))
-#     created_roles = []
-#     for role in settings.INTERNAL_ROLES:
-#         created_role = keystone.fiware_roles.roles.create(
-#             name=role, application=idm_app, is_internal=True)
-#         created_roles.append(created_role)
-#         # Link roles with permissions
-#         for index in settings.INTERNAL_ROLES[role]:
-#             keystone.fiware_roles.permissions.add_to_role(
-#                 created_role, created_permissions[index])
     
 
 # def _grant_administrator(meta, idm_app, users):
