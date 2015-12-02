@@ -203,40 +203,126 @@ ASSIGNMENTS = [
 ]
 
 # Internal FIWARE roles and permissions
+_IDM_ADMIN_APP_NAME = 'idm_admin_app'
 
-APLICATIONS = [
+APPLICATIONS = [
     {
-        'id': 'idm_admin_app',
-        'name': 'idm_admin_app',
+        'id': _IDM_ADMIN_APP_NAME,
+        'name': _IDM_ADMIN_APP_NAME,
         'description': '',
         'grant_type':'authorization_code',
         'client_type':'confidential',
         'extra': json.dumps({
-                'is_default': True,
-            }),
+            'is_default': True,
+        }),
     },
 ]
 
+_INTERNAL_ROLES_PERM_NAME = 'Get and assign all internal application roles'
+_MANAGE_APP_PERM_NAME = 'Manage the application'
+_MANAGE_ROLES_PERM_NAME = 'Manage roles'
+_ALL_PUBLIC_PERM_NAME = 'Get and assign all public application roles'
+_MANAGE_AUTH_PERM_NAME = 'Manage Authorizations'
+_OWNED_ROLES_PERM_NAME = 'Get and assign only public owned roles'
+
 FIWARE_PERMISSIONS = [
+    {
+        'id': 'manage_application',
+        'name': _MANAGE_APP_PERM_NAME,
+        'application_id': find_id(APPLICATIONS, value=_IDM_ADMIN_APP_NAME),
+        'is_internal': True,
+    },
+    {
+        'id': 'manage_roles',
+        'name': _MANAGE_ROLES_PERM_NAME,
+        'application_id': find_id(APPLICATIONS, value=_IDM_ADMIN_APP_NAME),
+        'is_internal': True,
+    },
+    {
+        'id': 'get_assign_public_roles',
+        'name': _ALL_PUBLIC_PERM_NAME,
+        'application_id': find_id(APPLICATIONS, value=_IDM_ADMIN_APP_NAME),
+        'is_internal': True,
+    },
+    {
+        'id': 'manage_authorizations',
+        'name': _MANAGE_AUTH_PERM_NAME,
+        'application_id': find_id(APPLICATIONS, value=_IDM_ADMIN_APP_NAME),
+        'is_internal': True,
+    },
+    {
+        'id': 'get_assign_public_owned_roles',
+        'name': _OWNED_ROLES_PERM_NAME,
+        'application_id': find_id(APPLICATIONS, value=_IDM_ADMIN_APP_NAME),
+        'is_internal': True,
+    },
+    {
+        'id': 'get_assign_internal_roles',
+        'name': _INTERNAL_ROLES_PERM_NAME,
+        'application_id': find_id(APPLICATIONS, value=_IDM_ADMIN_APP_NAME),
+        'is_internal': True,
+    },
 ]
 
+_PROVIDER_ROLE_NAME = 'Provider'
+_PURCHASER_ROLE_NAME = 'Purchaser'
+
 FIWARE_ROLES = [
+    {
+        'id': 'provider_role',
+        'name': _PROVIDER_ROLE_NAME,
+        'application_id': find_id(APPLICATIONS, value=_IDM_ADMIN_APP_NAME),
+        'is_internal': True,
+    },
+    {
+        'id': 'purchaser_role',
+        'name': _PURCHASER_ROLE_NAME,
+        'application_id': find_id(APPLICATIONS, value=_IDM_ADMIN_APP_NAME),
+        'is_internal': True,
+    },
 ]
-    # Default Permissions and roles
-    created_permissions = []
-    for permission in settings.INTERNAL_PERMISSIONS:
-        created_permissions.append(
-            keystone.fiware_roles.permissions.create(
-                name=permission, application=idm_app, is_internal=True))
-    created_roles = []
-    for role in settings.INTERNAL_ROLES:
-        created_role = keystone.fiware_roles.roles.create(
-            name=role, application=idm_app, is_internal=True)
-        created_roles.append(created_role)
-        # Link roles with permissions
-        for index in settings.INTERNAL_ROLES[role]:
-            keystone.fiware_roles.permissions.add_to_role(
-                created_role, created_permissions[index])
+
+# FIWARE role assignments
+FIWARE_ROLE_PERMISSION = [
+    {
+        'role_id': find_id(FIWARE_ROLES, value=_PROVIDER_ROLE_NAME),
+        'permission_id': find_id(FIWARE_PERMISSIONS, value=_INTERNAL_ROLES_PERM_NAME),
+    },
+    {
+        'role_id': find_id(FIWARE_ROLES, value=_PROVIDER_ROLE_NAME),
+        'permission_id': find_id(FIWARE_PERMISSIONS, value=_MANAGE_APP_PERM_NAME),
+    },
+    {
+        'role_id': find_id(FIWARE_ROLES, value=_PROVIDER_ROLE_NAME),
+        'permission_id': find_id(FIWARE_PERMISSIONS, value=_MANAGE_ROLES_PERM_NAME),
+    },
+    {
+        'role_id': find_id(FIWARE_ROLES, value=_PROVIDER_ROLE_NAME),
+        'permission_id': find_id(FIWARE_PERMISSIONS, value=_ALL_PUBLIC_PERM_NAME),
+    },
+    {
+        'role_id': find_id(FIWARE_ROLES, value=_PROVIDER_ROLE_NAME),
+        'permission_id': find_id(FIWARE_PERMISSIONS, value=_MANAGE_AUTH_PERM_NAME),
+    },
+    {
+        'role_id': find_id(FIWARE_ROLES, value=_PROVIDER_ROLE_NAME),
+        'permission_id': find_id(FIWARE_PERMISSIONS, value=_OWNED_ROLES_PERM_NAME),
+    },
+    {
+        'role_id': find_id(FIWARE_ROLES, value=_PURCHASER_ROLE_NAME),
+        'permission_id': find_id(FIWARE_PERMISSIONS, value=_ALL_PUBLIC_PERM_NAME),
+    },
+]
+
+FIWARE_ROLE_USER = [
+     {
+        'role_id': find_id(FIWARE_ROLES, value=_PROVIDER_ROLE_NAME),
+        'user_id': find_id(USERS, value='idm'),
+        'organization_id': find_id(PROJECTS, value='idm'),
+        'application_id': find_id(APPLICATIONS, value=_IDM_ADMIN_APP_NAME),
+
+    },
+]
 
 # Finally export all the data
 DATA = [
@@ -248,4 +334,8 @@ DATA = [
     ('user', USERS),
     ('project', PROJECTS),
     ('assignment', ASSIGNMENTS),
+    ('role_fiware', FIWARE_ROLES),
+    ('permission_fiware', FIWARE_PERMISSIONS),
+    ('role_permission_fiware', FIWARE_ROLE_PERMISSION),
+    ('role_user_fiware', FIWARE_ROLE_USER),
 ]
