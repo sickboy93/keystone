@@ -17,8 +17,6 @@ import uuid
 
 from keystone import config
 from keystone.assignment.backends.sql import AssignmentType
-from keystone.common import utils
-
 
 CONF = config.CONF
 DEFAULT_DOMAIN = CONF.identity.default_domain_id
@@ -169,20 +167,15 @@ PROJECTS = [
 ]
 
 # Users
-_USERS = [
+USERS = [
     {
         'id': 'idm_user',
         'name': 'idm',
         'username': 'idm',
         'default_project_id': find_id(PROJECTS, value='idm'),
         'domain_id': DEFAULT_DOMAIN,
-        'password': 'idm', #TODO(garcianavalon)
     },
 ]
-
-USERS = []
-for user in _USERS:
-    USERS.append(utils.hash_user_password(user))
 
 # Keystone role assignments
 ASSIGNMENTS = [
@@ -315,7 +308,7 @@ FIWARE_ROLE_PERMISSION = [
 ]
 
 FIWARE_ROLE_USER = [
-     {
+    {
         'role_id': find_id(FIWARE_ROLES, value=_PROVIDER_ROLE_NAME),
         'user_id': find_id(USERS, value='idm'),
         'organization_id': find_id(PROJECTS, value='idm'),

@@ -12,12 +12,18 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import getpass
 import migrate
 import sqlalchemy as sql
 from sqlalchemy import orm
 
-from keystone.contrib.initial_data.data import DATA
+from keystone.common import utils
+from keystone.contrib.initial_data import data
 
+_PASS_PROMT = (
+    'Set a password for the {0} user. '
+    '(If you forget it, the password can be changed later using the admin token): '
+)
 
 def upgrade(migrate_engine):
     # Upgrade operations go here. Don't create your own engine; bind
@@ -26,10 +32,15 @@ def upgrade(migrate_engine):
     meta.bind = migrate_engine
     session = orm.sessionmaker(bind=migrate_engine)()
 
-    for (table_name, elements) in DATA:
+    for (table_name, elements) in data.DATA:
         table = sql.Table(table_name, meta, autoload=True)
 
         for element_data in elements:
+            if table_name == 'user':
+                # set up users passwords
+                element_data['password'] = getpass.getpass(
+                    _PASS_PROMT.format(element_data['name']))
+                element_data = utils.hash_user_password(element_data)
             table.insert(element_data).execute()
             session.commit()
 
@@ -37,6 +48,6 @@ def downgrade(migrate_engine):
     # Operations to reverse the above upgrade go here.
     meta = sql.MetaData()
     meta.bind = migrate_engine
-    tables = [table_name for (table_name, elements) in DATA]
+    tables = [table_name for (table_name, elements) in data.DATA]
     for table_name in tables:
         table = sql.Table(table_name, meta, autoload=True).delete().execute()
