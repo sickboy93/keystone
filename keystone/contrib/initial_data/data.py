@@ -39,6 +39,7 @@ for region in _REGIONS:
     REGIONS.append({
         'id': region,
         'description': '',
+        'extra': json.dumps({}),
     })
 
 _SERVICE_CATALOG = [
@@ -91,6 +92,7 @@ for service_data in _SERVICE_CATALOG:
                 'url': interface[1],
                 'region_id': endpoint_data['region'],
                 'interface': interface[0],
+                'extra': json.dumps({}),
             })
 
 # Endpoint Group Filters
@@ -117,11 +119,13 @@ for service in [s for s in SERVICES if s['type'] == 'identity']:
 KEYSTONE_ROLES = [
     {
         'id': uuid.uuid4().hex,
-        'name': 'member'
+        'name': 'member',
+        'extra': json.dumps({}),
     },
     {
         'id': uuid.uuid4().hex,
-        'name': 'owner'
+        'name': 'owner',
+        'extra': json.dumps({}),
     },
     {
         'id': uuid.uuid4().hex,
@@ -159,6 +163,7 @@ PROJECTS = [
         'id': 'idm_project',
         'name': 'idm',
         'description':'',
+        'enabled': True,
         'domain_id': DEFAULT_DOMAIN,
         'extra': json.dumps({
             'is_default': True,
@@ -172,8 +177,10 @@ USERS = [
         'id': 'idm_user',
         'name': 'idm',
         'username': 'idm',
+        'enabled': True,
         'default_project_id': find_id(PROJECTS, value='idm'),
         'domain_id': DEFAULT_DOMAIN,
+        'extra': json.dumps({}),
     },
 ]
 
@@ -202,9 +209,16 @@ APPLICATIONS = [
     {
         'id': _IDM_ADMIN_APP_NAME,
         'name': _IDM_ADMIN_APP_NAME,
-        'description': '',
-        'grant_type':'authorization_code',
-        'client_type':'confidential',
+        'description': (
+            'Application that acts as the IdM itself. To see the administration '
+            'section of the web portal grant provider to a user in this application.'
+        ),
+        'grant_type': 'authorization_code',
+        'client_type': 'confidential',
+        'redirect_uris': json.dumps([]),
+        'response_type': 'code',
+        'secret':  uuid.uuid4().hex,
+        'scopes': json.dumps([]),
         'extra': json.dumps({
             'is_default': True,
         }),
@@ -327,6 +341,7 @@ DATA = [
     ('user', USERS),
     ('project', PROJECTS),
     ('assignment', ASSIGNMENTS),
+    ('consumer_oauth2', APPLICATIONS),
     ('role_fiware', FIWARE_ROLES),
     ('permission_fiware', FIWARE_PERMISSIONS),
     ('role_permission_fiware', FIWARE_ROLE_PERMISSION),
