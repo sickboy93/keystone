@@ -60,7 +60,12 @@ class TwoFactorAuthManager(manager.Manager):
 
         user = self.identity_api.get_user(user_id) # check if user exists
         two_factor_auth['key'] = pyotp.random_base32()
-        return self.driver.create_two_factor_key(user_id, two_factor_auth)
+        key_object = self.driver.create_two_factor_key(user_id, two_factor_auth)
+
+        totp = pyotp.TOTP(two_factor_auth['key'])
+        key_object['uri'] = totp.provisioning_uri(user['name'], issuer_name='Fiware Accounts')
+        
+        return key_object
 
     def is_two_factor_enabled(self, user_id):
         """Checks whether two factor auth is enabled."""

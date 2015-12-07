@@ -46,7 +46,7 @@ class TwoFactorV3Controller(controller.V3Controller):
             domain_id = context['query_string'].get('domain_id')
             domain_name = context['query_string'].get('domain_name')
 
-            if not user_name and not(domain_id or domain_name) :
+            if not user_name or not(domain_id or domain_name) :
                 # 400 bad request -> need id or name + domain
                 raise exception.ValidationError(
                     attribute='user_id or user_name and domain (id or name)',
