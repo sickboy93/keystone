@@ -27,6 +27,8 @@ import abc
 
 LOG = log.getLogger(__name__)
 
+ISSUER_NAME = 'FIWARE Lab Accounts'
+
 @dependency.requires('identity_api')
 @dependency.provider('two_factor_auth_api')
 class TwoFactorAuthManager(manager.Manager):
@@ -63,7 +65,8 @@ class TwoFactorAuthManager(manager.Manager):
         key_object = self.driver.create_two_factor_key(user_id, two_factor_auth)
 
         totp = pyotp.TOTP(two_factor_auth['key'])
-        key_object['uri'] = totp.provisioning_uri(user['name'], issuer_name='Fiware Accounts')
+        # TODO(@federicofdez) Save issuer_name in settings
+        key_object['uri'] = totp.provisioning_uri(user['name'], issuer_name=ISSUER_NAME)
         
         return key_object
 
