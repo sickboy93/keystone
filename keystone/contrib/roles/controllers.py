@@ -60,6 +60,7 @@ def _check_allowed_to_get_and_assign(self, context, protection, user_id=None,
     remove roles from a user or list application assignments.
 
     """
+    user_id = user_id if user_id else context['query_string'].get('user_id')
     ref = {}
     if application_id:
         req_user = self.identity_api.get_user(
@@ -81,6 +82,10 @@ def _check_allowed_to_get_and_assign(self, context, protection, user_id=None,
         else:
             # application must be allowed
             ref['is_allowed_to_get_and_assign'] = application_id in allowed_roles.keys()
+
+    elif user_id:
+        ref['is_allowed_to_get_and_assign'] = (
+            user_id == context['environment']['KEYSTONE_AUTH_CONTEXT']['user_id'])
 
     self.check_protection(context, protection, ref)
 
