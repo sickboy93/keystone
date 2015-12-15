@@ -65,12 +65,24 @@ class DbSync(BaseApp):
                                   'extension. If not provided, db_sync will '
                                   'migrate the common repository.'))
 
+        parser.add_argument('--populate', action='store_true',
+                            help=('Populate the database with inital data '
+                                  'instead of migrating tables. Only use '
+                                  'this option after running all migrations. '
+                                  'This option is not compatible with the '
+                                  'version or extension options. '
+                                  'If not provided, db_sync will function '
+                                  'normally.'))
+
         return parser
 
     @staticmethod
     def main():
         version = CONF.command.version
         extension = CONF.command.extension
+        populate = CONF.command.populate
+        if populate:
+            extension = 'initial_data'
         migration_helpers.sync_database_to_version(extension, version)
 
 
