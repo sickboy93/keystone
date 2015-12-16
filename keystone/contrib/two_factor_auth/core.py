@@ -61,6 +61,11 @@ class TwoFactorAuthManager(manager.Manager):
         """Enables two factor auth for a certain user."""
 
         user = self.identity_api.get_user(user_id) # check if user exists
+
+        # create dictionary if requesting a new key
+        if not two_factor_auth and self.driver.is_two_factor_enabled(user_id):
+            two_factor_auth = {}
+
         two_factor_auth['key'] = pyotp.random_base32()
         key_object = self.driver.create_two_factor_key(user_id, two_factor_auth)
 

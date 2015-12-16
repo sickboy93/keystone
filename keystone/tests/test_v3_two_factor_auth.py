@@ -61,6 +61,12 @@ class TwoFactorBaseTests(test_v3.RestfulTestCase):
             expected_status=expected_status
         )
 
+    def _create_two_factor_key_no_data(self, user_id, expected_status=None):
+        return self.post(
+            TWO_FACTOR_URL.format(user_id=user_id),
+            expected_status=expected_status
+        )
+
     def _delete_two_factor_key(self, user_id, expected_status=None):
         return self.delete(TWO_FACTOR_URL.format(user_id=user_id), expected_status=expected_status)
 
@@ -100,6 +106,13 @@ class TwoFactorCRUDTests(TwoFactorBaseTests):
         key1 = self._create_two_factor_key(user_id=self.user_id)
         key2 = self._create_two_factor_key(user_id=self.user_id)
         self.assertNotEqual(key1, key2)
+
+    def test_two_factor_new_code(self):
+        self._create_two_factor_key(user_id=self.user_id)
+        self._create_two_factor_key_no_data(user_id=self.user_id)
+
+    def test_two_factor_new_code_no_data(self):
+        self._create_two_factor_key_no_data(user_id=self.user_id, expected_status=400)
 
     def test_two_factor_disable_after_enabling(self):
         self._create_two_factor_key(user_id=self.user_id)

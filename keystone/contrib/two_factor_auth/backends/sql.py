@@ -46,11 +46,8 @@ class TwoFactorAuth(two_factor_auth.Driver):
                                       two_factor_key=two_factor_auth['key'],
                                       security_question=two_factor_auth['security_question'],
                                       security_answer=two_factor_auth['security_answer'])
-                session.add(twofactor)
             else:
                 twofactor.two_factor_key = two_factor_auth['key']
-                twofactor.security_question = two_factor_auth['security_question']
-                twofactor.security_answer = two_factor_auth['security_answer']
             session.add(twofactor)   
         return twofactor.to_dict()
 
