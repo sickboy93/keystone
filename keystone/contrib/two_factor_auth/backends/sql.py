@@ -84,6 +84,6 @@ class TwoFactorAuth(two_factor_auth.Driver):
             raise exception.NotFound(_('Two Factor Authentication is not enabled for user %s.' % user_id))
         else:
             if (two_factor_auth['security_answer'] != twofactor.security_answer):
-                raise exception.Unauthorized(_('Invalid answer'))
+                return False
             else:
-                return twofactor.to_dict()
+                return True
