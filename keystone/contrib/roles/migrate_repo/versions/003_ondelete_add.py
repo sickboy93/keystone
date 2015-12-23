@@ -38,20 +38,55 @@ def upgrade(migrate_engine):
         consumer_oauth2 = sql.Table('consumer_oauth2', meta, autoload=True)
         project = sql.Table('project', meta, autoload=True)
 
-        ForeignKeyConstraint(columns=[role_user_table.c.application_id], refcolumns=[consumer_oauth2.c.id], name='role_user_fiware_ibfk_4').drop()
-        ForeignKeyConstraint(columns=[role_user_table.c.application_id], refcolumns=[consumer_oauth2.c.id], name='role_user_fiware_ibfk_4', ondelete='CASCADE').create()
+        ForeignKeyConstraint(
+            columns=[role_user_table.c.application_id],
+            refcolumns=[consumer_oauth2.c.id],
+            name='role_user_fiware_ibfk_4').drop()
+        ForeignKeyConstraint(
+            columns=[role_user_table.c.application_id],
+            refcolumns=[consumer_oauth2.c.id],
+            name='role_user_fiware_ibfk_4',
+            ondelete='CASCADE').create()
 
-        ForeignKeyConstraint(columns=[role_user_table.c.application_id], refcolumns=[consumer_oauth2.c.id], name='role_user_fiware_ibfk_3').drop()
-        ForeignKeyConstraint(columns=[role_user_table.c.application_id], refcolumns=[consumer_oauth2.c.id], name='role_user_fiware_ibfk_3', ondelete='CASCADE').create()
+        ForeignKeyConstraint(
+            columns=[role_user_table.c.application_id],
+            refcolumns=[consumer_oauth2.c.id],
+            name='role_user_fiware_ibfk_3').drop()
+        ForeignKeyConstraint(
+            columns=[role_user_table.c.application_id],
+            refcolumns=[consumer_oauth2.c.id],
+            name='role_user_fiware_ibfk_3',
+            ondelete='CASCADE').create()
 
-        ForeignKeyConstraint(columns=[role_fiware_table.c.application_id], refcolumns=[consumer_oauth2.c.id], name='role_fiware_ibfk_1').drop()
-        ForeignKeyConstraint(columns=[role_fiware_table.c.application_id], refcolumns=[consumer_oauth2.c.id], name='role_fiware_ibfk_1', ondelete='CASCADE').create()
+        ForeignKeyConstraint(
+            columns=[role_fiware_table.c.application_id],
+            refcolumns=[consumer_oauth2.c.id],
+            name='role_fiware_ibfk_1').drop()
+        ForeignKeyConstraint(
+            columns=[role_fiware_table.c.application_id],
+            refcolumns=[consumer_oauth2.c.id],
+            name='role_fiware_ibfk_1',
+            ondelete='CASCADE').create()
 
-        ForeignKeyConstraint(columns=[role_organization_table.c.organization_id], refcolumns=[project.c.id], name='role_organization_fiware_ibfk_2').drop()    
-        ForeignKeyConstraint(columns=[role_organization_table.c.organization_id], refcolumns=[project.c.id], name='role_organization_fiware_ibfk_2', ondelete='CASCADE').create()    
+        ForeignKeyConstraint(
+            columns=[role_organization_table.c.organization_id],
+            refcolumns=[project.c.id],
+            name='role_organization_fiware_ibfk_2').drop()    
+        ForeignKeyConstraint(
+            columns=[role_organization_table.c.organization_id],
+            refcolumns=[project.c.id],
+            name='role_organization_fiware_ibfk_2',
+            ondelete='CASCADE').create()    
 
-        ForeignKeyConstraint(columns=[role_organization_table.c.organization_id], refcolumns=[project.c.id], name='role_organization_fiware_ibfk_3').drop()    
-        ForeignKeyConstraint(columns=[role_organization_table.c.organization_id], refcolumns=[project.c.id], name='role_organization_fiware_ibfk_3', ondelete='CASCADE').create()    
+        ForeignKeyConstraint(
+            columns=[role_organization_table.c.organization_id],
+            refcolumns=[project.c.id],
+            name='role_organization_fiware_ibfk_3').drop()    
+        ForeignKeyConstraint(
+            columns=[role_organization_table.c.organization_id],
+            refcolumns=[project.c.id],
+            name='role_organization_fiware_ibfk_3',
+            ondelete='CASCADE').create()    
 
 
 def downgrade(migrate_engine):
@@ -64,19 +99,55 @@ def downgrade(migrate_engine):
         role_organization_table = sql.Table('role_organization_fiware', meta, autoload=True)
         consumer_oauth2 = sql.Table('consumer_oauth2', meta, autoload=True)
         project = sql.Table('project', meta, autoload=True)
+        role_fiware_table = sql.Table('role_fiware', meta, autoload=True)
 
-        ForeignKeyConstraint(columns=[role_user_table.c.application_id], refcolumns=[consumer_oauth2.c.id], name='role_user_fiware_ibfk_4', ondelete='CASCADE').drop()
-        ForeignKeyConstraint(columns=[role_user_table.c.application_id], refcolumns=[consumer_oauth2.c.id], name='role_user_fiware_ibfk_4').create()
+        ForeignKeyConstraint(
+            columns=[role_user_table.c.application_id],
+            refcolumns=[consumer_oauth2.c.id],
+            name='role_user_fiware_ibfk_4',
+            ondelete='CASCADE').drop()
+        ForeignKeyConstraint(
+            columns=[role_user_table.c.application_id],
+            refcolumns=[consumer_oauth2.c.id],
+            name='role_user_fiware_ibfk_4').create()
 
-        ForeignKeyConstraint(columns=[role_user_table.c.application_id], refcolumns=[consumer_oauth2.c.id], name='role_user_fiware_ibfk_3', ondelete='CASCADE').drop()
-        ForeignKeyConstraint(columns=[role_user_table.c.application_id], refcolumns=[consumer_oauth2.c.id], name='role_user_fiware_ibfk_3').create()
+        ForeignKeyConstraint(
+            columns=[role_user_table.c.application_id],
+            refcolumns=[consumer_oauth2.c.id],
+            name='role_user_fiware_ibfk_3',
+            ondelete='CASCADE').drop()
+        ForeignKeyConstraint(
+            columns=[role_user_table.c.application_id],
+            refcolumns=[consumer_oauth2.c.id],
+            name='role_user_fiware_ibfk_3').create()
 
-        ForeignKeyConstraint(columns=[role_fiware_table.c.application_id], refcolumns=[consumer_oauth2.c.id], name='role_fiware_ibfk_1', ondelete='CASCADE').drop()
-        ForeignKeyConstraint(columns=[role_fiware_table.c.application_id], refcolumns=[consumer_oauth2.c.id], name='role_fiware_ibfk_1').create()
+        ForeignKeyConstraint(
+            columns=[role_fiware_table.c.application_id],
+            refcolumns=[consumer_oauth2.c.id],
+            name='role_fiware_ibfk_1',
+            ondelete='CASCADE').drop()
+        ForeignKeyConstraint(
+            columns=[role_fiware_table.c.application_id],
+            refcolumns=[consumer_oauth2.c.id],
+            name='role_fiware_ibfk_1').create()
 
-        ForeignKeyConstraint(columns=[role_organization_table.c.organization_id], refcolumns=[project.c.id], name='role_organization_fiware_ibfk_2', ondelete='CASCADE').drop()    
-        ForeignKeyConstraint(columns=[role_organization_table.c.organization_id], refcolumns=[project.c.id], name='role_organization_fiware_ibfk_2').create()    
+        ForeignKeyConstraint(
+            columns=[role_organization_table.c.organization_id],
+            refcolumns=[project.c.id],
+            name='role_organization_fiware_ibfk_2',
+            ondelete='CASCADE').drop()    
+        ForeignKeyConstraint(
+            columns=[role_organization_table.c.organization_id],
+            refcolumns=[project.c.id],
+            name='role_organization_fiware_ibfk_2').create()    
 
-        ForeignKeyConstraint(columns=[role_organization_table.c.organization_id], refcolumns=[project.c.id], name='role_organization_fiware_ibfk_3', ondelete='CASCADE').drop()    
-        ForeignKeyConstraint(columns=[role_organization_table.c.organization_id], refcolumns=[project.c.id], name='role_organization_fiware_ibfk_3').create()  
+        ForeignKeyConstraint(
+            columns=[role_organization_table.c.organization_id],
+            refcolumns=[project.c.id],
+            name='role_organization_fiware_ibfk_3',
+            ondelete='CASCADE').drop()    
+        ForeignKeyConstraint(
+            columns=[role_organization_table.c.organization_id],
+            refcolumns=[project.c.id],
+            name='role_organization_fiware_ibfk_3').create()  
 
