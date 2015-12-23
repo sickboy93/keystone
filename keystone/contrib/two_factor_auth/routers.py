@@ -29,12 +29,16 @@ class TwoFactorExtension(wsgi.V3ExtensionRouter):
 
     The API looks like::
 
-      # two factor enabling and disabling endpoint
-      HEAD /OS-TWO-FACTOR/two_factor_auth?user_id=&?user_name=?domain_id= #is enabled?
+      # check if two factor is enabled for a certain user
+      HEAD /OS-TWO-FACTOR/two_factor_auth?user_id={user_id}&user_name={user_name}&domain_id={domain_id}
 
+      # two factor enabling and disabling endpoint
       POST /users/{user_id}/OS-TWO-FACTOR/two_factor_auth #enable and create question/answer
-      DELETE /users/{user_id}/OS-TWO-FACTOR/two_factor_auth #disable 
-      GET /users/{user_id}/OS-TWO-FACTOR/sec_question #check security question
+      DELETE /users/{user_id}/OS-TWO-FACTOR/two_factor_auth #disable
+
+      # get non-sensitive data and check security question
+      GET /users/{user_id}/OS-TWO-FACTOR/two_factor_data
+      HEAD /users/{user_id}/OS-TWO-FACTOR/sec_question #check security question
       
     """
 
@@ -55,7 +59,6 @@ class TwoFactorExtension(wsgi.V3ExtensionRouter):
             mapper,
             two_factor_controller,
             path='/users/{user_id}' + self.PATH_PREFIX + '/two_factor_auth',
-            get_head_action='is_two_factor_auth_enabled',
             post_action='enable_two_factor_auth',
             delete_action='disable_two_factor_auth',
             rel=build_resource_relation(resource_name='two_factor_auth')
@@ -65,6 +68,14 @@ class TwoFactorExtension(wsgi.V3ExtensionRouter):
             mapper,
             two_factor_controller,
             path='/users/{user_id}' + self.PATH_PREFIX + '/sec_question',
-            get_action='check_security_question',
+            get_head_action='check_security_question',
+            rel=build_resource_relation(resource_name='two_factor_auth')
+        )
+
+        self._add_resource(
+            mapper,
+            two_factor_controller,
+            path='/users/{user_id}' + self.PATH_PREFIX +'/two_factor_data',
+            get_action='get_two_factor_data',
             rel=build_resource_relation(resource_name='two_factor_auth')
         )

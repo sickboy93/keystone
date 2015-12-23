@@ -68,7 +68,7 @@ class TwoFactorV3Controller(controller.V3Controller):
         self.two_factor_auth_api.is_two_factor_enabled(user_id)
 
     @controller.protected()
-    def enable_two_factor_auth(self, context, user_id, two_factor_auth):
+    def enable_two_factor_auth(self, context, user_id, two_factor_auth=None):
         """Enables two factor auth for a certain user"""
         twofactor = self.two_factor_auth_api.create_two_factor_key(user_id, two_factor_auth)
         return TwoFactorV3Controller.wrap_member(context, twofactor)
@@ -85,5 +85,10 @@ class TwoFactorV3Controller(controller.V3Controller):
 
         return self.two_factor_auth_api.check_security_question(user_id, two_factor_auth)
 
-        
+    @controller.protected()
+    def get_two_factor_data(self, context, user_id):
+        """Retrieves two factor non-sensitive data for a certain user"""
+
+        data = self.two_factor_auth_api.get_two_factor_data(user_id)
+        return TwoFactorV3Controller.wrap_member(context, data)
 

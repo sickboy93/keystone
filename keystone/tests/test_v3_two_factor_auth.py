@@ -30,8 +30,11 @@ TWO_FACTOR_USER_URL = '/users/{user_id}'
 TWO_FACTOR_BASE_URL = '/OS-TWO-FACTOR'
 AUTH_ENDPOINT = '/two_factor_auth'
 QUESTION_ENDPOINT = '/sec_question'
+DATA_ENDPOINT = '/two_factor_data'
+
 TWO_FACTOR_URL = TWO_FACTOR_USER_URL + TWO_FACTOR_BASE_URL + AUTH_ENDPOINT
 TWO_FACTOR_QUESTION_URL = TWO_FACTOR_USER_URL + TWO_FACTOR_BASE_URL + QUESTION_ENDPOINT
+TWO_FACTOR_DATA_URL = TWO_FACTOR_USER_URL + TWO_FACTOR_BASE_URL + DATA_ENDPOINT
 
 class TwoFactorBaseTests(test_v3.RestfulTestCase):
 
@@ -61,6 +64,12 @@ class TwoFactorBaseTests(test_v3.RestfulTestCase):
             expected_status=expected_status
         )
 
+    def _create_two_factor_key_no_data(self, user_id, expected_status=None):
+        return self.post(
+            TWO_FACTOR_URL.format(user_id=user_id),
+            expected_status=expected_status
+        )
+
     def _delete_two_factor_key(self, user_id, expected_status=None):
         return self.delete(TWO_FACTOR_URL.format(user_id=user_id), expected_status=expected_status)
 
@@ -78,6 +87,10 @@ class TwoFactorBaseTests(test_v3.RestfulTestCase):
         return self.get(TWO_FACTOR_QUESTION_URL.format(user_id=user_id), 
                         expected_status=expected_status,
                         body=body)
+
+    def _get_two_factor_data(self, user_id, expected_status=None):
+        return self.get(TWO_FACTOR_DATA_URL.format(user_id=user_id),
+                        expected_status=expected_status)
 
 
     def _create_user(self):
@@ -100,6 +113,13 @@ class TwoFactorCRUDTests(TwoFactorBaseTests):
         key1 = self._create_two_factor_key(user_id=self.user_id)
         key2 = self._create_two_factor_key(user_id=self.user_id)
         self.assertNotEqual(key1, key2)
+
+    def test_two_factor_new_code(self):
+        self._create_two_factor_key(user_id=self.user_id)
+        self._create_two_factor_key_no_data(user_id=self.user_id)
+
+    def test_two_factor_new_code_no_data(self):
+        self._create_two_factor_key_no_data(user_id=self.user_id, expected_status=400)
 
     def test_two_factor_disable_after_enabling(self):
         self._create_two_factor_key(user_id=self.user_id)
@@ -158,6 +178,12 @@ class TwoFactorCRUDTests(TwoFactorBaseTests):
 
 
 class TwoFactorSecQuestionTests(TwoFactorBaseTests):
+
+    def test_security_question_get(self):
+        self._create_two_factor_key(user_id=self.user_id)
+        data = self._get_two_factor_data(user_id=self.user_id)
+        self.assertEqual(data.result['two_factor_auth']['security_question'],
+                         self.SAMPLE_SECURITY_QUESTION)
 
     def test_security_question_correct(self):
         self._create_two_factor_key(user_id=self.user_id)
