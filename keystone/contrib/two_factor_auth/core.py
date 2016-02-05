@@ -61,6 +61,11 @@ class TwoFactorAuthManager(manager.Manager):
         """Enables two factor auth for a certain user."""
 
         user = self.identity_api.get_user(user_id) # check if user exists
+
+        # create dictionary if requesting a new key
+        if not two_factor_auth and self.driver.is_two_factor_enabled(user_id):
+            two_factor_auth = {}
+
         two_factor_auth['key'] = pyotp.random_base32()
         key_object = self.driver.create_two_factor_key(user_id, two_factor_auth)
 
@@ -80,7 +85,17 @@ class TwoFactorAuthManager(manager.Manager):
         """Checks if the provided security answer is correct"""
 
         user = self.identity_api.get_user(user_id) # check if user exists
-        return self.driver.check_security_question(user_id, two_factor_auth)
+        if not self.driver.check_security_question(user_id, two_factor_auth):
+            raise exception.Unauthorized(_('Security answer is not correct.'))
+
+    def get_two_factor_data(self, user_id):
+        """Get two factor non-sesitive data (i.e. everything but key and security answer)"""
+
+        twofactor = self.driver.get_two_factor_info(user_id).to_dict()
+        sensitive_info = ["two_factor_key", "security_answer"]
+        for key in sensitive_info:
+            twofactor.pop(key, None)
+        return twofactor
 
     def verify_code(self, user_id, verification_code):
         """Verifies a given time based code"""

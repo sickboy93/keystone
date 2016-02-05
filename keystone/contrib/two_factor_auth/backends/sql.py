@@ -46,11 +46,8 @@ class TwoFactorAuth(two_factor_auth.Driver):
                                       two_factor_key=two_factor_auth['key'],
                                       security_question=two_factor_auth['security_question'],
                                       security_answer=two_factor_auth['security_answer'])
-                session.add(twofactor)
             else:
                 twofactor.two_factor_key = two_factor_auth['key']
-                twofactor.security_question = two_factor_auth['security_question']
-                twofactor.security_answer = two_factor_auth['security_answer']
             session.add(twofactor)   
         return twofactor.to_dict()
 
@@ -87,6 +84,6 @@ class TwoFactorAuth(two_factor_auth.Driver):
             raise exception.NotFound(_('Two Factor Authentication is not enabled for user %s.' % user_id))
         else:
             if (two_factor_auth['security_answer'] != twofactor.security_answer):
-                raise exception.Unauthorized(_('Invalid answer'))
+                return False
             else:
-                return twofactor.to_dict()
+                return True
