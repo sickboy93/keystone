@@ -481,7 +481,7 @@
 methods=external,password,token,oauth2
 
 # The password auth plugin module. (string value)
-#password=keystone.auth.plugins.password.Password
+password=keystone.auth.plugins.two_factor.TwoFactor
 
 # The token auth plugin module. (string value)
 #token=keystone.auth.plugins.token.Token
