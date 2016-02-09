@@ -92,3 +92,27 @@ class TwoFactorV3Controller(controller.V3Controller):
         data = self.two_factor_auth_api.get_two_factor_data(user_id)
         return TwoFactorV3Controller.wrap_member(context, data)
 
+    @controller.protected()
+    def remember_device(self, context, user_id):
+        """Stores data to remember current device"""
+
+        device_data = self.two_factor_auth_api.remember_device(user_id)
+        return TwoFactorV3Controller.wrap_member(context, device_data)
+
+    @controller.protected()
+    def check_for_device(self, context):
+        """Checks if current device is stored"""
+
+        device_id = context['query_string'].get('device_id')
+        device_token = context['query_string'].get('device_token')
+        user_id = context['query_string'].get('user_id')
+
+        device_data = {'device_id': device_id, 'device_token': device_token, 'user_id': user_id}
+        return TwoFactorV3Controller.wrap_member(context, self.two_factor_auth_api.check_for_device(device_data))
+
+
+    @controller.protected()
+    def forget_devices(self, context, user_id):
+        """Deletes all remembered devices belonging to a certain user"""
+
+        return self.two_factor_auth_api.forget_all_devices(user_id)

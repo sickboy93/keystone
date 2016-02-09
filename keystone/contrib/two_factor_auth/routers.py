@@ -39,6 +39,11 @@ class TwoFactorExtension(wsgi.V3ExtensionRouter):
       # get non-sensitive data and check security question
       GET /users/{user_id}/OS-TWO-FACTOR/two_factor_data
       HEAD /users/{user_id}/OS-TWO-FACTOR/sec_question #check security question
+
+      # remember device functionality
+      POST /users/{user_id}/OS-TWO-FACTOR/devices
+      GET /OS-TWO-FACTOR/devices?device_id={device_id}&device_token={device_token}&user_id={user_id}
+      DELETE /users/{user_id}/OS-TWO-FACTOR/devices
       
     """
 
@@ -77,5 +82,22 @@ class TwoFactorExtension(wsgi.V3ExtensionRouter):
             two_factor_controller,
             path='/users/{user_id}' + self.PATH_PREFIX +'/two_factor_data',
             get_action='get_two_factor_data',
+            rel=build_resource_relation(resource_name='two_factor_auth')
+        )
+
+        self._add_resource(
+            mapper,
+            two_factor_controller,
+            path='/users/{user_id}' + self.PATH_PREFIX + '/devices',
+            post_action='remember_device',
+            delete_action='forget_devices',
+            rel=build_resource_relation(resource_name='two_factor_auth')
+        )
+
+        self._add_resource(
+            mapper,
+            two_factor_controller,
+            path=self.PATH_PREFIX + '/devices',
+            get_action='check_for_device',
             rel=build_resource_relation(resource_name='two_factor_auth')
         )

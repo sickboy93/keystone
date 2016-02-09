@@ -23,6 +23,7 @@ from keystone.contrib.two_factor_auth import core
 from keystone.openstack.common import log
 
 import pyotp
+import json
 
 LOG = log.getLogger(__name__)
 
@@ -31,10 +32,12 @@ TWO_FACTOR_BASE_URL = '/OS-TWO-FACTOR'
 AUTH_ENDPOINT = '/two_factor_auth'
 QUESTION_ENDPOINT = '/sec_question'
 DATA_ENDPOINT = '/two_factor_data'
+DEVICES_ENDPOINT = '/devices'
 
 TWO_FACTOR_URL = TWO_FACTOR_USER_URL + TWO_FACTOR_BASE_URL + AUTH_ENDPOINT
 TWO_FACTOR_QUESTION_URL = TWO_FACTOR_USER_URL + TWO_FACTOR_BASE_URL + QUESTION_ENDPOINT
 TWO_FACTOR_DATA_URL = TWO_FACTOR_USER_URL + TWO_FACTOR_BASE_URL + DATA_ENDPOINT
+TWO_FACTOR_DEVICES_URL = TWO_FACTOR_USER_URL + TWO_FACTOR_BASE_URL + DEVICES_ENDPOINT
 
 class TwoFactorBaseTests(test_v3.RestfulTestCase):
 
@@ -305,3 +308,88 @@ class TwoFactorAuthTests(TwoFactorBaseTests):
             verification_code='123456', 
             password=self.user['password'])
         self._authenticate(auth_body=req, expected_status=401)
+
+class TwoFactorDevicesTests(TwoFactorBaseTests):
+
+    def _update_device(self, user_id):
+        try:
+            self._check_is_two_factor_enabled(user_id=user_id)
+        except:
+            self._create_two_factor_key(user_id=user_id)
+            self._check_is_two_factor_enabled(user_id=user_id)
+        return self.manager.remember_device(user_id)
+
+    def _check_for_device(self, expected_status=None, **kwargs):
+        return self.get(TWO_FACTOR_BASE_URL + DEVICES_ENDPOINT + '?' +urllib.urlencode(kwargs), expected_status=expected_status)
+
+    def _delete_devices(self, user_id, expected_status=None):
+        return self.delete(TWO_FACTOR_DEVICES_URL.format(user_id=user_id), expected_status=expected_status)
+
+    def test_remember_device(self):
+        return self.post(TWO_FACTOR_DEVICES_URL.format(user_id=self.user_id))
+
+    def test_device_right_data(self):
+        data = self._update_device(user_id=self.user_id)
+        self._check_for_device(user_id=self.user_id,
+                               device_id=data['device_id'],
+                               device_token=data['device_token'])
+
+    def test_device_updates_token(self):
+        data = self._update_device(user_id=self.user_id)
+        response = json.loads(self._check_for_device(user_id=self.user_id,
+                                          device_id=data['device_id'],
+                                          device_token=data['device_token']).body)['two_factor_auth']
+        
+        self.assertEqual(response['device_id'], data['device_id'])
+        self.assertEqual(response['user_id'], data['user_id'])
+        self.assertNotEqual(response['device_token'], data['device_token'])
+
+    def test_device_wrong_user(self):
+        user = self._create_user()
+        data = self._update_device(user_id=self.user_id)
+        self._check_for_device(user_id=user['id'],
+                               device_id=data['device_id'],
+                               device_token=data['device_token'],
+                               expected_status=404)
+
+    def test_device_wrong_device(self):
+        data = self._update_device(user_id=self.user_id)
+        self._check_for_device(user_id=self.user_id,
+                               device_id='just_another_device',
+                               device_token=data['device_token'],
+                               expected_status=404)
+
+    def test_device_wrong_token(self):
+        data = self._update_device(user_id=self.user_id)
+        self._check_for_device(user_id=self.user_id,
+                               device_id=data['device_id'],
+                               device_token='fake_token',
+                               expected_status=401)
+
+    def test_device_delete_all(self):
+        data = self._update_device(user_id=self.user_id)
+        self._delete_devices(user_id=self.user_id)
+        self._check_for_device(user_id=self.user_id,
+                               device_id=data['device_id'],
+                               device_token=data['device_token'],
+                               expected_status=404)
+
+    def test_device_deletes_all_devices_when_wrong_token(self):
+        data = self._update_device(user_id=self.user_id)
+        self._check_for_device(user_id=self.user_id,
+                               device_id=data['device_id'],
+                               device_token='fake_token',
+                               expected_status=401)
+        self._check_for_device(user_id=self.user_id,
+                               device_id=data['device_id'],
+                               device_token=data['device_token'],
+                               expected_status=404)
+
+    def test_device_delete_user(self):
+        user = self._create_user()
+        data = self._update_device(user_id=user['id'])
+        self._delete_user(user['id'])
+        self._check_for_device(user_id=user['id'],
+                               device_id=data['device_id'],
+                               device_token=data['device_token'],
+                               expected_status=404)

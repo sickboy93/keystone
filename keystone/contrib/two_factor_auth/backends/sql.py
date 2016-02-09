@@ -33,6 +33,13 @@ class TwoFactor(sql.ModelBase, sql.ModelDictMixin):
     security_question = sql.Column(sql.String(128), nullable=False)
     security_answer = sql.Column(sql.String(128), nullable=False)
 
+class TwoFactorDevice(sql.ModelBase, sql.ModelDictMixin):
+    __tablename__ = 'two_factor_devices'
+    attributes = ['device_token', 'series_id', 'user_id']
+    device_id = sql.Column(sql.String(32), nullable=False, primary_key=True)
+    device_token = sql.Column(sql.String(64), nullable=False)
+    user_id = sql.Column(sql.String(64), nullable=False)
+
 
 class TwoFactorAuth(two_factor_auth.Driver):
     """ CRUD driver for the SQL backend """
@@ -87,3 +94,35 @@ class TwoFactorAuth(two_factor_auth.Driver):
                 return False
             else:
                 return True
+
+    def update_device(self, device_data):
+        session = sql.get_session()
+        device = session.query(TwoFactorDevice).get(device_data['device_id'])
+        with session.begin():
+            if device is None:
+                device = TwoFactorDevice(device_id=device_data['device_id'],
+                                         device_token=device_data['hashed_token'],
+                                         user_id=device_data['user_id'])
+            else:
+                device.device_token = device_data['hashed_token']
+            session.add(device)   
+        return device.to_dict()
+
+    def check_for_device(self, device_data):
+        session = sql.get_session()
+        device = session.query(TwoFactorDevice).get(device_data['device_id'])
+        with session.begin():
+            if device is None or device_data['user_id'] != device.user_id:
+                raise exception.NotFound(_('Device not found for user %s.' % device_data['user_id']))
+            elif device_data['hashed_token'] == device.device_token:
+                return True
+            else:
+                return False
+
+    def forget_all_devices(self, user_id):
+        session = sql.get_session()
+        devices = session.query(TwoFactorDevice).filter_by(user_id=user_id)
+
+        for device in devices:
+            with session.begin():
+                session.delete(device)
