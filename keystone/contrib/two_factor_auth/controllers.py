@@ -36,9 +36,7 @@ class TwoFactorV3Controller(controller.V3Controller):
         ref.setdefault('links', {})
         ref['links']['self'] = cls.base_url(context) + '/' + ref['user_id']
 
-    @controller.protected()
-    def is_two_factor_auth_enabled(self, context):
-        """Checks if a certain user has enabled two factor auth"""
+    def _get_user_id_from_context(self, context):
         user_id = context['query_string'].get('user_id')
         
         if not user_id:
@@ -64,8 +62,14 @@ class TwoFactorV3Controller(controller.V3Controller):
             
             user = self.identity_api.get_user_by_name(user_name, domain_id)
             user_id = user['id']
+        return user_id
 
-        self.two_factor_auth_api.is_two_factor_enabled(user_id)
+
+    @controller.protected()
+    def is_two_factor_auth_enabled(self, context):
+        """Checks if a certain user has enabled two factor auth"""
+        
+        self.two_factor_auth_api.is_two_factor_enabled(self._get_user_id_from_context(context))
 
     @controller.protected()
     def enable_two_factor_auth(self, context, user_id, two_factor_auth=None):
@@ -93,10 +97,10 @@ class TwoFactorV3Controller(controller.V3Controller):
         return TwoFactorV3Controller.wrap_member(context, data)
 
     @controller.protected()
-    def remember_device(self, context, user_id):
+    def remember_device(self, context):
         """Stores data to remember current device"""
 
-        device_data = self.two_factor_auth_api.remember_device(user_id)
+        device_data = self.two_factor_auth_api.remember_device(self._get_user_id_from_context(context))
         return TwoFactorV3Controller.wrap_member(context, device_data)
 
     @controller.protected()
