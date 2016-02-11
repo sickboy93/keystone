@@ -25,8 +25,9 @@ def upgrade(migrate_engine):
         'two_factor_devices',
         meta,
         sql.Column('device_id', sql.String(32), nullable=False, primary_key=True),
-        sql.Column('device_token', sql.String(64), nullable=False),
-        sql.Column('user_id', sql.String(64), nullable=False))
+        sql.Column('device_token', sql.String(32), nullable=False, primary_key=True),
+        sql.Column('user_id', sql.String(64), nullable=False, primary_key=True),
+        sql.Column('is_valid', sql.Boolean(), nullable=False))
     two_factor_devices_table.create(migrate_engine, checkfirst=True)
 
 

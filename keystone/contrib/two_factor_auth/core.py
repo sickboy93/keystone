@@ -21,7 +21,6 @@ from keystone import notifications
 from keystone.openstack.common import log
 
 import uuid
-import hashlib
 
 import pyotp
 import six
@@ -114,9 +113,9 @@ class TwoFactorAuthManager(manager.Manager):
         device_id = uuid.uuid4().hex
         device_token = uuid.uuid4().hex
 
-        self.driver.update_device({'device_id': device_id,
-                                   'hashed_token': hashlib.sha256(device_token).hexdigest(), 
-                                   'user_id': user_id})
+        self.driver.save_device(device_id=device_id,
+                                device_token=device_token,
+                                user_id=user_id)
         return {'device_id': device_id,
                 'device_token': device_token,
                 'user_id': user_id}
@@ -125,18 +124,21 @@ class TwoFactorAuthManager(manager.Manager):
         """Checks for a certain device, and updates its data"""
 
         self.is_two_factor_enabled(device_data['user_id'])
-        device_data['hashed_token'] = hashlib.sha256(device_data['device_token']).hexdigest()
 
-        if self.driver.check_for_device(device_data):
+        if self.driver.is_device_valid(device_id=device_data['device_id'],
+                                       device_token=device_data['device_token'],
+                                       user_id=device_data['user_id']):
             new_token = uuid.uuid4().hex
-            device_data['hashed_token'] = hashlib.sha256(new_token).hexdigest()
-            self.driver.update_device(device_data)
+            self.driver.save_device(device_id=device_data['device_id'],
+                                    device_token=new_token,
+                                    user_id=device_data['user_id'])
+
             return {'device_id': device_data['device_id'],
                     'device_token': new_token,
                     'user_id': device_data['user_id']}
         else:
             self.driver.forget_all_devices(device_data['user_id'])
-            raise exception.Unauthorized(_('Problem with device token.'))
+            raise exception.Unauthorized(_('Problem with device token: old token.'))
             
 @six.add_metaclass(abc.ABCMeta)
 class Driver(object):
@@ -195,7 +197,7 @@ class Driver(object):
         raise exception.NotImplemented()
 
     @abc.abstractmethod
-    def update_device(self, device_data):
+    def save_device(self, device_id, device_token, user_id):
         """Save information of current device.
 
         :param device_data: device info to be saved
@@ -204,8 +206,8 @@ class Driver(object):
         raise exception.NotImplemented()
 
     @abc.abstractmethod
-    def check_for_device(self, device_data):
-        """Checks whether the provided answer is correct.
+    def is_device_valid(self, device_id, device_token, user_id):
+        """Retrieves state of a certain device
 
         :param device_data: device data to be checked
         :returns: Boolean with the result of the check
@@ -213,8 +215,8 @@ class Driver(object):
         raise exception.NotImplemented()
 
     @abc.abstractmethod
-    def forget_all_devices(self, user_id):
-        """Checks whether the provided answer is correct.
+    def delete_all_devices(self, user_id):
+        """Deletes all devices for a certain user
 
         :param user_id: user ID
         :returns: None.
