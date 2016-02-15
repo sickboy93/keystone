@@ -406,8 +406,15 @@ class FiwareApiControllerV3(BaseControllerV3):
         """
         # TODO(garcianavalon) check if token is valid, use user_id to filter in get
         token = self.oauth2_api.get_access_token(token_id)
-        user = self.identity_api.get_user(token['authorizing_user_id'])
         application_id = token['consumer_id']
+
+        if not token['authorizing_user_id']:
+            # Client Credentials Grant
+            # We validate the token but no user info is provided
+            return {
+            }
+            
+        user = self.identity_api.get_user(token['authorizing_user_id'])
         
         organizations = self.roles_api.get_authorized_organizations(
             user, application_id)
