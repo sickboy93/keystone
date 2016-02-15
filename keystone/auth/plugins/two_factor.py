@@ -41,10 +41,17 @@ class UserTwoFactorAuthInfo(UserAuthInfo):
 
     def _validate_and_normalize_auth_data(self, auth_payload):
         super(UserTwoFactorAuthInfo, self)._validate_and_normalize_auth_data(auth_payload)
+        print auth_payload
         verification_code = auth_payload['user'].get('verification_code', None)
-        if not verification_code:
-            raise exception.ValidationError(attribute='verification_code', target=METHOD_NAME)
-        self.verification_code = verification_code
+        device_data = auth_payload['user'].get('device_data', None)
+
+        if not (verification_code or device_data):
+            raise exception.ValidationError(attribute='verification_code or device_data', target=METHOD_NAME)
+        
+        if verification_code:
+            self.verification_code = verification_code
+        elif device_data:
+            self.device_data = device_data
 
 
 @dependency.requires('two_factor_auth_api')
@@ -68,8 +75,12 @@ class TwoFactor(Password):
 
         user_info = UserTwoFactorAuthInfo.create(auth_payload)
 
-        if not self.two_factor_auth_api.verify_code(user_id, user_info.verification_code):
-            raise exception.Unauthorized(_('Invalid time based code'))
+        if user_info.verification_code:
+            if not self.two_factor_auth_api.verify_code(user_id, user_info.verification_code):
+                raise exception.Unauthorized(_('Invalid time based code'))
+        elif user_info.device_data:
+            if not self.two_factor_auth_api.check_for_device(user_info.device_data):
+                raise exception.Unauthorized(_('Invalid device data'))
         
         return super(TwoFactor, self).authenticate(context, auth_payload, auth_context)
             

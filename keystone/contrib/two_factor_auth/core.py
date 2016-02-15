@@ -58,7 +58,13 @@ class TwoFactorAuthManager(manager.Manager):
         user_id = payload['resource_info']
         if self.driver.is_two_factor_enabled(user_id):
             self.driver.delete_two_factor_key(user_id)
-            self.driver.forget_all_devices(user_id)
+            self.driver.delete_all_devices(user_id)
+
+    def delete_two_factor_key(self, user_id):
+        """Disables two factor auth for a certain user."""
+
+        self.driver.delete_two_factor_key(user_id)
+        self.driver.delete_all_devices(user_id)
 
     def create_two_factor_key(self, user_id, two_factor_auth):
         """Enables two factor auth for a certain user."""
@@ -137,7 +143,7 @@ class TwoFactorAuthManager(manager.Manager):
                     'device_token': new_token,
                     'user_id': device_data['user_id']}
         else:
-            self.driver.forget_all_devices(device_data['user_id'])
+            self.driver.delete_all_devices(device_data['user_id'])
             raise exception.Unauthorized(_('Problem with device token: old token.'))
             
 @six.add_metaclass(abc.ABCMeta)

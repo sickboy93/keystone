@@ -119,4 +119,4 @@ class TwoFactorV3Controller(controller.V3Controller):
     def forget_devices(self, context, user_id):
         """Deletes all remembered devices belonging to a certain user"""
 
-        return self.two_factor_auth_api.forget_all_devices(user_id)
+        return self.two_factor_auth_api.delete_all_devices(user_id)
