@@ -41,8 +41,8 @@ class TwoFactorExtension(wsgi.V3ExtensionRouter):
       HEAD /users/{user_id}/OS-TWO-FACTOR/sec_question #check security question
 
       # remember device functionality
-      POST /OS-TWO-FACTOR/devices?user_id={user_id}&user_name={user_name}&domain_name={domain_name}
-      GET /OS-TWO-FACTOR/devices?device_id={device_id}&device_token={device_token}&user_id={user_id}
+      POST /OS-TWO-FACTOR/devices?user_id={user_id}&user_name={user_name}&domain_name={domain_name}?device_id={device_id}?device_token={device_token}
+      HEAD /OS-TWO-FACTOR/devices?device_id={device_id}&device_token={device_token}&user_id={user_id}
       DELETE /users/{user_id}/OS-TWO-FACTOR/devices
       
     """
@@ -97,7 +97,7 @@ class TwoFactorExtension(wsgi.V3ExtensionRouter):
             mapper,
             two_factor_controller,
             path=self.PATH_PREFIX + '/devices',
-            get_action='check_for_device',
+            get_head_action='check_for_device',
             post_action='remember_device',
             rel=build_resource_relation(resource_name='two_factor_auth')
         )
