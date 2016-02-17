@@ -41,8 +41,8 @@ class TwoFactorExtension(wsgi.V3ExtensionRouter):
       HEAD /users/{user_id}/OS-TWO-FACTOR/sec_question #check security question
 
       # remember device functionality
-      POST /OS-TWO-FACTOR/devices?user_id={user_id}&user_name={user_name}&domain_name={domain_name}?device_id={device_id}?device_token={device_token}
-      HEAD /OS-TWO-FACTOR/devices?device_id={device_id}&device_token={device_token}&user_id={user_id}
+      POST /OS-TWO-FACTOR/devices?user_id={user_id}&user_name={user_name}&domain_name={domain_name}&device_id={device_id}&device_token={device_token}
+      HEAD /OS-TWO-FACTOR/devices?device_id={device_id}&device_token={device_token}&user_id={user_id}&user_name={user_name}&domain_name={domain_name}
       DELETE /users/{user_id}/OS-TWO-FACTOR/devices
       
     """

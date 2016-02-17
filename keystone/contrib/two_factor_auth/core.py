@@ -135,8 +135,7 @@ class TwoFactorAuthManager(manager.Manager):
                 self.driver.delete_all_devices(user_id)
 
         return {'device_id': device_id,
-                'device_token': new_device_token,
-                'user_id': user_id}
+                'device_token': new_device_token}
 
     def check_for_device(self, user_id, device_id, device_token):
         """Checks for a certain device, and updates its data"""
@@ -147,7 +146,7 @@ class TwoFactorAuthManager(manager.Manager):
                                            device_token=device_token,
                                            user_id=user_id):
             self.driver.delete_all_devices(user_id)
-            raise exception.Unauthorized(_('Problem with device token: old token.'))
+            raise exception.Forbidden(_('Problem with device token: old token.'))
 
             
 @six.add_metaclass(abc.ABCMeta)
