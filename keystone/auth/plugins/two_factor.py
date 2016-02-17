@@ -38,6 +38,7 @@ class UserTwoFactorAuthInfo(UserAuthInfo):
     def __init__(self):
         super(UserTwoFactorAuthInfo, self).__init__()
         self.verification_code = None
+        self.device_data = None
 
     def _validate_and_normalize_auth_data(self, auth_payload):
         super(UserTwoFactorAuthInfo, self)._validate_and_normalize_auth_data(auth_payload)
@@ -81,8 +82,13 @@ class TwoFactor(Password):
             device_id = user_info.device_data['device_id']
             device_token = user_info.device_data['device_token']
             user_id = user_info.user_id
-            if not self.two_factor_auth_api.is_device_valid(device_id=device_id, device_token=device_token, user_id=user_id):
-                raise exception.Unauthorized(_('Invalid device data'))
+
+            try:
+                if not self.two_factor_auth_api.is_device_valid(device_id=device_id, device_token=device_token, user_id=user_id):
+                    raise exception.Unauthorized(_('Invalid device data: old token'))
+            except exception.NotFound:
+                raise exception.Unauthorized(_('Invalid device data: wrong data'))
         
         return super(TwoFactor, self).authenticate(context, auth_payload, auth_context)
+        
             
