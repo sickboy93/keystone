@@ -240,7 +240,8 @@ class TwoFactorDevicesCRUDTests(TwoFactorBaseTests):
         data = self._remember_device(user_id=self.user_id,
                                      user_name=self.user['name'],
                                      domain_id=self.user['domain_id'])
-        self._check_for_device(user_id=self.user_id,
+        self._check_for_device(user_name=self.user['name'],
+                               domain_id=self.user['domain_id'],
                                device_id=data['device_id'],
                                device_token=data['device_token'])
 
@@ -251,7 +252,6 @@ class TwoFactorDevicesCRUDTests(TwoFactorBaseTests):
                                          device_token=data['device_token'])
         
         self.assertEqual(new_data['device_id'], data['device_id'])
-        self.assertEqual(new_data['user_id'], data['user_id'])
         self.assertNotEqual(new_data['device_token'], data['device_token'])
 
     def test_device_wrong_user(self):
@@ -284,7 +284,7 @@ class TwoFactorDevicesCRUDTests(TwoFactorBaseTests):
         self._check_for_device(user_id=self.user_id,
                                device_id=data['device_id'],
                                device_token=data['device_token'],
-                               expected_status=401)
+                               expected_status=403)
 
     def test_device_delete_all(self):
         data = self._remember_device(user_id=self.user_id)
@@ -312,7 +312,7 @@ class TwoFactorDevicesCRUDTests(TwoFactorBaseTests):
         self._check_for_device(user_id=self.user_id,
                                device_id=data['device_id'],
                                device_token=data['device_token'],
-                               expected_status=401)
+                               expected_status=403)
         self._check_for_device(user_id=self.user_id,
                                device_id=new_data['device_id'],
                                device_token=new_data['device_token'],
@@ -450,3 +450,19 @@ class TwoFactorAuthTests(TwoFactorBaseTests):
             device_data=data,
             password=self.user['password'])
         self._authenticate(auth_body=req)
+
+    def test_auth_device_data_from_another_user(self):
+        user = self._create_user()
+        self._create_two_factor_key(user_id=user['id'])
+        
+        self._create_two_factor_key(user_id=self.user_id)
+        
+
+        user_device = self.manager.remember_device(user_id=self.user_id)
+        new_user_device = self.manager.remember_device(user_id=user['id'])
+
+        req = self._auth_body(
+            user_id=self.user_id,
+            device_data=new_user_device,
+            password=self.user['password'])
+        self._authenticate(auth_body=req, expected_status=401)
