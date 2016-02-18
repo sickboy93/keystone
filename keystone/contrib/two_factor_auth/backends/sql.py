@@ -98,7 +98,7 @@ class TwoFactorAuth(two_factor_auth.Driver):
 
     def save_device(self, device_id, device_token, user_id):
         session = sql.get_session()
-        old_device = session.query(TwoFactorDevice).filter_by(device_id=device_id, user_id=user_id, is_valid=True)
+        old_device = session.query(TwoFactorDevice).filter_by(device_id=device_id, user_id=user_id, is_valid=True).first()
 
         with session.begin():
             if old_device:
@@ -114,7 +114,7 @@ class TwoFactorAuth(two_factor_auth.Driver):
 
     def is_device_valid(self, device_id, device_token, user_id):
         session = sql.get_session()
-        device = session.query(TwoFactorDevice).get(device_id, device_token, user_id)
+        device = session.query(TwoFactorDevice).get((device_id, device_token, user_id))
         
         with session.begin():
             if device is None:

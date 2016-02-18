@@ -34,7 +34,7 @@ class TwoFactorV3Controller(controller.V3Controller):
     @classmethod
     def _add_self_referential_link(cls, context, ref):
         ref.setdefault('links', {})
-        ref['links']['self'] = cls.base_url(context) + '/' + ref['user_id']
+        ref['links']['self'] = cls.base_url(context)
 
     def _get_user_id_from_context(self, context):
         user_id = context['query_string'].get('user_id')
@@ -100,7 +100,12 @@ class TwoFactorV3Controller(controller.V3Controller):
     def remember_device(self, context):
         """Stores data to remember current device"""
 
-        device_data = self.two_factor_auth_api.remember_device(self._get_user_id_from_context(context))
+        device_id = context['query_string'].get('device_id', None)
+        device_token = context['query_string'].get('device_token', None)
+
+        device_data = self.two_factor_auth_api.remember_device(user_id=self._get_user_id_from_context(context),
+                                                               device_id=device_id,
+                                                               device_token=device_token)
         return TwoFactorV3Controller.wrap_member(context, device_data)
 
     @controller.protected()
@@ -109,14 +114,14 @@ class TwoFactorV3Controller(controller.V3Controller):
 
         device_id = context['query_string'].get('device_id')
         device_token = context['query_string'].get('device_token')
-        user_id = context['query_string'].get('user_id')
 
-        device_data = {'device_id': device_id, 'device_token': device_token, 'user_id': user_id}
-        return TwoFactorV3Controller.wrap_member(context, self.two_factor_auth_api.check_for_device(device_data))
+        self.two_factor_auth_api.check_for_device(device_id=device_id,
+                                                  device_token=device_token,
+                                                  user_id=self._get_user_id_from_context(context))
 
 
     @controller.protected()
     def forget_devices(self, context, user_id):
         """Deletes all remembered devices belonging to a certain user"""
 
-        return self.two_factor_auth_api.forget_all_devices(user_id)
+        return self.two_factor_auth_api.delete_all_devices(user_id)

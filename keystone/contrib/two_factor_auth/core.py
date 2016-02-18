@@ -58,7 +58,13 @@ class TwoFactorAuthManager(manager.Manager):
         user_id = payload['resource_info']
         if self.driver.is_two_factor_enabled(user_id):
             self.driver.delete_two_factor_key(user_id)
-            self.driver.forget_all_devices(user_id)
+            self.driver.delete_all_devices(user_id)
+
+    def delete_two_factor_key(self, user_id):
+        """Disables two factor auth for a certain user."""
+
+        self.driver.delete_two_factor_key(user_id)
+        self.driver.delete_all_devices(user_id)
 
     def create_two_factor_key(self, user_id, two_factor_auth):
         """Enables two factor auth for a certain user."""
@@ -107,38 +113,41 @@ class TwoFactorAuthManager(manager.Manager):
         totp = pyotp.TOTP(twofactor.two_factor_key)
         return totp.verify(verification_code)
 
-    def remember_device(self, user_id):
+    def remember_device(self, user_id, device_id=None, device_token=None):
         """Stores data to remember current device"""
 
-        device_id = uuid.uuid4().hex
-        device_token = uuid.uuid4().hex
+        new_device_token = uuid.uuid4().hex
+        
+        if not device_id:
+            device_id = uuid.uuid4().hex
+            self.driver.save_device(device_id=device_id,
+                                    device_token=new_device_token,
+                                    user_id=user_id)
+        else:
+            try:
+                self.check_for_device(device_id=device_id,
+                                      device_token=device_token,
+                                      user_id=user_id)
+                self.driver.save_device(device_id=device_id,
+                                        device_token=new_device_token,
+                                        user_id=user_id)
+            except exception.Unauthorized:
+                self.driver.delete_all_devices(user_id)
 
-        self.driver.save_device(device_id=device_id,
-                                device_token=device_token,
-                                user_id=user_id)
         return {'device_id': device_id,
-                'device_token': device_token,
-                'user_id': user_id}
+                'device_token': new_device_token}
 
-    def check_for_device(self, device_data):
+    def check_for_device(self, user_id, device_id, device_token):
         """Checks for a certain device, and updates its data"""
 
-        self.is_two_factor_enabled(device_data['user_id'])
+        self.is_two_factor_enabled(user_id)
 
-        if self.driver.is_device_valid(device_id=device_data['device_id'],
-                                       device_token=device_data['device_token'],
-                                       user_id=device_data['user_id']):
-            new_token = uuid.uuid4().hex
-            self.driver.save_device(device_id=device_data['device_id'],
-                                    device_token=new_token,
-                                    user_id=device_data['user_id'])
+        if not self.driver.is_device_valid(device_id=device_id,
+                                           device_token=device_token,
+                                           user_id=user_id):
+            self.driver.delete_all_devices(user_id)
+            raise exception.Forbidden(_('Problem with device token: old token.'))
 
-            return {'device_id': device_data['device_id'],
-                    'device_token': new_token,
-                    'user_id': device_data['user_id']}
-        else:
-            self.driver.forget_all_devices(device_data['user_id'])
-            raise exception.Unauthorized(_('Problem with device token: old token.'))
             
 @six.add_metaclass(abc.ABCMeta)
 class Driver(object):
