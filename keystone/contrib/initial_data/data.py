@@ -276,13 +276,13 @@ _PURCHASER_ROLE_NAME = 'Purchaser'
 
 FIWARE_ROLES = [
     {
-        'id': 'provider_role',
+        'id': 'provider',
         'name': _PROVIDER_ROLE_NAME,
         'application_id': find_id(APPLICATIONS, value=_IDM_ADMIN_APP_NAME),
         'is_internal': True,
     },
     {
-        'id': 'purchaser_role',
+        'id': 'purchaser',
         'name': _PURCHASER_ROLE_NAME,
         'application_id': find_id(APPLICATIONS, value=_IDM_ADMIN_APP_NAME),
         'is_internal': True,
