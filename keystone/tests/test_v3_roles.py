@@ -30,6 +30,17 @@ class RolesBaseTests(test_v3.RestfulTestCase):
     EXTENSION_NAME = 'roles'
     EXTENSION_TO_ADD = 'roles_extension'
 
+    CONSUMER_URL = '/OS-OAUTH2/consumers'
+    DEFAULT_REDIRECT_URIS = [
+        'https://%s.com' %uuid.uuid4().hex,
+        'https://%s.com' %uuid.uuid4().hex
+    ]
+    DEFAULT_SCOPES = [
+        uuid.uuid4().hex,
+        uuid.uuid4().hex,
+        'all_info'
+    ]
+
     ROLES_URL = '/OS-ROLES/roles'
     PERMISSIONS_URL = '/OS-ROLES/permissions'
 
@@ -342,6 +353,28 @@ class RolesBaseTests(test_v3.RestfulTestCase):
         self.assertEqual(reference_permission['name'], test_permission['name'])
         if hasattr(reference_permission, 'is_internal'):
             self.assertEqual(reference_permission['is_internal'], test_permission['is_internal'])
+
+    def _create_consumer(self, name=None, description=None,
+                         client_type='confidential',
+                         redirect_uris=DEFAULT_REDIRECT_URIS,
+                         grant_type='authorization_code',
+                         scopes=DEFAULT_SCOPES,
+                         **kwargs):
+        if not name:
+            name = uuid.uuid4().hex
+        data = {
+            'name': name,
+            'description': description,
+            'client_type': client_type,
+            'redirect_uris': redirect_uris,
+            'grant_type': grant_type,
+            'scopes': scopes
+        }
+        # extra
+        data.update(kwargs)
+        response = self.post(self.CONSUMER_URL, body={'consumer': data})
+
+        return response.result['consumer'], data
 
 
 class RoleCrudTests(RolesBaseTests):
@@ -1283,8 +1316,9 @@ class FiwareApiTests(RolesBaseTests):
         # create a keystone role
         self.keystone_role = self._create_keystone_role()
 
-        # create a fake application
-        self.application_id = uuid.uuid4().hex
+        # create an application
+        consumer, data = self._create_consumer()
+        self.application_id = consumer['id']
 
     def _create_organizations_with_user_and_keystone_role(self):
         organizations = []
