@@ -604,5 +604,6 @@ class BaseProvider(provider.Provider):
                 bind=token_ref.get('bind'),
                 expires=token_ref['expires'],
                 issued_at=issued_at,
-                audit_info=audit)
+                audit_info=audit,
+                include_catalog=False)
         return token_data
