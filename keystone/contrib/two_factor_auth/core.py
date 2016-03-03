@@ -20,6 +20,8 @@ from keystone.i18n import _
 from keystone import notifications
 from keystone.openstack.common import log
 
+import uuid
+
 import pyotp
 import six
 import abc
@@ -56,6 +58,13 @@ class TwoFactorAuthManager(manager.Manager):
         user_id = payload['resource_info']
         if self.driver.is_two_factor_enabled(user_id):
             self.driver.delete_two_factor_key(user_id)
+            self.driver.delete_all_devices(user_id)
+
+    def delete_two_factor_key(self, user_id):
+        """Disables two factor auth for a certain user."""
+
+        self.driver.delete_two_factor_key(user_id)
+        self.driver.delete_all_devices(user_id)
 
     def create_two_factor_key(self, user_id, two_factor_auth):
         """Enables two factor auth for a certain user."""
@@ -104,6 +113,42 @@ class TwoFactorAuthManager(manager.Manager):
         totp = pyotp.TOTP(twofactor.two_factor_key)
         return totp.verify(verification_code)
 
+    def remember_device(self, user_id, device_id=None, device_token=None):
+        """Stores data to remember current device"""
+
+        new_device_token = uuid.uuid4().hex
+        
+        if not device_id:
+            device_id = uuid.uuid4().hex
+            self.driver.save_device(device_id=device_id,
+                                    device_token=new_device_token,
+                                    user_id=user_id)
+        else:
+            try:
+                self.check_for_device(device_id=device_id,
+                                      device_token=device_token,
+                                      user_id=user_id)
+                self.driver.save_device(device_id=device_id,
+                                        device_token=new_device_token,
+                                        user_id=user_id)
+            except exception.Unauthorized:
+                self.driver.delete_all_devices(user_id)
+
+        return {'device_id': device_id,
+                'device_token': new_device_token}
+
+    def check_for_device(self, user_id, device_id, device_token):
+        """Checks for a certain device, and updates its data"""
+
+        self.is_two_factor_enabled(user_id)
+
+        if not self.driver.is_device_valid(device_id=device_id,
+                                           device_token=device_token,
+                                           user_id=user_id):
+            self.driver.delete_all_devices(user_id)
+            raise exception.Forbidden(_('Problem with device token: old token.'))
+
+            
 @six.add_metaclass(abc.ABCMeta)
 class Driver(object):
     """Interface description for Two Factor Auth driver."""
@@ -156,6 +201,33 @@ class Driver(object):
 
         :param user_id: user ID
         :param sec_answer: answer to the security question
+        :returns: Boolean with the result of the comparison
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def save_device(self, device_id, device_token, user_id):
+        """Save information of current device.
+
+        :param device_data: device info to be saved
+        :returns: None.
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def is_device_valid(self, device_id, device_token, user_id):
+        """Retrieves state of a certain device
+
+        :param device_data: device data to be checked
+        :returns: Boolean with the result of the check
+        """
+        raise exception.NotImplemented()
+
+    @abc.abstractmethod
+    def delete_all_devices(self, user_id):
+        """Deletes all devices for a certain user
+
+        :param user_id: user ID
         :returns: None.
         """
         raise exception.NotImplemented()

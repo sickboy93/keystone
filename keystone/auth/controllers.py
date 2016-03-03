@@ -522,6 +522,7 @@ class Auth(controller.V3Controller):
     def validate_token(self, context):
         token_id = context.get('subject_token_id')
         include_catalog = 'nocatalog' not in context['query_string']
+        include_catalog = False
         token_data = self.token_provider_api.validate_v3_token(
             token_id)
         if not include_catalog and 'catalog' in token_data['token']:
