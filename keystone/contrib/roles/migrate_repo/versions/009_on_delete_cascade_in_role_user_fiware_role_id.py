@@ -31,10 +31,10 @@ def upgrade(migrate_engine):
     meta = sql.MetaData()
     meta.bind = migrate_engine
 
-    if 'mysql' in str(meta):
-        role_user_table = sql.Table('role_user_fiware', meta, autoload=True)
-        role_fiware = sql.Table('role_fiware', meta, autoload=True)
+    role_user_table = sql.Table('role_user_fiware', meta, autoload=True)
+    role_fiware = sql.Table('role_fiware', meta, autoload=True)
 
+    if 'mysql' in str(meta):
         ForeignKeyConstraint(
             columns=[role_user_table.c.role_id],
             refcolumns=[role_fiware.c.id],
@@ -46,15 +46,27 @@ def upgrade(migrate_engine):
             name='role_user_fiware_ibfk_1',
             ondelete='CASCADE').create()
 
+    if 'postgres' in str(meta):
+        ForeignKeyConstraint(
+            columns=[role_user_table.c.role_id],
+            refcolumns=[role_fiware.c.id],
+            name='role_user_fiware_role_id_fkey').drop()
+
+        ForeignKeyConstraint(
+            columns=[role_user_table.c.role_id],
+            refcolumns=[role_fiware.c.id],
+            name='role_user_fiware_role_id_fkey',
+            ondelete='CASCADE').create()
+
 def downgrade(migrate_engine):
     # Operations to reverse the above upgrade go here.
     meta = sql.MetaData()
     meta.bind = migrate_engine
 
-    if 'mysql' in str(meta):
-        role_user_table = sql.Table('role_user_fiware', meta, autoload=True)
-        role_fiware = sql.Table('role_fiware', meta, autoload=True)
+    role_user_table = sql.Table('role_user_fiware', meta, autoload=True)
+    role_fiware = sql.Table('role_fiware', meta, autoload=True)
 
+    if 'mysql' in str(meta):
         ForeignKeyConstraint(
             columns=[role_user_table.c.role_id],
             refcolumns=[role_fiware.c.id],
@@ -65,4 +77,16 @@ def downgrade(migrate_engine):
             columns=[role_user_table.c.role_id],
             refcolumns=[role_fiware.c.id],
             name='role_user_fiware_ibfk_1').create()
+
+    if 'postgres' in str(meta):
+        ForeignKeyConstraint(
+            columns=[role_user_table.c.role_id],
+            refcolumns=[role_fiware.c.id],
+            name='role_user_fiware_role_id_fkey',
+            ondelete='CASCADE').drop()
+
+        ForeignKeyConstraint(
+            columns=[role_user_table.c.role_id],
+            refcolumns=[role_fiware.c.id],
+            name='role_user_fiware_role_id_fkey').create()
 
