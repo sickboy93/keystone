@@ -16,7 +16,7 @@ import uuid
 
 from keystone import exception
 from keystone.common import sql
-from keystone.contrib import two_factor_auth
+from keystone.contrib.two_factor_auth import Driver, utils
 from keystone.i18n import _
 from oslo.utils import timeutils
 from keystone.openstack.common import log
@@ -42,7 +42,7 @@ class TwoFactorDevice(sql.ModelBase, sql.ModelDictMixin):
     is_valid = sql.Column(sql.Boolean(), nullable=False)
 
 
-class TwoFactorAuth(two_factor_auth.Driver):
+class TwoFactorAuth(Driver):
     """ CRUD driver for the SQL backend """
 
     def create_two_factor_key(self, user_id, two_factor_auth):
@@ -50,6 +50,7 @@ class TwoFactorAuth(two_factor_auth.Driver):
         twofactor = session.query(TwoFactor).get(user_id)
         with session.begin():
             if twofactor is None:
+                two_factor_auth = utils.hash_two_factor_security_answer(two_factor_auth)
                 twofactor = TwoFactor(user_id=user_id,
                                       two_factor_key=two_factor_auth['key'],
                                       security_question=two_factor_auth['security_question'],
@@ -91,10 +92,8 @@ class TwoFactorAuth(two_factor_auth.Driver):
         if twofactor is None:
             raise exception.NotFound(_('Two Factor Authentication is not enabled for user %s.' % user_id))
         else:
-            if (two_factor_auth['security_answer'] != twofactor.security_answer):
-                return False
-            else:
-                return True
+            return utils.check_security_answer(two_factor_auth['security_answer'],
+                                                               twofactor.security_answer)
 
     def save_device(self, device_id, device_token, user_id):
         session = sql.get_session()
@@ -129,3 +128,4 @@ class TwoFactorAuth(two_factor_auth.Driver):
         for device in devices:
             with session.begin():
                 session.delete(device)
+

@@ -926,6 +926,14 @@ FILE_OPTIONS = {
                         'This file should be generated with the '
                         'keystone-manage saml_idp_metadata command.'),
     ],
+    'two_factor_auth': [
+        cfg.StrOpt('driver',
+                   default='keystone.contrib.two_factor_auth.backends.sql.TwoFactorAuth',
+                   help='Two factor auth backend driver.'),
+        cfg.IntOpt('max_security_answer_length', default=4096,
+                   help='Maximum supported length for security answers; '
+                        'decrease to improve performance.'),
+    ],
 }
 
 
