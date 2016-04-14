@@ -122,6 +122,13 @@ class PasswordVerificationError(Error):
     code = 403
     title = 'Forbidden'
 
+class TwoFactorSecurityAnswerVerificationError(Error):
+    message_format = _("The security answer length must be less than or equal "
+                       "to %(size)i. The server could not comply with the "
+                       "request because the security answer is invalid.")
+    code = 403
+    title = 'Forbidden'
+
 
 class RegionDeletionError(Error):
     message_format = _("Unable to delete region %(region_id)s because it or "
