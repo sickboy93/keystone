@@ -445,8 +445,8 @@ class FiwareApiControllerV3(BaseControllerV3):
             'app_id': application_id
         }
 
-        if getattr(application, 'ac_domain', None):
-            response_body['app_azf_domain'] = application.ac_domain
+        if 'ac_domain' in application:
+            response_body['app_azf_domain'] = application['ac_domain']
 
         return response_body
 
