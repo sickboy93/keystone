@@ -84,10 +84,17 @@ class TwoFactorV3Controller(controller.V3Controller):
         return self.two_factor_auth_api.delete_two_factor_key(user_id)
 
     @controller.protected()
-    def check_security_question(self, context, user_id, two_factor_auth):
+    def check_security_question(self, context, user_id):
         """Checks whether the provided answer is correct"""
 
-        return self.two_factor_auth_api.check_security_question(user_id, two_factor_auth)
+        sec_answer = context['query_string'].get('sec_answer')
+
+        if not sec_answer:
+            raise exception.ValidationError(
+                    attribute='sec_answer',
+                    target='query string')
+
+        return self.two_factor_auth_api.check_security_question(user_id, sec_answer)
 
     @controller.protected()
     def get_two_factor_data(self, context, user_id):
@@ -103,6 +110,11 @@ class TwoFactorV3Controller(controller.V3Controller):
         device_id = context['query_string'].get('device_id', None)
         device_token = context['query_string'].get('device_token', None)
 
+        if device_id and not device_token:
+            raise exception.ValidationError(
+                    attribute='device_token',
+                    target='query string')
+
         device_data = self.two_factor_auth_api.remember_device(user_id=self._get_user_id_from_context(context),
                                                                device_id=device_id,
                                                                device_token=device_token)
@@ -114,6 +126,11 @@ class TwoFactorV3Controller(controller.V3Controller):
 
         device_id = context['query_string'].get('device_id')
         device_token = context['query_string'].get('device_token')
+
+        if not device_id or not device_token:
+            raise exception.ValidationError(
+                    attribute='device_id and device_token',
+                    target='query string')
 
         self.two_factor_auth_api.check_for_device(device_id=device_id,
                                                   device_token=device_token,

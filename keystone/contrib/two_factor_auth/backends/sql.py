@@ -86,13 +86,13 @@ class TwoFactorAuth(Driver):
         else:
             return twofactor
 
-    def check_security_question(self, user_id, two_factor_auth):
+    def check_security_question(self, user_id, sec_answer):
         session = sql.get_session()
         twofactor = session.query(TwoFactor).get(user_id)
         if twofactor is None:
             raise exception.NotFound(_('Two Factor Authentication is not enabled for user %s.' % user_id))
         else:
-            return utils.check_security_answer(two_factor_auth['security_answer'],
+            return utils.check_security_answer(sec_answer,
                                                                twofactor.security_answer)
 
     def save_device(self, device_id, device_token, user_id):
