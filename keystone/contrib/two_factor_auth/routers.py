@@ -38,7 +38,7 @@ class TwoFactorExtension(wsgi.V3ExtensionRouter):
 
       # get non-sensitive data and check security question
       GET /users/{user_id}/OS-TWO-FACTOR/two_factor_data
-      HEAD /users/{user_id}/OS-TWO-FACTOR/sec_question #check security question
+      HEAD /users/{user_id}/OS-TWO-FACTOR/sec_question?sec_answer={sec_answer} #check security question
 
       # remember device functionality
       POST /OS-TWO-FACTOR/devices?user_id={user_id}&user_name={user_name}&domain_name={domain_name}&device_id={device_id}&device_token={device_token}

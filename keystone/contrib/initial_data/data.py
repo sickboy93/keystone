@@ -234,37 +234,37 @@ _OWNED_ROLES_PERM_NAME = 'Get and assign only public owned roles'
 
 FIWARE_PERMISSIONS = [
     {
-        'id': 'manage_application',
+        'id': 'manage-application',
         'name': _MANAGE_APP_PERM_NAME,
         'application_id': find_id(APPLICATIONS, value=_IDM_ADMIN_APP_NAME),
         'is_internal': True,
     },
     {
-        'id': 'manage_roles',
+        'id': 'manage-roles',
         'name': _MANAGE_ROLES_PERM_NAME,
         'application_id': find_id(APPLICATIONS, value=_IDM_ADMIN_APP_NAME),
         'is_internal': True,
     },
     {
-        'id': 'get_assign_public_roles',
+        'id': 'get-assign-public-roles',
         'name': _ALL_PUBLIC_PERM_NAME,
         'application_id': find_id(APPLICATIONS, value=_IDM_ADMIN_APP_NAME),
         'is_internal': True,
     },
     {
-        'id': 'manage_authorizations',
+        'id': 'manage-authorizations',
         'name': _MANAGE_AUTH_PERM_NAME,
         'application_id': find_id(APPLICATIONS, value=_IDM_ADMIN_APP_NAME),
         'is_internal': True,
     },
     {
-        'id': 'get_assign_public_owned_roles',
+        'id': 'get-assign-public-owned-roles',
         'name': _OWNED_ROLES_PERM_NAME,
         'application_id': find_id(APPLICATIONS, value=_IDM_ADMIN_APP_NAME),
         'is_internal': True,
     },
     {
-        'id': 'get_assign_internal_roles',
+        'id': 'get-assign-internal-roles',
         'name': _INTERNAL_ROLES_PERM_NAME,
         'application_id': find_id(APPLICATIONS, value=_IDM_ADMIN_APP_NAME),
         'is_internal': True,

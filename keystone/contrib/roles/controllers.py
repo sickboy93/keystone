@@ -13,6 +13,7 @@
 # under the License.
 
 import itertools
+import datetime
 
 from keystone import exception
 from keystone.common import controller
@@ -414,6 +415,9 @@ class FiwareApiControllerV3(BaseControllerV3):
             # We validate the token but no user info is provided
             return {
             }
+
+        if not token['valid'] or datetime.datetime.strptime(token['expires_at'], '%Y-%m-%d %H:%M:%S') < datetime.datetime.today():
+            raise exception.Unauthorized
             
         user = self.identity_api.get_user(token['authorizing_user_id'])
         

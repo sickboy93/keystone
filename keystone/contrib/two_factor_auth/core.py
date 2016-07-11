@@ -90,11 +90,11 @@ class TwoFactorAuthManager(manager.Manager):
         if not self.driver.is_two_factor_enabled(user_id):
             raise exception.NotFound(_('Two Factor Authentication is not enabled for user %s.' %user_id))
 
-    def check_security_question(self, user_id, two_factor_auth):
+    def check_security_question(self, user_id, sec_answer):
         """Checks if the provided security answer is correct"""
 
         user = self.identity_api.get_user(user_id) # check if user exists
-        if not self.driver.check_security_question(user_id, two_factor_auth):
+        if not self.driver.check_security_question(user_id, sec_answer):
             raise exception.Unauthorized(_('Security answer is not correct.'))
 
     def get_two_factor_data(self, user_id):
@@ -196,7 +196,7 @@ class Driver(object):
         raise exception.NotImplemented()
 
     @abc.abstractmethod
-    def check_security_question(self, user_id, two_factor_auth):
+    def check_security_question(self, user_id, sec_answer):
         """Checks whether the provided answer is correct.
 
         :param user_id: user ID
