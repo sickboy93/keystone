@@ -54,7 +54,8 @@ def user_key2scim(ref, path, schema=True):
         'active': ref.get('enabled', None),
         'emails': [{'value': ref['email']}] if 'email' in ref else None,
         get_schema(_EXT_SCHEMA, path): {
-            'domain_id': ref.get('domain_id', None)
+            'domain_id': ref.get('domain_id', None),
+            'default_project_id': ref.get('default_project_id', None)
         }
     }
     return ref
@@ -80,6 +81,7 @@ def user_scim2key(scim, path):
         'id': scim.get('id', None),
         'enabled': scim.get('active', None),
         'name': scim.get('userName', None),
+        'username': scim.get('id', None),
         'description': scim.get('displayName', None),
         'password': scim.get('password', None)
     }

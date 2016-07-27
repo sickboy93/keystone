@@ -132,7 +132,7 @@ class ScimInfoController(wsgi.Application):
     def scim_get_schemas(self, context):
         return schemas.SCHEMAS
 
-
+@dependency.requires('assignment_api', 'registration_api')
 class ScimUserV3Controller(UserV3):
 
     collection_name = 'users'
@@ -164,6 +164,32 @@ class ScimUserV3Controller(UserV3):
         scim = self._denormalize(kwargs, context['path'])
         user = conv.user_scim2key(scim, path=context['path'])
         ref = super(ScimUserV3Controller, self).create_user(context, user=user)
+
+        if ref.get('user', None):
+            user_id = ref.get('user', None)['id']
+            # create user's associated project
+            project = {
+                'name':user_id,
+                'domain_id':ref.get('user', None)['domain_id'],
+                'enabled': True,
+                'is_default': True,
+            }
+            project_ref = self._assign_unique_id(self._normalize_dict(project))
+            project_ref = self._normalize_domain_id(context, project_ref)
+            project_ref = self.assignment_api.create_project(
+                project_ref['id'], project_ref)
+
+            # assign default role to new user in their associated project
+            default_role = self.registration_api.get_default_role()
+            self.assignment_api.create_grant(default_role['id'], 
+                                             user_id=user_id,
+                                             project_id=project_ref['id'])
+            
+            # store default_project_id and username
+            user['default_project_id'] = project_ref['id']
+            user['username'] = user_id
+            ref = super(ScimUserV3Controller, self).update_user(context, user_id=user_id, user=user)
+
         return conv.user_key2scim(ref.get('user', None), path=context['path'])
 
     def patch_user(self, context, user_id, **kwargs):
