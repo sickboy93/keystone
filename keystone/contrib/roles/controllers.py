@@ -446,7 +446,8 @@ class FiwareApiControllerV3(BaseControllerV3):
             'displayName': _get_name(user),
             'roles': user_roles,
             'organizations': organizations,
-            'app_id': application_id
+            'app_id': application_id,
+            'isGravatarEnabled': user['use_gravatar'] if 'use_gravatar' in user else False
         }
 
         if 'ac_domain' in application:
