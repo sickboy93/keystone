@@ -15,6 +15,7 @@
 import itertools
 import datetime
 
+from keystone.common import authorization
 from keystone import exception
 from keystone.common import controller
 from keystone.common import dependency
@@ -47,10 +48,16 @@ def _check_allowed_to_manage_roles(self, context, protection, role=None, role_id
         # List filtering
         application_id = context['query_string']['application_id']
 
-    user_id = context['environment']['KEYSTONE_AUTH_CONTEXT']['user_id']
-    allowed_applications = self.roles_api.list_applications_user_allowed_to_manage_roles(
-        user_id=user_id, organization_id=None)
-    ref['is_allowed_to_manage_roles'] = application_id in allowed_applications
+    if ('environment' in context and
+        authorization.AUTH_CONTEXT_ENV in context['environment']):
+
+        user_id = context['environment'][authorization.AUTH_CONTEXT_ENV]['user_id']
+        allowed_applications = self.roles_api.list_applications_user_allowed_to_manage_roles(
+            user_id=user_id, organization_id=None)
+        ref['is_allowed_to_manage_roles'] = application_id in allowed_applications
+
+    else:
+        ref['is_allowed_to_manage_roles'] = False
 
     self.check_protection(context, protection, ref)
 
@@ -63,30 +70,36 @@ def _check_allowed_to_get_and_assign(self, context, protection, user_id=None,
     """
     user_id = user_id if user_id else context['query_string'].get('user_id')
     ref = {}
-    if application_id:
-        req_user = self.identity_api.get_user(
-            context['environment']['KEYSTONE_AUTH_CONTEXT']['user_id'])
-        req_project_id = context['environment']['KEYSTONE_AUTH_CONTEXT']['project_id']
-        if req_project_id == req_user.get('default_project_id'):
-            # user acting as user
-            allowed_roles = self.roles_api.list_roles_user_allowed_to_assign(
-                user_id=req_user['id'], organization_id=None)
-        else:
-            # user logged as org
-            allowed_roles = self.roles_api.list_roles_organization_allowed_to_assign(
-                organization_id=req_project_id)
 
-        if role_id:
-            # Role must be allowed
-            ref['is_allowed_to_get_and_assign'] = role_id in list(
-                itertools.chain(*allowed_roles.values()))
-        else:
-            # application must be allowed
-            ref['is_allowed_to_get_and_assign'] = application_id in allowed_roles.keys()
+    if ('environment' in context and
+        authorization.AUTH_CONTEXT_ENV in context['environment']):
 
-    elif user_id:
-        ref['is_allowed_to_get_and_assign'] = (
-            user_id == context['environment']['KEYSTONE_AUTH_CONTEXT']['user_id'])
+        if application_id:
+            req_user = self.identity_api.get_user(
+                context['environment'][authorization.AUTH_CONTEXT_ENV]['user_id'])
+            req_project_id = context['environment'][authorization.AUTH_CONTEXT_ENV]['project_id']
+            if req_project_id == req_user.get('default_project_id'):
+                # user acting as user
+                allowed_roles = self.roles_api.list_roles_user_allowed_to_assign(
+                    user_id=req_user['id'], organization_id=None)
+            else:
+                # user logged as org
+                allowed_roles = self.roles_api.list_roles_organization_allowed_to_assign(
+                    organization_id=req_project_id)
+
+            if role_id:
+                # Role must be allowed
+                ref['is_allowed_to_get_and_assign'] = role_id in list(
+                    itertools.chain(*allowed_roles.values()))
+            else:
+                # application must be allowed
+                ref['is_allowed_to_get_and_assign'] = application_id in allowed_roles.keys()
+
+        elif user_id:
+            ref['is_allowed_to_get_and_assign'] = (
+                user_id == context['environment'][authorization.AUTH_CONTEXT_ENV]['user_id'])
+    else:
+        ref['is_allowed_to_get_and_assign'] = False
 
     self.check_protection(context, protection, ref)
 
@@ -113,10 +126,16 @@ def _check_allowed_to_manage_permissions(self, context, protection, permission=N
         # List filtering
         application_id = context['query_string']['application_id']
 
-    user_id = context['environment']['KEYSTONE_AUTH_CONTEXT']['user_id']
-    allowed_applications = self.roles_api.list_applications_user_allowed_to_manage_roles(
-        user_id=user_id, organization_id=None)
-    ref['is_allowed_to_manage_roles'] = application_id in allowed_applications
+    if ('environment' in context and
+        authorization.AUTH_CONTEXT_ENV in context['environment']):
+
+        user_id = context['environment'][authorization.AUTH_CONTEXT_ENV]['user_id']
+        allowed_applications = self.roles_api.list_applications_user_allowed_to_manage_roles(
+            user_id=user_id, organization_id=None)
+        ref['is_allowed_to_manage_roles'] = application_id in allowed_applications
+
+    else:
+        ref['is_allowed_to_manage_roles'] = False
 
     self.check_protection(context, protection, ref)
 
@@ -128,10 +147,16 @@ def _check_allowed_to_manage_consumer(self, context, protection, consumer_id=Non
     """
     ref = {}
 
-    user_id = context['environment']['KEYSTONE_AUTH_CONTEXT']['user_id']
-    allowed_applications = self.roles_api.list_applications_user_allowed_to_manage(
-        user_id=user_id, organization_id=None)
-    ref['is_allowed_to_manage'] = consumer_id in allowed_applications
+    if ('environment' in context and
+        authorization.AUTH_CONTEXT_ENV in context['environment']):
+        
+        user_id = context['environment'][authorization.AUTH_CONTEXT_ENV]['user_id']
+        allowed_applications = self.roles_api.list_applications_user_allowed_to_manage(
+            user_id=user_id, organization_id=None)
+        ref['is_allowed_to_manage'] = consumer_id in allowed_applications
+
+    else:
+        ref['is_allowed_to_manage'] = False
 
     self.check_protection(context, protection, ref)
 
