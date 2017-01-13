@@ -397,6 +397,14 @@ class Auth(controller.V3Controller):
             if trust:
                 self.trust_api.consume_use(trust['id'])
 
+
+            # NOTE(federicofdez): include FIWARE role in token for proper
+            # cloud services authorization
+            is_cloud_token = self.assignment_api.get_project(project_id).get('is_cloud_project')
+            roles = token_data.get('token').get('roles')
+            if (is_cloud_token and ('member' or 'owner' in [r.name for r in roles])):
+                token_data['token']['roles'].append({'id': u'cloud_member', 'name': u'cloud_member'})
+
             return render_token_data_response(token_id, token_data,
                                               created=True)
         except exception.TrustNotFound as e:
@@ -527,6 +535,15 @@ class Auth(controller.V3Controller):
             token_id)
         if not include_catalog and 'catalog' in token_data['token']:
             del token_data['token']['catalog']
+
+        # NOTE(federicofdez): include FIWARE role in token for proper
+        # cloud services authorization
+        project_id = token_data.get('token').get('project').get('id')
+        is_cloud_token = self.assignment_api.get_project(project_id).get('is_cloud_project')
+        roles = token_data.get('token').get('roles')
+        if (is_cloud_token and ('member' or 'owner' in [r.name for r in roles])):
+            token_data['token']['roles'].append({'id': u'cloud_member', 'name': u'cloud_member'})
+
         return render_token_data_response(token_id, token_data)
 
     @controller.protected()
