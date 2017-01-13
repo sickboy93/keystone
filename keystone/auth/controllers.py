@@ -40,6 +40,10 @@ CONF = config.CONF
 AUTH_METHODS = {}
 AUTH_PLUGINS_LOADED = False
 
+# NOTE(federicofdez): special role for proper cloud services authorization
+CLOUD_ROLE_ID = u'cloud_member'
+CLOUD_ROLE_NAME = u'cloud_member'
+
 
 def load_auth_methods():
     global AUTH_PLUGINS_LOADED
@@ -398,12 +402,12 @@ class Auth(controller.V3Controller):
                 self.trust_api.consume_use(trust['id'])
 
 
-            # NOTE(federicofdez): include FIWARE role in token for proper
+            # NOTE(federicofdez): include special role in token for proper
             # cloud services authorization
             is_cloud_token = self.assignment_api.get_project(project_id).get('is_cloud_project')
             roles = token_data.get('token').get('roles')
             if (is_cloud_token and ('member' or 'owner' in [r.name for r in roles])):
-                token_data['token']['roles'].append({'id': u'cloud_member', 'name': u'cloud_member'})
+                token_data['token']['roles'].append({'id': CLOUD_ROLE_ID, 'name': CLOUD_ROLE_NAME})
 
             return render_token_data_response(token_id, token_data,
                                               created=True)
@@ -542,7 +546,7 @@ class Auth(controller.V3Controller):
         is_cloud_token = self.assignment_api.get_project(project_id).get('is_cloud_project')
         roles = token_data.get('token').get('roles')
         if (is_cloud_token and ('member' or 'owner' in [r.name for r in roles])):
-            token_data['token']['roles'].append({'id': u'cloud_member', 'name': u'cloud_member'})
+            token_data['token']['roles'].append({'id': CLOUD_ROLE_ID, 'name': CLOUD_ROLE_NAME})
 
         return render_token_data_response(token_id, token_data)
 
