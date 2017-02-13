@@ -1,7 +1,9 @@
 {
     "admin_required": "role:admin or is_admin:1",
     "service_role": "role:service",
+    "pep_proxy_role": "role:pep_proxy",
     "service_or_admin": "rule:admin_required or rule:service_role",
+    "service_or_admin_or_pep": "rule:admin_required or rule:pep_proxy_role or rule:service_role",
     "owner" : "user_id:%(user_id)s or user_id:%(target.token.user_id)s",
     "admin_or_owner": "rule:admin_required or rule:owner",
     "member_or_admin_or_owner": "role:member or role:owner or rule:admin_required",
@@ -101,8 +103,8 @@
     "identity:delete_policy": "rule:admin_required",
 
     "identity:check_token": "rule:admin_required",
-    "identity:validate_token": "rule:service_or_admin",
-    "identity:validate_token_head": "rule:service_or_admin",
+    "identity:validate_token": "rule:service_or_admin_or_pep",
+    "identity:validate_token_head": "rule:service_or_admin_or_pep",
     "identity:revocation_list": "rule:service_or_admin",
     "identity:revoke_token": "rule:member_or_admin_or_owner",
 
