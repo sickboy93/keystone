@@ -103,8 +103,8 @@
     "identity:delete_policy": "rule:admin_required",
 
     "identity:check_token": "rule:admin_required",
-    "identity:validate_token": "rule:service_or_admin",
-    "identity:validate_token_head": "rule:service_or_admin",
+    "identity:validate_token": "rule:service_or_admin_or_pep",
+    "identity:validate_token_head": "rule:service_or_admin_or_pep",
     "identity:revocation_list": "rule:service_or_admin",
     "identity:revoke_token": "rule:member_or_admin_or_owner",
 
