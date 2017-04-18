@@ -49,6 +49,9 @@ def user_key2scim(ref, path, schema=True):
                     get_schema(_EXT_SCHEMA, path)] if schema
         else None,
         'id': ref.get('id', None),
+        'meta': {
+            'location': ref.get('links', None)['self']
+        },
         'userName': ref.get('name', None),
         'displayName': ref.get('description', None),
         'active': ref.get('enabled', None),
