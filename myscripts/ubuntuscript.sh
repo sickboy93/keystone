@@ -72,9 +72,11 @@ curl -i -X POST localhost:5000/v3/users -H "Content-type: application/json" -H "
 }
 EOF
 
+ADMIN_ID=$(sqlite3 keystone.db "select(id) from role where name='admin'")
 sqlite3 keystone.db "insert into role (id, name, extra) values ('pep_proxy', 'pep_proxy', '{"is_default": "true"}');"
 
 sqlite3 keystone.db "insert into assignment (type, actor_id, target_id, role_id, inherited) values ('GroupDomain', '$YOUR_USER', 'default', 'pep_proxy', 0);"
+sqlite3 keystone.db "insert into assignment (type, actor_id, target_id, role_id, inherited) values ('GroupDomain', '$YOUR_USER', 'default', '$ADMIN_ID', 0);"
 
 curl -i -X POST http://localhost:5000/v3/auth/tokens -H "Content-Type: application/json" -H "X-Auth-Token: $YOUR_TOKEN" \
 -d @- <<EOF
@@ -100,8 +102,9 @@ curl -i -X POST http://localhost:5000/v3/auth/tokens -H "Content-Type: applicati
 }
 EOF
 
+cd /home/ubuntu
 curl -sL https://deb.nodesource.com/setup_4.x | sudo -E bash -
-sudo apt-get install -y nodejs sqlite3
+sudo apt-get install -y nodejs
 
 cd fiware-pep-proxy/
 npm install
