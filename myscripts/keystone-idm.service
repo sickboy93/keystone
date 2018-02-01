@@ -1,0 +1,10 @@
+[Unit]
+Description=Keystone IDM service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/keystone-idm
+
+[Install]
+WantedBy=multi-user.target

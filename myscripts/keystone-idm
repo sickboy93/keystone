@@ -1,0 +1,7 @@
+#!/bin/sh
+
+cd /home/ubuntu/keystone
+#activate the venv
+. .venv/bin/activate
+#run keystone
+bin/keystone-all
