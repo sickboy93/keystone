@@ -1,12 +1,15 @@
 #!/bin/sh
 set -x
 PASSW=coritel
+YOUR_TOKEN=ADMIN
+YOUR_USER=sandro
+YOUR_PASSW=sandro
 
-apt-get -y update
+apt-get -y update && apt-get -y upgrade
 
 apt-get -y install gcc g++ python python-dev python-pip \
-                   #libxml2-dev libxslt1-dev libsasl2-dev libssl-dev libldap2-dev libffi-dev libsqlite3-dev libmysqlclient-dev python-mysqldb git \
-                   #libssl-dev libffi-dev libjpeg8-dev
+                   libxml2-dev libxslt1-dev libsasl2-dev libssl-dev libldap2-dev libffi-dev libsqlite3-dev libmysqlclient-dev python-mysqldb git \
+                   libssl-dev libffi-dev libjpeg8-dev sqlite3
 sudo pip install --upgrade virtualenv
 
 cd /home/ubuntu
@@ -54,25 +57,52 @@ systemctl start keystone-idm
 #cd fiware-pep-proxy/
 #npm install
 
-#curl -i -X POST localhost:5000/v3/users -H "Content-type: application/json" -H "X-Auth-Token: $YOUR_TOKEN" \
-#-d @- <<EOF
-#{
-    #"user": {
-        #"default_project_id": "idm_project",
-        #"domain_id": "default",
-        #"enabled": true,
-        #"name": "$YOUR_USER",
-        #"password": "$YOUR_PASSW",
-        #"description": "user",
-        #"email": "$YOUR_USER@example.com"
-    #}
-#}
-#EOF
+curl -i -X POST localhost:5000/v3/users -H "Content-type: application/json" -H "X-Auth-Token: $YOUR_TOKEN" \
+-d @- <<EOF
+{
+    "user": {
+        "default_project_id": "idm_project",
+        "domain_id": "default",
+        "enabled": true,
+        "name": "$YOUR_USER",
+        "password": "$YOUR_PASSW",
+        "description": "user",
+        "email": "$YOUR_USER@example.com"
+    }
+}
+EOF
 
-#sqlite
+sqlite3 keystone.db "insert into role (id, name, extra) values ('pep_proxy', 'pep_proxy', '{"is_default": "true"}');"
 
+sqlite3 keystone.db "insert into assignment (type, actor_id, target_id, role_id, inherited) values ('GroupDomain', '$YOUR_USER', 'default', 'pep_proxy', 0);"
 
+curl -i -X POST http://localhost:5000/v3/auth/tokens -H "Content-Type: application/json" -H "X-Auth-Token: $YOUR_TOKEN" \
+-d @- <<EOF
+{
+    "auth": {
+        "identity": {
+            "methods": [
+                "password"
+            ],
+            "password": {
+                "user": {
+                    "id": "$YOUR_USER",
+                    "password": "$YOUR_PASSW"
+                }
+            }
+        },
+        "scope": {
+            "project": {
+                "id": "idm_project"
+            }
+        }
+    }
+}
+EOF
 
-#wget http://repo1.maven.org/maven2/org/ow2/authzforce/authzforce-ce-server-dist/8.0.1/authzforce-ce-server-dist-8.0.1.deb
+curl -sL https://deb.nodesource.com/setup_4.x | sudo -E bash -
+sudo apt-get install -y nodejs sqlite3
 
+cd fiware-pep-proxy/
+npm install
 
