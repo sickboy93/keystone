@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import getpass
+import sys
 import migrate
 import sqlalchemy as sql
 from sqlalchemy import orm
@@ -38,8 +38,7 @@ def upgrade(migrate_engine):
         for element_data in elements:
             if table_name == 'user':
                 # set up users passwords
-                element_data['password'] = getpass.getpass(
-                    _PASS_PROMT.format(element_data['name']))
+                element_data['password'] = sys.stdin.read().strip()
                 element_data = utils.hash_user_password(element_data)
             table.insert(element_data).execute()
             session.commit()
